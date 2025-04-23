@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <!-- Màu nền có thể là trong suốt hoặc màu khác tùy nhu cầu -->
+    <solid android:color="@android:color/transparent"/>
+</shape>

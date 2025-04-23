@@ -1,0 +1,201 @@
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ui.project.CreateProjectActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary">
+
+        <!-- Sử dụng MaterialToolbar và set layout custom cho Toolbar -->
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/tb_createProject"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/colorPrimary"
+            android:layout_marginTop="5dp">
+
+            <ImageButton
+                android:id="@+id/btn_close_create_Project"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_close"
+                android:contentDescription="@string/text_close" />
+
+            <TextView
+                android:id="@+id/toolbar_title_creProject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/btn_close_create_Project"
+                android:layout_marginStart="50dp"
+                android:layout_centerVertical="true"
+                android:text="@string/create_project"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:textSize="20sp" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/background"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
+            android:elevation="10dp"
+            app:cardCornerRadius="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Tên project -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/projectNameTIL"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/input_name_project"
+                    app:counterEnabled="true"
+                    app:counterMaxLength="30"
+                    app:helperText="@string/required"
+                    app:helperTextTextColor="@color/red"
+                    app:startIconTint="@null">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/projectNameTiet"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:minHeight="48dp"
+                        android:selectAllOnFocus="true"/>
+                    <requestFocus/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Mô tả project -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_marginTop="12dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/text_project_description"
+                    app:counterEnabled="true"
+                    app:counterMaxLength="200">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/projectDescTiet"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine|textNoSuggestions"
+                        android:lines="3"
+                        android:scrollbars="vertical"
+                        android:overScrollMode="always"
+                        android:gravity="top|start"
+                        />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    >
+                    <!-- Chọn ngày giờ dự án -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/projectDateTIL_day"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginEnd="12dp"
+
+                        android:hint="@string/choose_day"
+
+                        app:startIconTint="@null">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/projectDateTiet_day"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="false"
+                            android:drawableEnd="@drawable/calendar"
+                            android:inputType="datetime" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/projectDateTIL_hour"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.25"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/choose_hour"
+                        app:startIconTint="@null">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/projectDateTiet_hour"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="false"
+                            android:drawableEnd="@drawable/clock"
+                            android:inputType="datetime" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <!-- Checkbox chia sẻ link -->
+<!--                <CheckBox-->
+<!--                    android:id="@+id/checkbox_share_link"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="12dp"-->
+<!--                    android:text="Chia sẻ bằng link"/>-->
+
+                <!-- Nút chọn background (gradient/ảnh) -->
+                <include
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="10dp"
+                    android:id="@+id/button_image_custom"
+                    layout="@layout/button_image_custom" />
+
+                <!-- Nút Tạo bảng -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/create_project_btn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="30dp"
+                    android:background="@drawable/shape_button_rounded"
+                    android:enabled="false"
+                    android:gravity="center"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/create_project"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+</LinearLayout>

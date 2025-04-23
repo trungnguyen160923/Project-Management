@@ -1,0 +1,80 @@
+<resources>
+    <string name="app_name">Project Management</string>
+
+    // Main
+    <string name="tieu_de">Thúc đẩy tinh thần đồng đội tiến lên - ngay cả khi đang di chuyển</string>
+    <string name="dang_ky">Đăng ký</string>
+    <string name="dang_nhap">Đăng nhập</string>
+    <string name="chu_thich">Bằng cách đăng ký, bạn đồng ý với Điều khoản dịch vụ và Chính sách Riêng tư của chúng tôi</string>
+    <string name="bophanhotro">Liên hệ bộ phận hỗ trợ</string>
+
+    //Login
+    <string name="login_header">Đăng nhập để tiếp tục</string>
+    <string name="prompt_email">Nhập email của bạn!</string>
+    <string name="prompt_password">Nhập mật khẩu!</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="or">Hoặc</string>
+    <string name="label_email">Địa chỉ email</string>
+    <string name="label_password">Mật khẩu</string>
+    <string name="login_by_google">Đăng nhập bằng Google</string>
+    <string name="text_do_not_have_acc">Bạn chưa có tài khoản?</string>
+    <string name="register">Đăng Ký</string>
+    <string name="login">ĐĂNG NHẬP</string>
+
+    // Register
+    <string name="prompt_fullname">Nhập họ tên đẩy đủ của bạn!</string>
+    <string name="register_header">Đăng ký để tiếp tục</string>
+    <string name="label_fullname">Họ tên đẩy đủ:</string>
+    <string name="label_confirmPassword">Xác nhận mật khẩu</string>
+    <string name="confirmPassword">Nhập lại mật khẩu!</string>
+    <string name="have_acc">Bạn đã có tài khoản?</string>
+
+    //invalid
+    <string name="invalid_email">Chưa đúng định dạng Email!</string>
+    <string name="invalid_password">Mật khẩu chứa ít nhất 6 kí tự!</string>
+    <string name="empty_email">Email không được để trống!</string>
+    <string name="empty_password">Mật khẩu không được để trống!</string>
+    <string name="required">Bắt buộc *</string>
+    <string name="loading">Loading...</string>
+    <string name="empty_fullname">Họ và tên không được để trống!</string>
+    <string name="passwords_do_not_match">Mật khẩu không khớp!</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_project">Dự án</string>
+    <string name="menu_task">Các thẻ của tôi</string>
+    <string name="menu_setting">Cài đặt</string>
+    <string name="logout_description">Log out</string>
+    <string name="home_text_donot_have_project">Không có dự án</string>
+    <string name="home_text_create_first_project">Tạo dự án Trello đầu tiên của bạn</string>
+    <string name="name_project">Tên bảng</string>
+    <string name="input_name_project">Nhập tên dự án</string>
+    <string name="project_background_text">Phông nền dự án</string>
+    <string name="text_close">Đóng</string>
+    <string name="create_project">Tạo dự án</string>
+
+    <string name="empty_projectName">Tên dự án không được để trống!</string>
+    <string name="text_back">Quay lại</string>
+    <string name="text_backgroundProject">Phông nền dự án</string>
+    <string name="text_project_description">Mô tả dự án</string>
+    <string name="choose_hour">Chọn giờ</string>
+    <string name="choose_day">Chọn ngày</string>
+    <string name="Bar_img">Ảnh</string>
+    <string name="desc_choose_background_image">Ảnh hệ thống</string>
+    <string name="desc_choose_from_device">Ảnh chọn từ máy</string>
+    <string name="choose_from_device">Chọn ảnh từ máy</string>
+    <string name="project_background_image">Ảnh nền</string>
+    <string name="project_name">Tên dự án</string>
+    <string name="project_description">Mô tả ngắn gọn…</string>
+    <string name="project_dealine">Hạn: 2025-04-30 14:00</string>
+    <string name="phase_title">Tiêu đề Phase</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="zoom">Zoom</string>
+
+</resources>

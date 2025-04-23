@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="splash_background_color">#2196F3</color>
+
+    <color name="colorAccent">#0C90F1</color>
+    <color name="colorPrimary">#0A80F5</color>
+    <color name="dialog_background">#FFFFFF</color>
+    <color name="primary_text_color">#212121</color>
+
+
+
+    <color name="gray">#B3B3B3</color>
+    <color name="secondary_text_color">#7A8089</color>
+    <color name="red">#EB0909</color>
+    <color name="lime_green">#197e5c</color>
+    <color name="card_stroke_default">#DDDDDD</color>
+    <color name="card_stroke_checked">#197e5c</color>
+
+    <!-- gradients row 1 -->
+    <color name="g11_start">#E2EAFD</color>
+    <color name="g11_end">  #1E84D8</color>
+    <color name="g12_start">#1E84D8</color>
+    <color name="g12_end">  #0A50B0</color>
+    <color name="g13_start">#0A50B0</color>
+    <color name="g13_end">  #084190</color>
+
+    <!-- gradients row 2 -->
+    <color name="g21_start">#2E3875</color>
+    <color name="g21_end">  #654083</color>
+    <color name="g22_start">#654083</color>
+    <color name="g22_end">  #AD69C0</color>
+    <color name="g23_start">#AD69C0</color>
+    <color name="g23_end">  #EF7C39</color>
+
+    <!-- gradients row 3 -->
+    <color name="g31_start">#F2748A</color>
+    <color name="g31_end">  #EF738F</color>
+    <color name="g32_start">#EF738F</color>
+    <color name="g32_end">  #349E88</color>
+    <color name="g33_start">#349E88</color>
+    <color name="g33_end">  #384967</color>
+
+    <!-- solids row 4 -->
+    <color name="s41">#572912</color>
+    <color name="s42">#0079BE</color>
+    <color name="s43">#D29030</color>
+
+    <!-- solids row 5 -->
+    <color name="s51">#52973A</color>
+    <color name="s52">#AF4432</color>
+    <color name="s53">#88609E</color>
+
+    <!-- solids row 6 -->
+    <color name="s61">#ED739C</color>
+    <color name="s62">#42ACA2</color>
+    <color name="s63">#2A3D5E</color>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Khi nút bị disable -->
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/gray" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <!-- Khi nút được enable (trạng thái mặc định) -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="360"
+                android:startColor="#0BCCEB"
+                android:endColor="#0A80F5"
+                android:type="linear" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+</selector>

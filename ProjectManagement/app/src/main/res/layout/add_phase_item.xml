@@ -1,0 +1,18 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="250dp"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:padding="12dp"
+    android:background="@drawable/bg_add_phase"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/tvAddPhase"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Thêm danh sách"
+        android:textSize="16sp"
+        android:textColor="@color/colorAccent"/>
+</LinearLayout>

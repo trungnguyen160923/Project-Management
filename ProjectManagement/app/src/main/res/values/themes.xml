@@ -1,0 +1,29 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Theme chính của ứng dụng -->
+    <style name="Base.Theme.ProjectManagement" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Đặt màu chủ đạo theo mong muốn (ví dụ: xanh) -->
+        <item name="android:colorPrimary">@color/colorAccent</item>
+        <item name="android:colorPrimaryDark">@color/colorAccent</item>
+        <item name="android:statusBarColor">@color/colorAccent</item>
+        <!-- Bạn có thể định nghĩa thêm các thuộc tính khác nếu cần -->
+    </style>
+
+    <style name="Theme.ProjectManagement" parent="Base.Theme.ProjectManagement">
+    </style>
+
+    <!-- Theme Splash tùy chỉnh -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background_color</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/trello_logo_vector</item>
+        <item name="postSplashScreenTheme">@style/Theme.ProjectManagement</item>
+    </style>
+
+    <style name="Theme.ProjectManagement.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.ProjectManagement.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.ProjectManagement.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+</resources>

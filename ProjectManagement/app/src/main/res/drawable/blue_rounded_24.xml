@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- Kích thước của drawable -->
+    <size
+        android:width="48dp"
+        android:height="48dp" />
+    <!-- Màu nền xanh, bạn có thể thay đổi nếu cần -->
+    <solid android:color="#2196F3" />
+    <!-- Góc bo tròn nhẹ -->
+    <corners android:radius="4dp" />
+</shape>

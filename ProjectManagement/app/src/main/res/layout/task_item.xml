@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardTask"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:strokeWidth="2dp"
+    app:strokeColor="@color/card_stroke_default"
+    app:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp">
+
+            <!-- Checkbox -->
+            <CheckBox
+                android:id="@+id/checkBoxTask"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"/>
+
+            <!-- Tiêu đề Task -->
+            <TextView
+                android:id="@+id/tvTaskTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/checkBoxTask"
+                android:layout_alignParentTop="true"
+                android:layout_marginStart="8dp"
+                android:text="Tiêu đề task"
+                android:textColor="#000"
+                android:textSize="16sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Mô tả Task -->
+            <TextView
+                android:id="@+id/tvTaskDes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/checkBoxTask"
+                android:layout_below="@id/tvTaskTitle"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="2dp"
+                android:visibility="gone"
+                android:text="Đây là phần mô tả task, chỉ hiện 1 dòng thôi nhé."
+                android:textColor="#555"
+                android:textSize="14sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+        </RelativeLayout>
+
+        <!-- Hàng thông tin 1: icon clock + date -->
+        <LinearLayout
+            android:id="@+id/layoutInfoRow"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="start|center_vertical">
+
+            <ImageView
+                android:id="@+id/imgEye"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_clock"
+                app:tint="@color/black" />
+
+            <TextView
+                android:id="@+id/tvDateRange"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:gravity="center_vertical"
+                android:text=""
+                android:textColor="@android:color/black"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Hàng thông tin 2: icon comment + số, icon file + số -->
+        <LinearLayout
+            android:id="@+id/layoutInfoRow1"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="start|center_vertical">
+
+            <ImageView
+                android:id="@+id/imgComment"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_comment"
+                app:tint="@color/black" />
+
+            <TextView
+                android:id="@+id/tvCommentCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:gravity="center_vertical"
+                android:text=""
+                android:textColor="@android:color/black"
+                android:textSize="14sp" />
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="match_parent" />
+
+            <ImageView
+                android:id="@+id/imgfile"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_file"
+                app:tint="@color/black" />
+
+            <TextView
+                android:id="@+id/tvFileCnt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:gravity="center_vertical"
+                android:text=""
+                android:textColor="@android:color/black"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Hàng avatar -->
+        <LinearLayout
+            android:id="@+id/layoutInfoRow2"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="end|center_vertical">
+
+            <TextView
+                android:id="@+id/tvAvatar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:gravity="center"
+                android:text="NT"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:background="@drawable/bg_avatar_circle" />
+
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

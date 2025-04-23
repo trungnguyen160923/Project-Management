@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- res/values/styles.xml -->
+    <style name="CustomDialogTheme" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+        <!-- Màu chính cho các thành phần như tiêu đề và nút -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+
+        <!-- Màu phụ cho các thành phần như nút nhấn -->
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- Màu nền của dialog -->
+        <item name="android:background">@color/dialog_background</item>
+
+        <!-- Màu chữ cho tiêu đề -->
+        <item name="android:textColorPrimary">@color/primary_text_color</item>
+
+        <!-- Màu chữ cho nội dung -->
+        <item name="android:textColorSecondary">@color/secondary_text_color</item>
+
+        <!-- Bo góc cho dialog -->
+        <item name="dialogCornerRadius">16dp</item>
+
+        <!-- Đặt phông chữ tùy chỉnh (nếu có) -->
+<!--        <item name="android:fontFamily">@font/your_custom_font</item>-->
+
+    </style>
+    <style name="ShapeAppearanceOverlay.App.FabSquare" parent="">
+        <!-- bo góc 8dp, family rounded -->
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+</resources>

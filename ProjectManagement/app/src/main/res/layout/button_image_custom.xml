@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/composite_button"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="8dp"
+    android:background="@drawable/btn_no_borerd"
+    android:foreground="?attr/selectableItemBackground">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Text hiển thị bên trái -->
+        <TextView
+            android:id="@+id/button_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/project_background_text"
+            android:textSize="18sp"
+            android:textColor="@color/black" />
+
+        <!-- Image hiển thị bên phải với scaleType fixXY -->
+        <ImageView
+            android:id="@+id/button_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:scaleType="fitXY"
+            android:src="@drawable/blue_rounded_24" />
+    </LinearLayout>
+</FrameLayout>
