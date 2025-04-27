@@ -51,6 +51,27 @@ public class Task {
         this.fileCnt = fileCnt;
     }
 
+    public Task(int taskID, int phaseID, String taskName, String taskDescription,
+                int assignedTo, String status, String priority, Date dueDate,
+                Boolean allowSelfAssign, int orderIndex,
+                Date createAt, Date lastUpdate,
+                Integer cmtCnt, Integer fileCnt) {
+        this.taskID = taskID;
+        this.phaseID = phaseID;
+        this.taskName = taskName;
+        this.taskDescription = taskDescription;
+        this.assignedTo = assignedTo;
+        this.status = status;
+        this.priority = priority;
+        this.dueDate = dueDate;
+        this.allowSelfAssign = allowSelfAssign;
+        this.orderIndex = orderIndex;
+        this.createAt = createAt;
+        this.lastUpdate = lastUpdate;
+        this.cmtCnt = cmtCnt;
+        this.fileCnt = fileCnt;
+    }
+
     public int getTaskID() {
         return taskID;
     }

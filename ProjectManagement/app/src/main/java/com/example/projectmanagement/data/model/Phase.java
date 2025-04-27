@@ -27,6 +27,17 @@ public class Phase {
         this.createAt = createAt;
     }
 
+    public Phase(int phaseID, int projectID, String phaseName, String description,
+                 int orderIndex, Date createAt, List<Task> task) {
+        this.phaseID = phaseID;
+        this.projectID = projectID;
+        this.phaseName = phaseName;
+        this.description = description;
+        this.orderIndex = orderIndex;
+        this.createAt = createAt;
+        this.task = task;
+    }
+
     public Phase(String phaseName, List<Task> task) {
         this.phaseName = phaseName;
         this.task = task;
@@ -69,7 +80,7 @@ public class Phase {
     }
 
     public void setOrderIndex(int orderIndex) {
-        orderIndex = orderIndex;
+        this.orderIndex = orderIndex;
     }
 
     public Date getCreateAt() {

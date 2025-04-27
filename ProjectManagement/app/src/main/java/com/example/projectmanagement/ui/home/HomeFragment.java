@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,34 +19,42 @@ import java.util.List;
 
 public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
-    private HomeViewModel viewModel;
     private ProjectAdapter adapter;
 
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container,
-                             Bundle savedInstanceState) {
+    @Nullable @Override
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
-        viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
-
-        // Setup RecyclerView
-        adapter = new ProjectAdapter(requireContext(), null);
-        binding.rvProject.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.rvProject.setAdapter(adapter);
-
-        // Observe data
-        viewModel.getProjects().observe(getViewLifecycleOwner(), this::updateUI);
-
         return binding.getRoot();
     }
 
-    private void updateUI(List<Project> projects) {
-        if (projects == null || projects.isEmpty()) {
-            binding.emptyView.setVisibility(View.VISIBLE);
-            binding.rvProject.setVisibility(View.GONE);
-        } else {
-            binding.emptyView.setVisibility(View.GONE);
-            binding.rvProject.setVisibility(View.VISIBLE);
+    @Override
+    public void onViewCreated(
+            @NonNull View view,
+            @Nullable Bundle savedInstanceState
+    ) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Khởi tạo adapter (dùng constructor không tham số)
+        adapter = new ProjectAdapter();
+        binding.rvProject.setLayoutManager(
+                new LinearLayoutManager(requireContext())
+        );
+        binding.rvProject.setAdapter(adapter);
+
+        // Lấy ViewModel và observe dữ liệu
+        HomeViewModel vm = new ViewModelProvider(this).get(HomeViewModel.class);
+        vm.getProjects().observe(getViewLifecycleOwner(), this::renderProjects);
+    }
+
+    private void renderProjects(List<Project> projects) {
+        boolean empty = projects == null || projects.isEmpty();
+        binding.emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
+        binding.rvProject.setVisibility(empty ? View.GONE : View.VISIBLE);
+        if (!empty) {
             adapter.setData(projects);
         }
     }
