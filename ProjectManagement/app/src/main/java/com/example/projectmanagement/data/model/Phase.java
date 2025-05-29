@@ -12,7 +12,7 @@ public class Phase {
     private Date createAt;
 
 
-    private List<Task> task;
+    private List<Task> tasks;
 
     public Phase() {
     }
@@ -27,9 +27,9 @@ public class Phase {
         this.createAt = createAt;
     }
 
-    public Phase(String phaseName, List<Task> task) {
+    public Phase(String phaseName, List<Task> tasks) {
         this.phaseName = phaseName;
-        this.task = task;
+        this.tasks = tasks;
     }
 
     public int getPhaseID() {
@@ -80,11 +80,11 @@ public class Phase {
         this.createAt = createAt;
     }
 
-    public List<Task> getTask() {
-        return task;
+    public List<Task> getTasks() {
+        return tasks;
     }
 
-    public void setTask(List<Task> task) {
-        this.task = task;
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
     }
 }

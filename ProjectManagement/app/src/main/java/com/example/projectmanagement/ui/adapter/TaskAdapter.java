@@ -1,5 +1,6 @@
 package com.example.projectmanagement.ui.adapter;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,12 +9,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
+import com.example.projectmanagement.data.model.DraggedTaskInfo;
+import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.google.android.material.card.MaterialCardView;
@@ -21,12 +25,18 @@ import com.google.android.material.card.MaterialCardView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
+public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
 
-    private List<Task> tasks;
+    private static final int TYPE_TASK = 1;
+    private static final int TYPE_PLACEHOLDER = 2;
 
-    public TaskAdapter(List<Task> tasks) {
+    private  List<Task> tasks;
+    private  Phase parentPhase;
+    private int placeholderPosition = -1;
+
+    public TaskAdapter(List<Task> tasks, Phase parentPhase) {
         this.tasks = tasks != null ? tasks : new ArrayList<>();
+        this.parentPhase = parentPhase;
     }
 
     /** Gọi từ ViewHolder của PhaseAdapter để update list */
@@ -35,40 +45,80 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
+    public void setPlaceholderPosition(int position) {
+        if (position < 0) position = 0;
+        if (position > tasks.size()) position = tasks.size();
+        if (position != placeholderPosition) {
+            placeholderPosition = position;
+            notifyDataSetChanged();
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void clearPlaceholder() {
+        placeholderPosition = -1;
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (placeholderPosition != -1 && position == placeholderPosition) {
+            return TYPE_PLACEHOLDER;
+        }
+        return TYPE_TASK;
+    }
+
+    @Override
+    public int getItemCount() {
+        return tasks.size() + (placeholderPosition != -1 ? 1 : 0);
+    }
+
     @NonNull
     @Override
-    public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.task_item, parent, false);
-        return new TaskViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_TASK) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.task_item, parent, false);
+            return new TaskViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.task_placeholder, parent, false);
+            return new PlaceholderViewHolder(view);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
-        Task task = tasks.get(position);
-        holder.tvTaskTitle.setText(task.getTaskName());
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (getItemViewType(position) == TYPE_TASK && holder instanceof TaskViewHolder) {
+            int actualPosition = position;
+            if (placeholderPosition != -1 && position > placeholderPosition) {
+                actualPosition = position - 1;
+            }
+            Task task = tasks.get(actualPosition);
+            ((TaskViewHolder) holder).tvTaskTitle.setText(task.getTaskName());
 
-        // tránh listener cũ
-        holder.checkBoxTask.setOnCheckedChangeListener(null);
-        // set state checkbox
-        boolean done = "DONE".equals(task.getStatus());
-        holder.checkBoxTask.setChecked(done);
-        // set màu viền ban đầu
-        updateCardStroke(holder, done);
+            // tránh listener cũ
+            ((TaskViewHolder) holder).checkBoxTask.setOnCheckedChangeListener(null);
+            // set state checkbox
+            boolean done = "DONE".equals(task.getStatus());
+            ((TaskViewHolder) holder).checkBoxTask.setChecked(done);
+            // set màu viền ban đầu
+            updateCardStroke(((TaskViewHolder) holder), done);
 
-        // gắn listener mới
-        holder.checkBoxTask.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // đổi màu viền
-            updateCardStroke(holder, isChecked);
-            // nếu muốn cập nhật model:
-            task.setStatus(isChecked ? "DONE" : "WORKING");
-        });
+            // gắn listener mới
+            ((TaskViewHolder) holder).checkBoxTask.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                // đổi màu viền
+                updateCardStroke(((TaskViewHolder) holder), isChecked);
+                // nếu muốn cập nhật model:
+                task.setStatus(isChecked ? "DONE" : "WORKING");
+            });
 
-        bindDate(holder, task);
-        bindCommentAndFile(holder, task);
-        bindAvatar(holder, task);
-        binDescription(holder, task);
+            bindDate(((TaskViewHolder) holder), task);
+            bindCommentAndFile(((TaskViewHolder) holder), task);
+            bindAvatar(((TaskViewHolder) holder), task);
+            binDescription(((TaskViewHolder) holder), task);
+        }
     }
+
 
     private void updateCardStroke(TaskViewHolder holder, boolean isChecked) {
         int color = isChecked
@@ -77,12 +127,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.cardTask.setStrokeColor(color);
     }
 
-    @Override
-    public int getItemCount() {
-        return tasks.size();
-    }
-
-    static class TaskViewHolder extends RecyclerView.ViewHolder {
+    class TaskViewHolder extends RecyclerView.ViewHolder {
 
         MaterialCardView cardTask;
         CheckBox checkBoxTask;
@@ -108,6 +153,30 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             imgComment = itemView.findViewById(R.id.imgComment);
             imgfile    = itemView.findViewById(R.id.imgfile);
 
+            itemView.setOnClickListener(v ->
+                    Toast.makeText(v.getContext(), tvTaskTitle.getText(), Toast.LENGTH_SHORT).show());
+            itemView.setOnLongClickListener(v -> {
+                int adapterPosition = getAdapterPosition();
+                int actualPosition = adapterPosition;
+                if (placeholderPosition != -1 && adapterPosition > placeholderPosition) {
+                    actualPosition = adapterPosition - 1;
+                }
+                Task Task = tasks.get(actualPosition);
+                int TaskWidth = v.getWidth();
+                int TaskHeight = v.getHeight();
+                DraggedTaskInfo info = new DraggedTaskInfo(Task, parentPhase, actualPosition, TaskWidth, TaskHeight);
+                v.startDrag(null, new View.DragShadowBuilder(v), info, 0);
+                tasks.remove(actualPosition);
+                notifyItemRemoved(adapterPosition);
+                return true;
+            });
+
+        }
+    }
+
+    class PlaceholderViewHolder extends RecyclerView.ViewHolder {
+        public PlaceholderViewHolder(@NonNull View itemView) {
+            super(itemView);
         }
     }
 
