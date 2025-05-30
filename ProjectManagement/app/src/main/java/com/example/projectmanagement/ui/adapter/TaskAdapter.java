@@ -35,9 +35,24 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
     private  Phase parentPhase;
     private int placeholderPosition = -1;
 
+    private int placeholderWidth  = ViewGroup.LayoutParams.MATCH_PARENT;
+    private int placeholderHeight = ViewGroup.LayoutParams.WRAP_CONTENT;
+
     public TaskAdapter(List<Task> tasks, Phase parentPhase) {
         this.tasks = tasks != null ? tasks : new ArrayList<>();
         this.parentPhase = parentPhase;
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void setPlaceholderPosition(int pos, int width, int height) {
+        if (pos < 0 || pos > tasks.size()) {
+            clearPlaceholder();
+            return;
+        }
+        this.placeholderPosition = pos;
+        this.placeholderWidth  = width;
+        this.placeholderHeight = height;
+        notifyDataSetChanged();
     }
 
     /** Gọi từ ViewHolder của PhaseAdapter để update list */
@@ -49,26 +64,36 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
 
     @SuppressLint("NotifyDataSetChanged")
     public void setPlaceholderPosition(int position) {
-        if (position < 0) position = 0;
-        if (position > tasks.size()) position = tasks.size();
-        if (position != placeholderPosition) {
-            placeholderPosition = position;
-            notifyDataSetChanged();
+        int oldPos = placeholderPosition;
+        // Xóa placeholder cũ (nếu có)
+        if (oldPos != -1) {
+            placeholderPosition = -1;
+            notifyItemRemoved(oldPos);
+        }
+        // Cập nhật vị trí mới
+        placeholderPosition = position;
+        if (position != -1) {
+            notifyItemInserted(position);
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     public void clearPlaceholder() {
-        placeholderPosition = -1;
-        notifyDataSetChanged();
+        if (placeholderPosition != -1) {
+            int old = placeholderPosition;
+            placeholderPosition = -1;
+            notifyItemRemoved(old);
+        }
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (placeholderPosition != -1 && position == placeholderPosition) {
-            return TYPE_PLACEHOLDER;
-        }
-        return TYPE_TASK;
+//        if (placeholderPosition != -1 && position == placeholderPosition) {
+//            return TYPE_PLACEHOLDER;
+//        }
+//        return TYPE_TASK;
+        return position == placeholderPosition
+                ? TYPE_PLACEHOLDER
+                : TYPE_TASK;
     }
 
     @Override
@@ -118,6 +143,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
             bindCommentAndFile(((TaskViewHolder) holder), task);
             bindAvatar(((TaskViewHolder) holder), task);
             binDescription(((TaskViewHolder) holder), task);
+        }else if (getItemViewType(position) == TYPE_PLACEHOLDER) {
+            // Áp dụng kích thước đã lưu
+            ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
+            lp.width  = placeholderWidth;
+            lp.height = placeholderHeight;
+            holder.itemView.setLayoutParams(lp);
+            return;
         }
     }
 
