@@ -41,6 +41,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
     }
 
     /** Gọi từ ViewHolder của PhaseAdapter để update list */
+    @SuppressLint("NotifyDataSetChanged")
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks != null ? tasks : new ArrayList<>();
         notifyDataSetChanged();

@@ -81,13 +81,8 @@ public class ProjectActivity  extends AppCompatActivity implements PhaseAdapter.
             exitAddMode();
         });
 
-//        ItemTouchHelper helper = new ItemTouchHelper(
-//                new PhaseTouchHelperCallback(phaseAdapter)
-//        );
-//        helper.attachToRecyclerView(rvBoard);
-
         int scrollThreshold = 100;  // khi kéo vào 100px gần mép thì scroll
-        int scrollAmount    = 50;   // mỗi lần scroll 20px
+        int scrollAmount    = 100;   // mỗi lần scroll 20px
         PhaseDragListener.OnCardDropListener dropListener =
                 new PhaseDragListener.OnCardDropListener() {
                     @SuppressLint("NotifyDataSetChanged")

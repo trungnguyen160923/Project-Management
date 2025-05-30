@@ -21,14 +21,7 @@ public class PhaseTouchHelperCallback extends ItemTouchHelper.Callback {
     private final TaskMoveListener moveListener;
     private final RecyclerView rvBoard;      // RecyclerView ngang (board)
     private static final int EDGE_THRESHOLD = 100; // px
-    private static final int SCROLL_STEP     = 20;  // px mỗi lần cuộn
-
-
-//    public PhaseTouchHelperCallback(ItemTouchHelperAdapter adapter, TaskMoveListener moveListener, RecyclerView rvBoard) {
-//        this.adapter = adapter;
-//        this.moveListener = moveListener;
-//        this.rvBoard = rvBoard;
-//    }
+    private static final int SCROLL_STEP     = 50;  // px mỗi lần cuộn
 
     public PhaseTouchHelperCallback(TaskMoveListener moveListener, RecyclerView rvBoard) {
         this.moveListener = moveListener;
