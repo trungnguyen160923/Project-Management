@@ -94,38 +94,86 @@ public class PhaseDragListener implements View.OnDragListener {
     }
 
     private void updatePlaceholders(DragEvent e) {
-        // Tính tọa độ tuyệt đối của điểm drag
+//        // Tính tọa độ tuyệt đối của điểm drag
+//        int[] boardPos = new int[2];
+//        boardRecyclerView.getLocationOnScreen(boardPos);
+//        float absX = e.getX() + boardPos[0];
+//        float absY = e.getY() + boardPos[1];
+//
+//        int total = phases.size();
+//        for (int adapterPos = 0; adapterPos < total; adapterPos++) {
+//            // Lấy ViewHolder nếu đang visible
+//            RecyclerView.ViewHolder vh = boardRecyclerView.findViewHolderForAdapterPosition(adapterPos);
+//            if (vh == null) continue;
+//            View phaseView = vh.itemView;
+//            RecyclerView taskRv = phaseView.findViewById(R.id.rvTask);
+//            if (taskRv == null) continue;
+//            RecyclerView.Adapter<?> raw = taskRv.getAdapter();
+//            if (!(raw instanceof TaskAdapter)) continue;
+//            TaskAdapter adapter = (TaskAdapter) raw;
+//
+//            // Kiểm tra điểm drag có nằm trong phase này không
+//            int[] phasePos = new int[2];
+//            phaseView.getLocationOnScreen(phasePos);
+//            Rect rect = new Rect(
+//                    phasePos[0], phasePos[1],
+//                    phasePos[0] + phaseView.getWidth(),
+//                    phasePos[1] + phaseView.getHeight()
+//            );
+//            if (rect.contains((int)absX, (int)absY)) {
+//                // Tính vị trí placeholder theo Y
+//                float yRel = absY - phasePos[1];
+//                int idx = calculateInsertionIndex(taskRv, yRel);
+//                DraggedTaskInfo info = (DraggedTaskInfo) e.getLocalState();
+//                adapter.setPlaceholderPosition(idx, info.getTaskWidth(), info.getTaskHeight());
+//            } else {
+//                adapter.clearPlaceholder();
+//            }
+//        }
+        //////=================================================
+        DraggedTaskInfo info = (DraggedTaskInfo) e.getLocalState();
+        if (info == null) return;
+
+        // 1. Tọa độ tuyệt đối của điểm kéo
         int[] boardPos = new int[2];
         boardRecyclerView.getLocationOnScreen(boardPos);
         float absX = e.getX() + boardPos[0];
         float absY = e.getY() + boardPos[1];
 
-        int total = phases.size();
-        for (int adapterPos = 0; adapterPos < total; adapterPos++) {
-            // Lấy ViewHolder nếu đang visible
-            RecyclerView.ViewHolder vh = boardRecyclerView.findViewHolderForAdapterPosition(adapterPos);
-            if (vh == null) continue;
-            View phaseView = vh.itemView;
+        // 2. Xóa placeholder cũ
+        clearAllPlaceholders();
+
+        // 3. Duyệt từng phaseView để tìm nơi đang hover
+        for (int i = 0; i < boardRecyclerView.getChildCount(); i++) {
+            View phaseView = boardRecyclerView.getChildAt(i);
             RecyclerView taskRv = phaseView.findViewById(R.id.rvTask);
             if (taskRv == null) continue;
             RecyclerView.Adapter<?> raw = taskRv.getAdapter();
             if (!(raw instanceof TaskAdapter)) continue;
             TaskAdapter adapter = (TaskAdapter) raw;
 
-            // Kiểm tra điểm drag có nằm trong phase này không
+            // Kiểm tra absX/absY có nằm trong phase này không
             int[] phasePos = new int[2];
             phaseView.getLocationOnScreen(phasePos);
-            Rect rect = new Rect(
-                    phasePos[0], phasePos[1],
+            Rect phaseRect = new Rect(
+                    phasePos[0],
+                    phasePos[1],
                     phasePos[0] + phaseView.getWidth(),
                     phasePos[1] + phaseView.getHeight()
             );
-            if (rect.contains((int)absX, (int)absY)) {
-                // Tính vị trí placeholder theo Y
-                float yRel = absY - phasePos[1];
-                int idx = calculateInsertionIndex(taskRv, yRel);
-                DraggedTaskInfo info = (DraggedTaskInfo) e.getLocalState();
-                adapter.setPlaceholderPosition(idx, info.getTaskWidth(), info.getTaskHeight());
+            if (phaseRect.contains((int) absX, (int) absY)) {
+                // Tính y tương đối so với rvTask
+                int[] rvPos = new int[2];
+                taskRv.getLocationOnScreen(rvPos);
+                float yRelRv = absY - rvPos[1];
+
+                // Tính vị trí chèn placeholder dựa trên adapter position
+                int insertPos = calculateInsertionIndex(taskRv, yRelRv);
+                adapter.setPlaceholderPosition(
+                        insertPos,
+                        info.getTaskWidth(),
+                        info.getTaskHeight()
+                );
             } else {
                 adapter.clearPlaceholder();
             }
@@ -147,18 +195,29 @@ public class PhaseDragListener implements View.OnDragListener {
     }
 
     private int calculateInsertionIndex(RecyclerView rv, float y) {
+//        int childCount = rv.getChildCount();
+//        for (int i = 0; i < childCount; i++) {
+//            View child = rv.getChildAt(i);
+//            if (y < child.getTop() + child.getHeight() / 2f) {
+//                return i;
+//            }
+//        }
+//        // Nếu vượt hết, placeholder nằm ở cuối
+//        TaskAdapter adapter = (TaskAdapter) rv.getAdapter();
+//        return adapter.getItemCount();
+        ////======================
         int childCount = rv.getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = rv.getChildAt(i);
+            int adapterPos = rv.getChildAdapterPosition(child);
             if (y < child.getTop() + child.getHeight() / 2f) {
-                return i;
+                return adapterPos;
             }
         }
-        // Nếu vượt hết, placeholder nằm ở cuối
         TaskAdapter adapter = (TaskAdapter) rv.getAdapter();
         return adapter.getItemCount();
     }
-    
+
     private void handleDrop(DragEvent event) {
         DraggedTaskInfo info = (DraggedTaskInfo) event.getLocalState();
         if (info == null) return;
