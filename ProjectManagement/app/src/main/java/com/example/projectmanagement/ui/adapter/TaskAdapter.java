@@ -23,6 +23,7 @@ import com.example.projectmanagement.utils.ParseDateUtil;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
@@ -125,6 +126,21 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
                 ? ContextCompat.getColor(holder.itemView.getContext(), R.color.card_stroke_checked)
                 : ContextCompat.getColor(holder.itemView.getContext(), R.color.card_stroke_default);
         holder.cardTask.setStrokeColor(color);
+    }
+
+    public boolean onItemMove(int fromPosition, int toPosition) {
+        // Hoán đổi dữ liệu
+        if (fromPosition < toPosition) {
+            for (int i = fromPosition; i < toPosition; i++) {
+                Collections.swap(tasks, i, i + 1);
+            }
+        } else {
+            for (int i = fromPosition; i > toPosition; i--) {
+                Collections.swap(tasks, i, i - 1);
+            }
+        }
+        notifyItemMoved(fromPosition, toPosition);
+        return true;  // <-- trả về true để ItemTouchHelper biết đã xử lý
     }
 
     class TaskViewHolder extends RecyclerView.ViewHolder {

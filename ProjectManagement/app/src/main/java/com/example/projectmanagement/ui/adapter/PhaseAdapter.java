@@ -16,6 +16,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -147,28 +148,36 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             vh.rvTask.setLayoutManager(new LinearLayoutManager(vh.itemView.getContext()));
             vh.rvTask.setAdapter(taskAdapter);
 
-            // Drag listener
-            vh.rvTask.setOnDragListener((v, event) -> {
 
-                TaskAdapter adapter = (TaskAdapter) vh.rvTask.getAdapter();
-                switch (event.getAction()) {
-                    case DragEvent.ACTION_DRAG_STARTED:
-                        return event.getLocalState() instanceof DraggedTaskInfo;
-                    case DragEvent.ACTION_DRAG_LOCATION:
-                        handleDragLocation(v, event, adapter, vh);
-                        break;
-                    case DragEvent.ACTION_DRAG_EXITED:
-                    case DragEvent.ACTION_DRAG_ENDED:
-                        assert adapter != null;
-                        adapter.clearPlaceholder();
-                        stopAutoScroll(vh);
-                        break;
-                    case DragEvent.ACTION_DROP:
-                        handleDrop(v, event, adapter, vh);
-                        break;
-                }
-                return true;
-            });
+            PhaseTouchHelperCallback callback = new PhaseTouchHelperCallback(
+                    taskAdapter::onItemMove,     // giả sử TaskAdapter có method onItemMove(int, int)
+                    rvBoard                      // biến rvBoard bạn truyền từ Activity xuống Adapter
+            );
+            ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+            touchHelper.attachToRecyclerView(vh.rvTask);
+
+            // Drag listener
+//            vh.rvTask.setOnDragListener((v, event) -> {
+//
+//                TaskAdapter adapter = (TaskAdapter) vh.rvTask.getAdapter();
+//                switch (event.getAction()) {
+//                    case DragEvent.ACTION_DRAG_STARTED:
+//                        return event.getLocalState() instanceof DraggedTaskInfo;
+//                    case DragEvent.ACTION_DRAG_LOCATION:
+//                        handleDragLocation(v, event, adapter, vh);
+//                        break;
+//                    case DragEvent.ACTION_DRAG_EXITED:
+//                    case DragEvent.ACTION_DRAG_ENDED:
+//                        assert adapter != null;
+//                        adapter.clearPlaceholder();
+//                        stopAutoScroll(vh);
+//                        break;
+//                    case DragEvent.ACTION_DROP:
+//                        handleDrop(v, event, adapter, vh);
+//                        break;
+//                }
+//                return true;
+//            });
 
             // Edit mode
             if (adapterPos == editingPosition) {
@@ -212,6 +221,8 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             });
         }
     }
+
+
 
     @Override
     public int getItemCount() {

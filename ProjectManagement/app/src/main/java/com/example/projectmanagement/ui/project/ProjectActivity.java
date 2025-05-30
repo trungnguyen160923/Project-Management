@@ -81,18 +81,57 @@ public class ProjectActivity  extends AppCompatActivity implements PhaseAdapter.
             exitAddMode();
         });
 
-        ItemTouchHelper helper = new ItemTouchHelper(
-                new PhaseTouchHelperCallback(phaseAdapter)
-        );
-        helper.attachToRecyclerView(rvBoard);
+//        ItemTouchHelper helper = new ItemTouchHelper(
+//                new PhaseTouchHelperCallback(phaseAdapter)
+//        );
+//        helper.attachToRecyclerView(rvBoard);
 
-        final int BOARD_SCROLL_THRESHOLD = 200;
-        final int BOARD_SCROLL_AMOUNT  = 100;
-        PhaseDragListener boardDragListener = new PhaseDragListener(
-                rvBoard, phases, phaseAdapter,
-                BOARD_SCROLL_THRESHOLD, BOARD_SCROLL_AMOUNT
+        int scrollThreshold = 100;  // khi kéo vào 100px gần mép thì scroll
+        int scrollAmount    = 50;   // mỗi lần scroll 20px
+        PhaseDragListener.OnCardDropListener dropListener =
+                new PhaseDragListener.OnCardDropListener() {
+                    @SuppressLint("NotifyDataSetChanged")
+                    @Override
+                    public void onCardDropped(Phase targetPhase,
+                                              int dropIndex,
+                                              DraggedTaskInfo info) {
+
+                        List<Task> sourceList = info.getPhase().getTasks();
+                        List<Task> destList   = targetPhase.getTasks();
+                        Task task             = info.getTask();
+                        int originalPos       = info.getOriginalPosition();
+
+                        // 1) Remove theo object để không bị OOB
+                        boolean removed = sourceList.remove(task);
+
+                        // 2) Nếu kéo trong cùng phase, cần điều chỉnh dropIndex
+                        if (removed && targetPhase == info.getPhase()) {
+                            // Nếu dropIndex > originalPos thì sau remove, vị trí thực tế giảm 1
+                            if (dropIndex > originalPos) {
+                                dropIndex--;
+                            }
+                        }
+
+                        // 3) Clamp dropIndex nằm trong [0 .. destList.size()]
+                        dropIndex = Math.max(0, Math.min(dropIndex, destList.size()));
+
+                        // 4) Thêm vào destList
+                        destList.add(dropIndex, task);
+
+                        // 5) Cập nhật UI
+                        phaseAdapter.notifyDataSetChanged();
+                    }
+                };
+        PhaseDragListener dragListener = new PhaseDragListener(
+                rvBoard,
+                phases,
+                dropListener,
+                scrollThreshold,
+                scrollAmount
         );
-        rvBoard.setOnDragListener(boardDragListener);
+
+        // 5. Gắn listener cho rvBoard
+        rvBoard.setOnDragListener(dragListener);
     }
 
     private void initData() {

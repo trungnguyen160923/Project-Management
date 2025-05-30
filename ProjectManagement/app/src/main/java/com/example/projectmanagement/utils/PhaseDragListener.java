@@ -1,214 +1,219 @@
 package com.example.projectmanagement.utils;
 
 import android.graphics.Rect;
-import android.util.Log;
 import android.view.DragEvent;
 import android.view.View;
-
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.projectmanagement.R;
+import com.example.projectmanagement.ui.adapter.TaskAdapter;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.Phase;
-import com.example.projectmanagement.ui.adapter.PhaseAdapter;
-import com.example.projectmanagement.ui.adapter.TaskAdapter;
-
 import java.util.List;
 
 public class PhaseDragListener implements View.OnDragListener {
+    private final RecyclerView boardRecyclerView;
+    private final List<Phase> phases;
+    private final OnCardDropListener dropListener;
+    private final int boardScrollThreshold;
+    private final int boardScrollAmount;
 
-    private RecyclerView boardRecyclerView;
-    private List<Phase> phases;
-    private PhaseAdapter phaseAdapter;
-    private int boardScrollThreshold;
-    private int boardScrollAmount;
-
-    // Dùng để tự động cuộn với tốc độ cố định
-    private Runnable autoScrollRunnable;
     private boolean isAutoScrolling = false;
-    // Lưu trữ tọa độ X (relative với boardRecyclerView) từ drag event
-    private float lastLocalX = 0;
+    private float lastLocalX;
+    private Runnable autoScrollRunnable = null;
 
-    public PhaseDragListener(RecyclerView boardRecyclerView, List<Phase> phases,
-                             PhaseAdapter phaseAdapter, int boardScrollThreshold, int boardScrollAmount) {
-        this.boardRecyclerView = boardRecyclerView;
-        this.phases = phases;
-        this.phaseAdapter = phaseAdapter;
+    public PhaseDragListener(@NonNull RecyclerView boardRecyclerView,
+                             @NonNull List<Phase> phases,
+                             @NonNull OnCardDropListener dropListener,
+                             int boardScrollThreshold,
+                             int boardScrollAmount) {
+        this.boardRecyclerView    = boardRecyclerView;
+        this.phases               = phases;
+        this.dropListener         = dropListener;
         this.boardScrollThreshold = boardScrollThreshold;
-        this.boardScrollAmount = boardScrollAmount;
-        initAutoScrollRunnable();
+        this.boardScrollAmount    = boardScrollAmount;
+
+        // Khởi tạo auto-scroll runnable
+        autoScrollRunnable = () -> {
+            if (lastLocalX < boardScrollThreshold) {
+                boardRecyclerView.smoothScrollBy(-boardScrollAmount, 0);
+            } else if (lastLocalX > boardRecyclerView.getWidth() - boardScrollThreshold) {
+                boardRecyclerView.smoothScrollBy(boardScrollAmount, 0);
+            }
+            // Nếu vẫn đang ở vùng kích hoạt, tiếp tục post
+            if (isAutoScrolling) {
+                boardRecyclerView.postDelayed(autoScrollRunnable, 50);
+            }
+        };
+    }
+
+    private void startAutoScroll() {
+        if (!isAutoScrolling) {
+            isAutoScrolling = true;
+            boardRecyclerView.post(autoScrollRunnable);
+        }
+    }
+    private void stopAutoScroll() {
+        isAutoScrolling = false;
+        boardRecyclerView.removeCallbacks(autoScrollRunnable);
     }
 
     @Override
     public boolean onDrag(View v, DragEvent event) {
         switch (event.getAction()) {
             case DragEvent.ACTION_DRAG_LOCATION:
-                Log.d("BoardDragListener", "ACTION_DRAG_LOCATION");
-                handleDragLocation(event);
+                // Lấy tọa độ relative trong board
+                lastLocalX = event.getX();
+                // Auto-scroll nếu gần mép
+                if (lastLocalX < boardScrollThreshold
+                        || lastLocalX > boardRecyclerView.getWidth() - boardScrollThreshold) {
+                    startAutoScroll();
+                } else {
+                    stopAutoScroll();
+                }
+                // Cập nhật placeholder cho từng phase
+                updatePlaceholders(event);
                 break;
-            case DragEvent.ACTION_DROP:
-                Log.d("BoardDragListener", "ACTION_DROP");
-                handleDrop(event);
-                stopAutoScroll();
-                break;
+
+            case DragEvent.ACTION_DRAG_EXITED:
             case DragEvent.ACTION_DRAG_ENDED:
-                Log.d("BoardDragListener", "ACTION_DRAG_ENDED");
+                // Xoá hết placeholder và dừng auto-scroll
+                clearAllPlaceholders();
                 stopAutoScroll();
-                clearPlaceholders();
+                break;
+
+            case DragEvent.ACTION_DROP:
+                // Thực thi drop
+                handleDrop(event);
+                // Xoá placeholder và dừng auto-scroll
+                clearAllPlaceholders();
+                stopAutoScroll();
                 break;
         }
         return true;
     }
 
-    private void handleDragLocation(DragEvent event) {
-        // Lấy vị trí của boardRecyclerView trên màn hình
-        int[] boardLocation = new int[2];
-        boardRecyclerView.getLocationOnScreen(boardLocation);
+    private void updatePlaceholders(DragEvent event) {
+        // Tọa độ tuyệt đối của điểm drag trên màn hình
+        int[] boardLoc = new int[2];
+        boardRecyclerView.getLocationOnScreen(boardLoc);
+        float dropX = event.getX() + boardLoc[0];
+        float dropY = event.getY() + boardLoc[1];
 
-        // event.getX() và event.getY() trả về tọa độ tương đối của boardRecyclerView
-        float localX = event.getX();
-        float localY = event.getY();
-        // Tính tọa độ tuyệt đối (để so sánh với vị trí của list card)
-        float rawX = localX + boardLocation[0];
-        float rawY = localY + boardLocation[1];
-
-        // Cập nhật lastLocalX (sử dụng tọa độ relative)
-        lastLocalX = localX;
-
-        // Nếu vị trí con trỏ nằm gần mép trái hoặc phải, bắt đầu auto-scroll nếu chưa chạy
-        int boardWidth = boardRecyclerView.getWidth();
-        if ((localX < boardScrollThreshold || localX > boardWidth - boardScrollThreshold) && !isAutoScrolling) {
-            isAutoScrolling = true;
-            boardRecyclerView.post(autoScrollRunnable);
-        } else if (localX >= boardScrollThreshold && localX <= boardWidth - boardScrollThreshold) {
-            stopAutoScroll();
-        }
-
-//        // Cập nhật placeholder cho từng list card dựa trên tọa độ tuyệt đối
-//        for (int i = 0; i < boardRecyclerView.getChildCount(); i++) {
-//            View PhaseView = boardRecyclerView.getChildAt(i);
-//            int[] location = new int[2];
-//            PhaseView.getLocationOnScreen(location);
-//            Rect listRect = new Rect(location[0], location[1],
-//                    location[0] + PhaseView.getWidth(), location[1] + PhaseView.getHeight());
-//            RecyclerView cardRecyclerView = PhaseView.findViewById(R.id.cardRecyclerView);
-//            CardAdapter cardAdapter = (CardAdapter) cardRecyclerView.getAdapter();
-//            if (listRect.contains((int) rawX, (int) rawY)) {
-//                float yRelative = rawY - listRect.top;
-//                int index = calculateInsertionIndex(cardRecyclerView, yRelative, cardAdapter);
-//                cardAdapter.setPlaceholderPosition(index);
-//            } else {
-//                cardAdapter.clearPlaceholder();
-//            }
-//        }
-    }
-
-    private void handleDrop(DragEvent event) {
-        // Lấy tọa độ của boardRecyclerView trên màn hình
-        int[] boardLocation = new int[2];
-        boardRecyclerView.getLocationOnScreen(boardLocation);
-
-        float localX = event.getX();
-        float localY = event.getY();
-        float dropX = localX + boardLocation[0];
-        float dropY = localY + boardLocation[1];
-
-        DraggedTaskInfo info = (DraggedTaskInfo) event.getLocalState();
-        if (info == null) return;
-
-        // Tính toán vị trí của Card (giả sử điểm drop là tâm của card)
-        float cardLeft = dropX - info.getTaskWidth() / 2f;
-        float cardRight = dropX + info.getTaskWidth() / 2f;
-        float cardTop = dropY - info.getTaskHeight() / 2f;
-        float cardBottom = dropY + info.getTaskHeight() / 2f;
-        Rect cardRect = new Rect((int) cardLeft, (int) cardTop, (int) cardRight, (int) cardBottom);
-
-        float maxIntersection = 0;
-        int targetIndex = -1;
-        // Duyệt qua các list card để tìm list giao nhau lớn nhất với card
-        Log.d("MyTag","ChildCount: " + boardRecyclerView.getChildCount());
+        // Duyệt qua mỗi phase để tìm phase chứa điểm drop
         for (int i = 0; i < boardRecyclerView.getChildCount(); i++) {
-            View PhaseView = boardRecyclerView.getChildAt(i);
+            View phaseView = boardRecyclerView.getChildAt(i);
             int[] loc = new int[2];
-            PhaseView.getLocationOnScreen(loc);
-            Rect listRect = new Rect(loc[0], loc[1],
-                    loc[0] + PhaseView.getWidth(), loc[1] + PhaseView.getHeight());
-            Rect intersect = new Rect();
-            if (intersect.setIntersect(cardRect, listRect)) {
-                int area = intersect.width() * intersect.height();
-                if (area > maxIntersection) {
-                    maxIntersection = area;
-                    targetIndex = i;
-                }
+            phaseView.getLocationOnScreen(loc);
+            Rect phaseRect = new Rect(
+                    loc[0], loc[1],
+                    loc[0] + phaseView.getWidth(),
+                    loc[1] + phaseView.getHeight()
+            );
+
+            RecyclerView taskRv = phaseView.findViewById(R.id.rvTask);
+            TaskAdapter adapter = (TaskAdapter) taskRv.getAdapter();
+
+            if (phaseRect.contains((int)dropX, (int)dropY)) {
+                // Tính vị trí sẽ insert placeholder
+                float yRel = dropY - loc[1];
+                int placeholderIndex = calculateInsertionIndex(taskRv, yRel);
+                adapter.setPlaceholderPosition(placeholderIndex);  // hiển thị placeholder :contentReference[oaicite:0]{index=0}
+            } else {
+                adapter.clearPlaceholder();                        // xoá placeholder :contentReference[oaicite:1]{index=1}
             }
-        }
-        if (targetIndex != -1) {
-            View targetPhaseView = boardRecyclerView.getChildAt(targetIndex);
-            RecyclerView cardRecyclerView = targetPhaseView.findViewById(R.id.rvTask);
-            int[] loc = new int[2];
-            targetPhaseView.getLocationOnScreen(loc);
-            float yRelative = dropY - loc[1];
-            TaskAdapter taskAdapter = (TaskAdapter) cardRecyclerView.getAdapter();
-            int dropIndex = calculateInsertionIndex(cardRecyclerView, yRelative, taskAdapter);
-            Phase targetList = phases.get(targetIndex);
-            if (dropIndex > targetList.getTasks().size()) {
-                dropIndex = targetList.getTasks().size();
-            } else if (dropIndex < 0) {
-                dropIndex = 0;
-            }
-            if (phaseAdapter.getOnCardDropListener() != null) {
-                Log.d("MyTag", "Target index:"  + targetIndex);
-                Log.d("MyTag", "Drop index:"  + dropIndex);
-                phaseAdapter.getOnCardDropListener().onCardDropped(targetList, dropIndex, info);
-            }
-        } else {
-            Log.d("MyTag", "No target list found; restoring card to original list.");
-            info.getPhase().getTasks().add(info.getOriginalPosition(), info.getTask());
-            phaseAdapter.notifyDataSetChanged();
         }
     }
 
-    private void clearPlaceholders() {
+    private void clearAllPlaceholders() {
         for (int i = 0; i < boardRecyclerView.getChildCount(); i++) {
-            View PhaseView = boardRecyclerView.getChildAt(i);
-            RecyclerView cardRecyclerView = PhaseView.findViewById(R.id.rvTask);
-            TaskAdapter taskAdapter = (TaskAdapter) cardRecyclerView.getAdapter();
-            taskAdapter.clearPlaceholder();
+            View phaseView = boardRecyclerView.getChildAt(i);
+            RecyclerView taskRv = phaseView.findViewById(R.id.rvTask);
+            TaskAdapter adapter = (TaskAdapter) taskRv.getAdapter();
+            adapter.clearPlaceholder();                            // xoá placeholder :contentReference[oaicite:2]{index=2}
         }
     }
 
-    private int calculateInsertionIndex(RecyclerView recyclerView, float y, TaskAdapter adapter) {
-        int count = recyclerView.getChildCount();
-        for (int i = 0; i < count; i++) {
-            View child = recyclerView.getChildAt(i);
-            if (y <= child.getBottom() && y >= child.getTop()) {
+    private int calculateInsertionIndex(RecyclerView rv, float y) {
+        int childCount = rv.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = rv.getChildAt(i);
+            if (y < child.getTop() + child.getHeight() / 2f) {
                 return i;
             }
         }
+        // Nếu vượt hết, placeholder nằm ở cuối
+        TaskAdapter adapter = (TaskAdapter) rv.getAdapter();
         return adapter.getItemCount();
     }
 
-    private void initAutoScrollRunnable() {
-        autoScrollRunnable = new Runnable() {
-            @Override
-            public void run() {
-                int boardWidth = boardRecyclerView.getWidth();
-                // Sử dụng tốc độ cuộn cố định: boardScrollAmount
-                if (lastLocalX < boardScrollThreshold) {
-                    boardRecyclerView.smoothScrollBy(-boardScrollAmount, 0);
-                } else if (lastLocalX > boardWidth - boardScrollThreshold) {
-                    boardRecyclerView.smoothScrollBy(boardScrollAmount, 0);
-                }
-                // Nếu vẫn còn trong vùng kích hoạt, tiếp tục post runnable sau 50ms
-                if (lastLocalX < boardScrollThreshold || lastLocalX > boardWidth - boardScrollThreshold) {
-                    boardRecyclerView.postDelayed(this, 50);
+    private void handleDrop(DragEvent event) {
+        DraggedTaskInfo info = (DraggedTaskInfo) event.getLocalState();
+        if (info == null) return;
+
+        // Tọa độ drop tuyệt đối
+        int[] boardLoc = new int[2];
+        boardRecyclerView.getLocationOnScreen(boardLoc);
+        float dropX = event.getX() + boardLoc[0];
+        float dropY = event.getY() + boardLoc[1];
+
+        // Tìm phase có diện tích giao nhau lớn nhất
+        float maxArea = 0;
+        int targetPhaseIdx = -1;
+        Rect cardRect = new Rect(
+                (int)(dropX - info.getTaskWidth()/2f),
+                (int)(dropY - info.getTaskHeight()/2f),
+                (int)(dropX + info.getTaskWidth()/2f),
+                (int)(dropY + info.getTaskHeight()/2f)
+        );
+
+        for (int i = 0; i < boardRecyclerView.getChildCount(); i++) {
+            View pv = boardRecyclerView.getChildAt(i);
+            int[] loc = new int[2];
+            pv.getLocationOnScreen(loc);
+            Rect phaseRect = new Rect(
+                    loc[0], loc[1],
+                    loc[0] + pv.getWidth(),
+                    loc[1] + pv.getHeight()
+            );
+            Rect intersect = new Rect();
+            if (intersect.setIntersect(cardRect, phaseRect)) {
+                float area = intersect.width() * intersect.height();
+                if (area > maxArea) {
+                    maxArea = area;
+                    targetPhaseIdx = i;
                 }
             }
-        };
+        }
+
+        if (targetPhaseIdx != -1) {
+            // Tính index drop trong phase đích và gọi listener
+            View targetPhaseView = boardRecyclerView.getChildAt(targetPhaseIdx);
+            RecyclerView taskRv = targetPhaseView.findViewById(R.id.rvTask);
+            int[] loc = new int[2];
+            targetPhaseView.getLocationOnScreen(loc);
+            float yRel = dropY - loc[1];
+            TaskAdapter adapter = (TaskAdapter) taskRv.getAdapter();
+            int dropIndex = Math.min(
+                    Math.max(calculateInsertionIndex(taskRv, yRel), 0),
+                    phases.get(targetPhaseIdx).getTasks().size()
+            );
+            dropListener.onCardDropped(
+                    phases.get(targetPhaseIdx),
+                    dropIndex,
+                    info
+            );
+        } else {
+            // Không tìm được phase đích: hoàn tác
+            info.getPhase().getTasks().add(info.getOriginalPosition(), info.getTask());
+            dropListener.onCardDropped(info.getPhase(), info.getOriginalPosition(), info);
+        }
     }
 
-    private void stopAutoScroll() {
-        boardRecyclerView.removeCallbacks(autoScrollRunnable);
-        isAutoScrolling = false;
+    /**
+     * Interface để ProjectActivity/PhaseAdapter bắt event khi drop xong
+     */
+    public interface OnCardDropListener {
+        void onCardDropped(Phase targetPhase, int position, DraggedTaskInfo info);
     }
 }
