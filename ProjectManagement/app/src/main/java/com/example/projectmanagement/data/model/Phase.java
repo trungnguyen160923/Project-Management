@@ -12,7 +12,7 @@ public class Phase {
     private Date createAt;
 
 
-    private List<Task> task;
+    private List<Task> tasks;
 
     public Phase() {
     }
@@ -27,20 +27,9 @@ public class Phase {
         this.createAt = createAt;
     }
 
-    public Phase(int phaseID, int projectID, String phaseName, String description,
-                 int orderIndex, Date createAt, List<Task> task) {
-        this.phaseID = phaseID;
-        this.projectID = projectID;
+    public Phase(String phaseName, List<Task> tasks) {
         this.phaseName = phaseName;
-        this.description = description;
-        this.orderIndex = orderIndex;
-        this.createAt = createAt;
-        this.task = task;
-    }
-
-    public Phase(String phaseName, List<Task> task) {
-        this.phaseName = phaseName;
-        this.task = task;
+        this.tasks = tasks;
     }
 
     public int getPhaseID() {
@@ -80,7 +69,7 @@ public class Phase {
     }
 
     public void setOrderIndex(int orderIndex) {
-        this.orderIndex = orderIndex;
+        orderIndex = orderIndex;
     }
 
     public Date getCreateAt() {
@@ -91,11 +80,11 @@ public class Phase {
         this.createAt = createAt;
     }
 
-    public List<Task> getTask() {
-        return task;
+    public List<Task> getTasks() {
+        return tasks;
     }
 
-    public void setTask(List<Task> task) {
-        this.task = task;
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
     }
 }

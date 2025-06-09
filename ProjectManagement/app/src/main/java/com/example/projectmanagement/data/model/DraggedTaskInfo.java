@@ -1,19 +1,27 @@
 package com.example.projectmanagement.data.model;
 
 public class DraggedTaskInfo {
-    public final Task task;
-    public final Phase sourcePhase;
-    public final int originalPosition;
-    public final int viewWidth;
-    public final int viewHeight;
+    private final Task task;
+    private final Phase phase;
+    private final int originalPosition;
+    private final int taskWidth;
+    private final int taskHeight;
 
-    public DraggedTaskInfo(Task task, Phase sourcePhase,
+    public DraggedTaskInfo(Task task,
+                           Phase phase,
                            int originalPosition,
-                           int viewWidth, int viewHeight) {
+                           int taskWidth,
+                           int taskHeight) {
         this.task = task;
-        this.sourcePhase = sourcePhase;
+        this.phase = phase;
         this.originalPosition = originalPosition;
-        this.viewWidth = viewWidth;
-        this.viewHeight = viewHeight;
+        this.taskWidth = taskWidth;
+        this.taskHeight = taskHeight;
     }
+
+    public Task getTask() { return task; }
+    public Phase getPhase() { return phase; }
+    public int getOriginalPosition() { return originalPosition; }
+    public int getTaskWidth() { return taskWidth; }
+    public int getTaskHeight() { return taskHeight; }
 }
