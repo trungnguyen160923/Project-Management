@@ -77,5 +77,10 @@
     <string name="confirm">Confirm</string>
     <string name="zoom">Zoom</string>
     <string name="upload">upload</string>
+    <string-array name="notification_types">
+        <item>Tất cả</item>
+        <item>Đã đọc</item>
+        <item>Chưa đọc</item>
+    </string-array>
 
 </resources>

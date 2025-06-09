@@ -11,6 +11,10 @@
     <color name="avatar_background">#3F51B5</color>
     <color name="light_gray">#DDDDDD</color>
 
+    <color name="unread_bg">#FFFDE7</color>       <!-- nền nhạt cho item chưa đọc -->
+    <color name="text_primary">#212121</color>   <!-- chữ đậm -->
+    <color name="text_secondary">#757575</color> <!-- chữ nhạt cho đã đọc -->
+
 
 
     <color name="gray">#B3B3B3</color>

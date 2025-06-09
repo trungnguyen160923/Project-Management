@@ -13,12 +13,16 @@
         android:theme="@style/Base.Theme.ProjectManagement"
         tools:targetApi="31">
         <activity
-            android:name=".ui.task.TaskActivity"
-            android:windowSoftInputMode="adjustResize|stateHidden"
+            android:name=".ui.notification.NotificationActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.task.TaskActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
+        <activity
             android:name=".ui.project.ProjectActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity
             android:name=".ui.project.BGProjectImgActivity"
             android:exported="false" />
@@ -30,7 +34,8 @@
             android:exported="false" />
         <activity
             android:name=".ui.project.CreateProjectActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity
             android:name=".ui.main.HomeActivity"
             android:exported="false"

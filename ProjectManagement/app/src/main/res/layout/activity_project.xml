@@ -30,82 +30,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:background="@android:color/transparent"
-                android:contentInsetStart="0dp"
-                android:paddingTop="12dp">
-
-                <LinearLayout
-                    android:id="@+id/toolbar_project_detail"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:visibility="visible">
-
-                    <!-- Back button -->
-                    <ImageButton
-                        android:id="@+id/btn_project_back"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:layout_gravity="start|center_vertical"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@drawable/ic_back"
-                        android:contentDescription="@string/text_back"/>
-
-                    <!-- Title -->
-                    <TextView
-                        android:id="@+id/toolbar_title_project"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginStart="16dp"
-                        android:text="@string/project_name"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/white"/>
-
-                </LinearLayout>
-
-                <!-- CHẾ ĐỘ THÊM THẺ: ẩn ban đầu -->
-                <LinearLayout
-                    android:id="@+id/toolbar_input_mode"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:visibility="gone">
-
-                    <!-- X để hủy -->
-                    <ImageButton
-                        android:id="@+id/btn_cancel_add"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_close"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/cancel"/>
-
-                    <!-- Text hiển thị “Thêm thẻ…” -->
-                    <TextView
-                        android:id="@+id/tv_add_mode_title"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:text="Thêm thẻ…"
-                        android:textColor="@android:color/white"
-                        android:textSize="18sp"/>
-
-                    <!-- ✓ để xác nhận -->
-                    <ImageButton
-                        android:id="@+id/btn_confirm_add"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_check"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:contentDescription="@string/confirm"/>
-
-                </LinearLayout>
-            </com.google.android.material.appbar.MaterialToolbar>
+                app:contentInsetStart="0dp"
+                app:popupTheme="@style/ThemeOverlay.MaterialComponents.Light"
+                app:titleTextColor="@android:color/white"
+                app:navigationIcon="@drawable/ic_back"
+                app:menu="@menu/menu_project_toolbar"/>
         </com.google.android.material.appbar.AppBarLayout>
 
         <!-- 2. RecyclerView với Behavior -->

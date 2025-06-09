@@ -2,14 +2,18 @@ package com.example.projectmanagement.ui.main;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.widget.Toast;
 
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.databinding.ActivityHomeBinding;
+import com.example.projectmanagement.ui.notification.NotificationActivity;
 import com.example.projectmanagement.ui.project.CreateProjectActivity;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.annotation.NonNull;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -63,5 +67,20 @@ public class HomeActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_home);
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.search) {
+            Toast.makeText(this, "Bạn chọn Search", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        else if (id == R.id.notification) {
+            // Khởi động NotificationActivity
+            Intent intent = new Intent(this, NotificationActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
