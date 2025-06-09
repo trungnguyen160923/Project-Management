@@ -1,16 +1,35 @@
 package com.example.projectmanagement.ui.project;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.DecodeFormat;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.target.ViewTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
@@ -22,6 +41,7 @@ import com.example.projectmanagement.ui.adapter.PhaseAdapter;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.utils.PhaseDragListener;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -43,6 +63,9 @@ public class ProjectActivity  extends AppCompatActivity implements PhaseAdapter.
     private ImageButton btnCancelAdd, btnConfirmAdd, back_btn;
 
     private TextView toolbar_title_project;
+    private ImageView ivBackground;
+    private CoordinatorLayout coordinatorLayout;
+    private MaterialToolbar toolbar;
 
     private int pendingPhase = -1;
 
@@ -66,6 +89,12 @@ public class ProjectActivity  extends AppCompatActivity implements PhaseAdapter.
             btnConfirmAdd    = findViewById(R.id.btn_confirm_add);
             toolbar_title_project = findViewById(R.id.toolbar_title_project);
             back_btn = findViewById(R.id.btn_project_back);
+            ivBackground      = findViewById(R.id.ivProjectBackground);
+            coordinatorLayout = findViewById(R.id.coordinatorLayout);
+            toolbar           = findViewById(R.id.toolbar_project);
+
+            // 3. Áp dụng background
+            applyProjectBackground(project.getBackgroundImg());
 
             back_btn.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -149,6 +178,125 @@ public class ProjectActivity  extends AppCompatActivity implements PhaseAdapter.
             finish();
         }
 
+    }
+
+    /**
+     * Parse chuỗi bgImg và set background cho coordinatorLayout.
+     * Định dạng bgImg:
+     *   COLOR;#RRGGBB
+     *   GRADIENT;#RRGGBB,#RRGGBB;orientationIndex
+     *   RESOURCE;resId
+     *   URI;uriString
+     */
+    private void applyProjectBackground(String bgImg) {
+        if (bgImg == null) return;
+
+        if (bgImg.startsWith("COLOR;")) {
+            String hex = bgImg.substring("COLOR;".length());
+            int color = Color.parseColor(hex);
+            ivBackground.setVisibility(View.GONE);
+            coordinatorLayout.setBackgroundColor(color);
+            toolbar.setBackgroundColor(color);
+
+        } else if (bgImg.startsWith("GRADIENT;")) {
+            String[] parts = bgImg.substring("GRADIENT;".length()).split(";");
+            String[] cols  = parts[0].split(",");
+            int ori        = Integer.parseInt(parts[1]);
+            int c1 = Color.parseColor(cols[0]);
+            int c2 = Color.parseColor(cols[1]);
+            GradientDrawable gd = new GradientDrawable(
+                    GradientDrawable.Orientation.values()[ori],
+                    new int[]{c1, c2}
+            );
+            gd.setCornerRadius(0f);
+            ivBackground.setVisibility(View.GONE);
+            coordinatorLayout.setBackground(gd);
+            toolbar.setBackground(gd);
+
+        } else if (bgImg.startsWith("RESOURCE;")) {
+            int resId = Integer.parseInt(bgImg.substring("RESOURCE;".length()));
+            ivBackground.setVisibility(View.VISIBLE);
+            // CoordinatorLayout/Toolbar trong suốt
+            coordinatorLayout.setBackgroundColor(Color.TRANSPARENT);
+            toolbar.setBackgroundColor(Color.TRANSPARENT);
+
+            Glide.with(this)
+                    .load(resId)
+                    .format(DecodeFormat.PREFER_ARGB_8888)
+                    .listener(new RequestListener<Drawable>() {
+                        @Override public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                                              Target<Drawable> target, boolean isFirstResource) {
+                            return false; // để Glide xử lý lỗi mặc định
+                        }
+
+
+                        @Override public boolean onResourceReady(Drawable resource, Object model,
+                                                                 Target<Drawable> target,
+                                                                 DataSource dataSource, boolean isFirstResource) {
+                            // 1) set drawable thủ công
+                            ivBackground.setImageDrawable(resource);
+                            // 2) chuyển sang MATRIX scaleType
+                            ivBackground.setScaleType(ImageView.ScaleType.MATRIX);
+                            // 3) chờ layout xong để có width/height
+                            ivBackground.post(() -> {
+                                int vw = ivBackground.getWidth();
+                                int vh = ivBackground.getHeight();
+                                int iw = resource.getIntrinsicWidth();
+                                int ih = resource.getIntrinsicHeight();
+                                // scale sao cho both dims ≥ view dims
+                                float scale = Math.max((float)vw / iw, (float)vh / ih);
+                                float dx = (vw - iw * scale) / 2f;
+                                float dy = (vh - ih * scale) / 2f;
+
+                                Matrix m = new Matrix();
+                                m.setScale(scale, scale);
+                                m.postTranslate(dx, dy);
+                                ivBackground.setImageMatrix(m);
+                            });
+                            return true; // mình đã set drawable rồi
+                        }
+                    })
+                    .submit();  // dùng submit() vì đã tự xử lý setDrawable
+        }
+
+        else if (bgImg.startsWith("URI;")) {
+            Uri uri = Uri.parse(bgImg.substring("URI;".length()));
+            ivBackground.setVisibility(View.VISIBLE);
+            coordinatorLayout.setBackgroundColor(Color.TRANSPARENT);
+            toolbar.setBackgroundColor(Color.TRANSPARENT);
+
+            Glide.with(this)
+                    .load(uri)
+                    .format(DecodeFormat.PREFER_ARGB_8888)
+                    .listener(new RequestListener<Drawable>() {
+                        @Override public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                                              Target<Drawable> target, boolean isFirstResource) {
+                            return false;
+                        }
+                        @Override public boolean onResourceReady(Drawable resource, Object model,
+                                                                 Target<Drawable> target,
+                                                                 DataSource dataSource, boolean isFirstResource) {
+                            ivBackground.setImageDrawable(resource);
+                            ivBackground.setScaleType(ImageView.ScaleType.MATRIX);
+                            ivBackground.post(() -> {
+                                int vw = ivBackground.getWidth();
+                                int vh = ivBackground.getHeight();
+                                int iw = resource.getIntrinsicWidth();
+                                int ih = resource.getIntrinsicHeight();
+                                float scale = Math.max((float)vw / iw, (float)vh / ih);
+                                float dx = (vw - iw * scale) / 2f;
+                                float dy = (vh - ih * scale) / 2f;
+
+                                Matrix m = new Matrix();
+                                m.setScale(scale, scale);
+                                m.postTranslate(dx, dy);
+                                ivBackground.setImageMatrix(m);
+                            });
+                            return true;
+                        }
+                    })
+                    .submit();
+        }
     }
 
     private void initData() {

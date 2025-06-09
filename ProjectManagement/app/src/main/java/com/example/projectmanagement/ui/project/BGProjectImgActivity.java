@@ -1,14 +1,12 @@
 package com.example.projectmanagement.ui.project;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.bumptech.glide.Glide;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.item.BGImgItem;
 import com.example.projectmanagement.databinding.ActivityBgprojectImgBinding;
@@ -65,6 +63,7 @@ public class BGProjectImgActivity extends AppCompatActivity {
         bgImgItems.add(new BGImgItem(R.drawable.bg3, "Ingmar H"));
         bgImgItems.add(new BGImgItem(R.drawable.bg4, "Philipp"));
         bgImgItems.add(new BGImgItem(R.drawable.bg5, "Dextar Vision"));
-        bgImgItems.add(new BGImgItem(R.drawable.bg6, "Leo Messi"));
+        bgImgItems.add(new BGImgItem(R.drawable.bg6, "Bug Vision"));
+        bgImgItems.add(new BGImgItem(R.drawable.bg7, "Leo Messi"));
     }
 }
