@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24.0"
+    android:viewportHeight="24.0">
+
+    <!-- Định nghĩa path của mũi tên hướng lên -->
+    <path
+        android:fillColor="@color/black"
+        android:pathData="M7.41,15.41
+                          L12,10.83
+                          l4.59,4.58
+                          L18,14
+                          l-6,-6
+                          l-6,6
+                          z"/>
+</vector>

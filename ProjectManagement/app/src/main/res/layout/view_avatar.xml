@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <FrameLayout
+        android:layout_width="@dimen/avatar_size"
+        android:layout_height="@dimen/avatar_size">
+
+        <!-- Ảnh, nếu có sẽ phủ lên TextView -->
+        <ImageView
+            android:id="@+id/ivAvatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="@drawable/bg_circle" />
+
+        <!-- TextView hiện chữ cái đầu -->
+        <TextView
+            android:id="@+id/tvInitials"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_circle"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:visibility="visible"
+            android:textStyle="bold" />
+
+    </FrameLayout>
+</merge>

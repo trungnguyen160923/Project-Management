@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp"
+    android:layout_margin="8dp"
+    android:gravity="center_vertical">
+
+    <!-- Icon loại file -->
+    <ImageView
+        android:id="@+id/img_file_icon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="File icon"
+        android:src="@drawable/ic_file" />
+
+    <View
+        android:layout_width="8dp"
+        android:layout_height="match_parent" />
+
+    <!-- Tên và kích thước file -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_file_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Example.pdf"
+            style="@style/TextAppearance.MaterialComponents.Body1" />
+
+        <TextView
+            android:id="@+id/tv_file_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="121 KB"
+            style="@style/TextAppearance.MaterialComponents.Caption"
+            android:textColor="#666" />
+    </LinearLayout>
+
+    <!-- Nút 3 chấm -->
+    <ImageButton
+        android:id="@+id/btn_file_more"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_more_vert"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Tùy chọn file" />
+</LinearLayout>

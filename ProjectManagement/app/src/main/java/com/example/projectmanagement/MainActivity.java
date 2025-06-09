@@ -29,6 +29,7 @@ import com.example.projectmanagement.ui.auth.LoginActivity;
 import com.example.projectmanagement.ui.auth.RegisterActivity;
 import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.ui.project.ProjectActivity;
+import com.example.projectmanagement.ui.task.TaskActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        dialog_signUp_Option();
 //        dialog_signIn_Option();
-        startActivity(new Intent(MainActivity.this, ProjectActivity.class));
+        startActivity(new Intent(MainActivity.this, TaskActivity.class));
     }
 
     /**

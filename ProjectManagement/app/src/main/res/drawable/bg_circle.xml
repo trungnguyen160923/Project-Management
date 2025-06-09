@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <!-- đổi màu tuỳ ý, hoặc lấy dynamic trong code -->
+    <solid android:color="@color/avatar_background" />
+</shape>

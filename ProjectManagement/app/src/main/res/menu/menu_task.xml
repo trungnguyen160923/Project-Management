@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_move"
+        android:title="Di chuyển thẻ"
+        android:icon="@drawable/ic_next"
+        />
+
+    <item
+        android:id="@+id/action_copy"
+        android:title="Sao chép thẻ"
+        android:icon="@drawable/ic_copy"/>
+
+    <item
+        android:id="@+id/action_delete"
+        android:title="Xóa"
+        android:icon="@drawable/ic_delete"
+        app:itemTextColor="#66EB0909"/>
+
+</menu>

@@ -76,5 +76,6 @@
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="zoom">Zoom</string>
+    <string name="upload">upload</string>
 
 </resources>

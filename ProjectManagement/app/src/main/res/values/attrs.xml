@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Định nghĩa các thuộc tính tùy chỉnh cho item_task_detail -->
+    <attr name="icon" format="reference"/>
+    <attr name="title" format="string"/>
+</resources>

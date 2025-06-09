@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Đường kẻ 1 (đầu tiên), dài từ x=4 đến x=20, cao 2dp, y từ 6 đến 8 -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,6 L20,6 L20,8 L4,8 Z" />
+
+    <!-- Đường kẻ 2, dài từ x=4 đến x=20, y từ 10 đến 12 -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,10 L20,10 L20,12 L4,12 Z" />
+
+    <!-- Đường kẻ 3, dài từ x=4 đến x=20, y từ 14 đến 16 -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,14 L20,14 L20,16 L4,16 Z" />
+
+    <!-- Đường kẻ 4 (đường ngắn), từ x=4 đến x=14, y từ 18 đến 20 -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,18 L14,18 L14,20 L4,20 Z" />
+</vector>

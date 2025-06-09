@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="4dp"
+    android:gravity="center_vertical">
+
+    <!-- Ảnh xem trước -->
+    <ImageView
+        android:id="@+id/img_preview"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="Ảnh đính kèm" />
+
+    <View
+        android:layout_width="8dp"
+        android:layout_height="match_parent" />
+
+    <!-- Nút 3 chấm -->
+    <ImageButton
+        android:id="@+id/btn_image_more"
+        android:layout_marginTop="20dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_more_vert"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Tùy chọn ảnh" />
+</LinearLayout>
