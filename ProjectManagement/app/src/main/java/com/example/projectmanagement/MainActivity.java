@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        dialog_signUp_Option();
 //        dialog_signIn_Option();
-        startActivity(new Intent(MainActivity.this, TaskActivity.class));
+        startActivity(new Intent(MainActivity.this, HomeActivity.class));
     }
 
     /**

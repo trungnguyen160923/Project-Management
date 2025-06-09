@@ -1,5 +1,6 @@
 package com.example.projectmanagement.ui.home;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,14 +15,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.projectmanagement.databinding.FragmentHomeBinding;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.ui.adapter.ProjectAdapter;
+import com.example.projectmanagement.ui.project.ProjectActivity;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClickListener {
     private FragmentHomeBinding binding;
+    private HomeViewModel viewModel;
     private ProjectAdapter adapter;
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater,
             @Nullable ViewGroup container,
@@ -38,25 +43,33 @@ public class HomeFragment extends Fragment {
     ) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Khởi tạo adapter (dùng constructor không tham số)
-        adapter = new ProjectAdapter();
-        binding.rvProject.setLayoutManager(
-                new LinearLayoutManager(requireContext())
-        );
+        // Khởi tạo ViewModel
+        viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+
+        // Khởi tạo Adapter và gán sự kiện click
+        adapter = new ProjectAdapter(this);
+        binding.rvProject.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvProject.setAdapter(adapter);
 
-        // Lấy ViewModel và observe dữ liệu
-        HomeViewModel vm = new ViewModelProvider(this).get(HomeViewModel.class);
-        vm.getProjects().observe(getViewLifecycleOwner(), this::renderProjects);
+        // Observe dữ liệu dự án
+        viewModel.getProjects().observe(getViewLifecycleOwner(), this::renderProjects);
     }
 
     private void renderProjects(List<Project> projects) {
-        boolean empty = projects == null || projects.isEmpty();
-        binding.emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
-        binding.rvProject.setVisibility(empty ? View.GONE : View.VISIBLE);
-        if (!empty) {
+        boolean isEmpty = projects == null || projects.isEmpty();
+        binding.emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        binding.rvProject.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        if (!isEmpty) {
             adapter.setData(projects);
         }
+    }
+
+    @Override
+    public void onItemClick(Project project) {
+        // Khi click vào 1 project, chuyển sang màn hình chi tiết và truyền dữ liệu
+        Intent intent = new Intent(requireContext(), ProjectActivity.class);
+        intent.putExtra("project",project);
+        startActivity(intent);
     }
 
     @Override

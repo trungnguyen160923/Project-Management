@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -19,6 +20,15 @@ import android.graphics.Color;
 
 public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHolder> {
     private final List<Project> projects = new ArrayList<>();
+    private OnItemClickListener listener;
+
+    public interface OnItemClickListener {
+        void onItemClick(Project project);
+    }
+
+    public ProjectAdapter(OnItemClickListener listener) {
+        this.listener = listener;
+    }
 
     public void setData(List<Project> data) {
         projects.clear();
@@ -37,7 +47,11 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
     @Override public void onBindViewHolder(
             @NonNull ViewHolder holder, int pos
     ) {
-        holder.bind(projects.get(pos));
+        Project p = projects.get(pos);
+        holder.bind(p);
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onItemClick(p);
+        });
     }
 
     @Override public int getItemCount() {
