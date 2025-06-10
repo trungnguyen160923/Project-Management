@@ -82,5 +82,10 @@
         <item>Đã đọc</item>
         <item>Chưa đọc</item>
     </string-array>
+    <string-array name="gender_options">
+        <item>Nam</item>
+        <item>Nữ</item>
+    </string-array>
+
 
 </resources>

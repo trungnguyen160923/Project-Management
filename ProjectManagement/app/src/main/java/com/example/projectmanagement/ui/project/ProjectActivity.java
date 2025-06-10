@@ -27,6 +27,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ItemTouchHelper;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -43,6 +44,7 @@ import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.ui.adapter.PhaseAdapter;
+import com.example.projectmanagement.ui.helper.PhaseOrderTouchCallback;
 import com.example.projectmanagement.ui.notification.NotificationActivity;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.utils.PhaseDragListener;
@@ -229,6 +231,11 @@ public class ProjectActivity extends AppCompatActivity implements
 
         PhaseDragListener dragListener = new PhaseDragListener(rvBoard, phases, dropListener, 100, 100);
         rvBoard.setOnDragListener(dragListener);
+
+        // Add phase reordering support
+        ItemTouchHelper.Callback phaseOrderCallback = new PhaseOrderTouchCallback(phases, phaseAdapter);
+        ItemTouchHelper phaseTouchHelper = new ItemTouchHelper(phaseOrderCallback);
+        phaseTouchHelper.attachToRecyclerView(rvBoard);
     }
 
     private void initData() {

@@ -201,10 +201,22 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         // Chỉ hoán đổi giữa các item phase (không tính nút thêm)
         if (fromPosition < phases.size() && toPosition < phases.size()) {
             Collections.swap(phases, fromPosition, toPosition);
+            // Cập nhật orderIndex cho tất cả phase
+            for (int i = 0; i < phases.size(); i++) {
+                phases.get(i).setOrderIndex(i);
+            }
             notifyItemMoved(fromPosition, toPosition);
             return true;
         }
         return false;
+    }
+
+    // Thêm method mới để thêm phase
+    @SuppressLint("NotifyDataSetChanged")
+    public void addPhase(Phase phase) {
+        phase.setOrderIndex(phases.size()); // Set orderIndex là index mới
+        phases.add(phase);
+        notifyDataSetChanged();
     }
 
     private void showPhaseMenu(View anchor, int phasePosition) {
