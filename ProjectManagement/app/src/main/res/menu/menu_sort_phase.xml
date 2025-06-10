@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_sort_by_due"
+        android:title="Ngày hết hạn">
+        <menu>
+            <item
+                android:id="@+id/action_sort_due_newest"
+                android:title="Mới nhất"/>
+            <item
+                android:id="@+id/action_sort_due_oldest"
+                android:title="Xa nhất"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_sort_by_created"
+        android:title="Ngày tạo">
+        <menu>
+            <item
+                android:id="@+id/action_sort_created_newest"
+                android:title="Mới nhất"/>
+            <item
+                android:id="@+id/action_sort_created_oldest"
+                android:title="Xa nhất"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_sort_by_name"
+        android:title="Tên thẻ (Bảng chữ cái">
+        <menu>
+            <item
+                android:id="@+id/action_sort_name_az"
+                android:title="A → Z"/>
+            <item
+                android:id="@+id/action_sort_name_za"
+                android:title="Z → A"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_back"
+        android:title="Quay lại"/>
+</menu>

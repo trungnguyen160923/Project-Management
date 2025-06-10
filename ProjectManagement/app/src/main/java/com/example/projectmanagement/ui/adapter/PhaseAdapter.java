@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -136,6 +137,9 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             vh.rvTask.setLayoutManager(new LinearLayoutManager(vh.itemView.getContext()));
             vh.rvTask.setAdapter(taskAdapter);
 
+            // Sự kiện cho nút ba chấm
+            vh.btnPhaseMenu.setOnClickListener(v -> showPhaseMenu(v, position));
+
 
             PhaseTouchHelperCallback callback = new PhaseTouchHelperCallback(
                     taskAdapter::onItemMove,     // giả sử TaskAdapter có method onItemMove(int, int)
@@ -202,16 +206,107 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
         return false;
     }
+
+    private void showPhaseMenu(View anchor, int phasePosition) {
+        PopupMenu popup = new PopupMenu(anchor.getContext(), anchor);
+        popup.getMenuInflater().inflate(R.menu.menu_phase, popup.getMenu());
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.action_about_phase) {
+                // Xử lý "Về task này"
+                // Ví dụ: Toast.makeText(anchor.getContext(), "Về phase " + phases.get(phasePosition).getPhaseName(), Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            if (id == R.id.action_sort) {
+                showSortMenu(anchor, phasePosition);
+                return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+
+    private void showSortMenu(View anchor, int phasePosition) {
+        PopupMenu popup = new PopupMenu(anchor.getContext(), anchor);
+        popup.getMenuInflater().inflate(R.menu.menu_sort_phase, popup.getMenu());
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.action_sort_due_newest) {
+                sortTasksByDueDate(phasePosition, true);
+                return true;
+            }
+            if (id == R.id.action_sort_due_oldest) {
+                sortTasksByDueDate(phasePosition, false);
+                return true;
+            }
+            if (id == R.id.action_sort_created_newest) {
+                sortTasksByCreatedDate(phasePosition, true);
+                return true;
+            }
+            if (id == R.id.action_sort_created_oldest) {
+                sortTasksByCreatedDate(phasePosition, false);
+                return true;
+            }
+            if (id == R.id.action_sort_name_az) {
+                sortTasksByName(phasePosition, true);
+                return true;
+            }
+            if (id == R.id.action_sort_name_za) {
+                sortTasksByName(phasePosition, false);
+                return true;
+            }
+            if (id == R.id.action_back) {
+                showPhaseMenu(anchor, phasePosition);
+                return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+    private void sortTasksByDueDate(int phasePosition, boolean newestFirst) {
+        Phase phase = phases.get(phasePosition);
+        if (newestFirst) {
+            Collections.sort(phase.getTasks(), (t1, t2) -> t2.getDueDate().compareTo(t1.getDueDate()));
+        } else {
+            Collections.sort(phase.getTasks(), (t1, t2) -> t1.getDueDate().compareTo(t2.getDueDate()));
+        }
+        notifyItemChanged(phasePosition);
+    }
+
+    private void sortTasksByCreatedDate(int phasePosition, boolean newestFirst) {
+        Phase phase = phases.get(phasePosition);
+        if (newestFirst) {
+            Collections.sort(phase.getTasks(), (t1, t2) -> t2.getCreateAt().compareTo(t1.getCreateAt()));
+        } else {
+            Collections.sort(phase.getTasks(), (t1, t2) -> t1.getCreateAt().compareTo(t2.getCreateAt()));
+        }
+        notifyItemChanged(phasePosition);
+    }
+
+    private void sortTasksByName(int phasePosition, boolean az) {
+        Phase phase = phases.get(phasePosition);
+        if (az) {
+            Collections.sort(phase.getTasks(), (t1, t2) -> t1.getTaskName().compareToIgnoreCase(t2.getTaskName()));
+        } else {
+            Collections.sort(phase.getTasks(), (t1, t2) -> t2.getTaskName().compareToIgnoreCase(t1.getTaskName()));
+        }
+        notifyItemChanged(phasePosition);
+    }
+
+
+
     class PhaseViewHolder extends RecyclerView.ViewHolder {
         final TextView tvPhaseTitle, tvAddTask;
         final RecyclerView rvTask;
         final EditText etNew;
+        final View btnPhaseMenu;
         PhaseViewHolder(@NonNull View itemView) {
             super(itemView);
             tvPhaseTitle = itemView.findViewById(R.id.tvPhaseTitle);
             rvTask       = itemView.findViewById(R.id.rvTask);
             tvAddTask    = itemView.findViewById(R.id.tvAddTask);
             etNew        = itemView.findViewById(R.id.etNewTaskName);
+            btnPhaseMenu = itemView.findViewById(R.id.btnPhaseMenu);
         }
     }
 
