@@ -2,8 +2,8 @@
 <merge xmlns:android="http://schemas.android.com/apk/res/android">
 
     <FrameLayout
-        android:layout_width="@dimen/avatar_size"
-        android:layout_height="@dimen/avatar_size">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <!-- Ảnh, nếu có sẽ phủ lên TextView -->
         <ImageView

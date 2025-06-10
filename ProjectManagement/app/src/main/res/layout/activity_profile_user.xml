@@ -6,13 +6,13 @@
     android:layout_height="match_parent">
 
     <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar_profile_user"
+        android:id="@+id/toolbarProfileUser"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         app:navigationIcon="@drawable/ic_back"
-        app:title="Profile"
+        app:title="Hồ sơ"
         app:titleTextColor="@android:color/white"
-        android:background="?attr/colorPrimary" />
+        android:background="@color/colorAccent" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -27,13 +27,14 @@
             android:gravity="center_horizontal">
 
             <com.example.projectmanagement.viewmodel.AvatarView
-                android:id="@+id/iv_avatar"
+                android:id="@+id/avatar_view"
+                android:layout_marginTop="50dp"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:layout_marginTop="48dp" />
+                android:layout_marginEnd="8dp"/>
 
             <TextView
-                android:id="@+id/tv_fullname"
+                android:id="@+id/tvFullname"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -41,7 +42,7 @@
                 android:text="Full Name" />
 
             <TextView
-                android:id="@+id/tv_username"
+                android:id="@+id/tvUsername"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
@@ -52,67 +53,112 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp"
+                app:strokeColor="@color/colorAccent"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
-                    <EditText
-                        android:id="@+id/tv_fullnameEdt"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/textInputLayoutFullname"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textEmailAddress"
-                        android:hint="Fullname" />
+                        android:hint="Full Name"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                    <EditText
-                        android:id="@+id/tv_email"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtFullname"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPersonName"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/textInputLayoutBirthday"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textEmailAddress"
-                        android:hint="Email" />
+                        android:hint="Birthday"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="12dp">
 
-                    <EditText
-                        android:id="@+id/tv_birthday"
-                        android:layout_width="match_parent"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtBirthday"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:inputType="date"
-                        android:hint="Birthday" />
+                        android:text="Gender"
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="4dp"
+                        android:paddingLeft="4dp"/>
 
                     <Spinner
-                        android:id="@+id/spinner_gender"
+                        android:id="@+id/spinnerGender"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:entries="@array/notification_types" />
+                        android:background="@drawable/bg_message_bubble"
+                        android:padding="8dp"/>
 
-                    <EditText
-                        android:id="@+id/tv_social_links"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/textInputLayoutSocialLinks"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textUri"
-                        android:hint="Social Links" />
+                        android:hint="Social Links"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="12dp">
 
-                    <EditText
-                        android:id="@+id/tv_bio"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtSocialLinks"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textUri"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:maxLines="3"
-                        android:scrollbars="vertical"
-                        android:inputType="textMultiLine"
-                        android:hint="Bio" />
+                        android:hint="Bio"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtBio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:maxLines="3"
+                            android:inputType="textMultiLine"/>
+                    </com.google.android.material.textfield.TextInputLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <Button
-                android:id="@+id/btn_update"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnUpdate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="20dp"
+                android:background="@drawable/shape_button_rounded"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:text="Cập nhật thông tin"
-                android:layout_marginTop="16dp" />
+                android:textColor="@color/white"
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -120,7 +166,7 @@
                 android:text="Cập nhật mật khẩu? Nhấn vào " />
 
             <TextView
-                android:id="@+id/tv_update_password"
+                android:id="@+id/tvUpdatePassword"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/colorAccent"

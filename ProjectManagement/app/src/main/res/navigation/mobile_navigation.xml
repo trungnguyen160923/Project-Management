@@ -13,13 +13,13 @@
 
     <fragment
         android:id="@+id/nav_task"
-        android:name="com.example.projectmanagement.ui.gallery.GalleryFragment"
+        android:name="com.example.projectmanagement.ui.statistics.StatisticsFragment"
         android:label="@string/menu_task"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_statistics" />
 
     <fragment
         android:id="@+id/nav_setting"
-        android:name="com.example.projectmanagement.ui.slideshow.SlideshowFragment"
+        android:name="com.example.projectmanagement.ui.setting.SettingFragment"
         android:label="@string/menu_setting"
-        tools:layout="@layout/fragment_slideshow" />
+        tools:layout="@layout/fragment_setting" />
 </navigation>

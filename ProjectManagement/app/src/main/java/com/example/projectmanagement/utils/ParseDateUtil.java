@@ -85,4 +85,17 @@ public final class ParseDateUtil {
             return DATETIME_FORMATTER.get().format(date);
         }
     }
+    /**
+     * Parses the input string into a Calendar using multiple date patterns.
+     * Returns null if parsing fails.
+     */
+    public static Calendar parseDateToCalendar(String input) {
+        Date date = parseDate(input);
+        if (date == null) {
+            return null;
+        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal;
+    }
 }

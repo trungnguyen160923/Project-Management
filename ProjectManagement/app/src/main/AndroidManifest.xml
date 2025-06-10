@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -15,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Base.Theme.ProjectManagement"
         tools:targetApi="31">
+        <activity
+            android:name=".ui.user.ChangePasswordActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.user.ProfileUserActivity"
             android:exported="false" />
