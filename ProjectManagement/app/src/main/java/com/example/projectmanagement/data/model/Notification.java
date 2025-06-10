@@ -12,6 +12,14 @@ public class Notification {
     private Long senderId;
     private Long userId;
 
+    public enum Type {
+        PROJECT_INVITATION, NORMAL
+    }
+
+    public enum Action {
+        ACCEPT, REJECT, PENDING
+    }
+
     public Notification() {
     }
 

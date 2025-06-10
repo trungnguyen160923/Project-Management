@@ -18,7 +18,8 @@ public class RegisterViewModel extends ViewModel {
     private MutableLiveData<RegisterFormState> registerFormState = new MutableLiveData<>();
 
     public RegisterViewModel() {
-        authRepository = AuthRepository.getInstance();
+//        authRepository = AuthRepository.getInstance();
+        authRepository = null;
         userLiveData = new MutableLiveData<>();
         isLoading = new MutableLiveData<>(false);
     }
@@ -42,14 +43,14 @@ public class RegisterViewModel extends ViewModel {
      */
     public void register(String email, String fullname, String password, String confirmPassword) {
         isLoading.setValue(true);
-        authRepository.register(email, fullname, password).observeForever(user -> {
-            if (user != null) {
-                userLiveData.setValue(new UserView(user.getFullname()));
-            } else {
-                userLiveData.setValue(null);
-            }
-            isLoading.setValue(false);
-        });
+//        authRepository.register(email, fullname, password).observeForever(user -> {
+//            if (user != null) {
+//                userLiveData.setValue(new UserView(user.getFullname()));
+//            } else {
+//                userLiveData.setValue(null);
+//            }
+//            isLoading.setValue(false);
+//        });
     }
 
     /**

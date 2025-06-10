@@ -1,115 +1,126 @@
 package com.example.projectmanagement.data.repository;
 
-import androidx.lifecycle.MutableLiveData;
+import android.content.Context;
+import android.util.Log;
 
-import com.example.projectmanagement.api.ApiClient;
+import com.android.volley.NetworkError;
+import com.android.volley.NoConnectionError;
+import com.android.volley.Response;
+import com.android.volley.TimeoutError;
+import com.android.volley.VolleyError;
 import com.example.projectmanagement.api.AuthService;
 import com.example.projectmanagement.data.model.User;
 
-/**
- * Xử lý logic gọi API cho tác vụ đăng nhập
- */
-public class AuthRepository {
-    private static AuthRepository instance;
-    private AuthService apiService;
+import org.json.JSONObject;
 
-    // Constructor private để áp dụng Singleton
-    private AuthRepository() {
-        apiService = ApiClient.getClient().create(AuthService.class);
+public class AuthRepository {
+
+    public interface AuthCallback {
+        void onSuccess(User user);
+        void onError(String errorMsg);
     }
 
-    // Lấy instance duy nhất
-    public static synchronized AuthRepository getInstance() {
+    private static AuthRepository instance;
+    public static AuthRepository getInstance(Context context) {
         if (instance == null) {
-            instance = new AuthRepository();
+            instance = new AuthRepository(context.getApplicationContext());
         }
         return instance;
     }
 
-    /**
-     * Hàm login gọi API, trả về MutableLiveData<User>
-     * - Nếu thành công: giá trị user != null
-     * - Nếu thất bại: user = null (hoặc bạn có thể trả về thêm dữ liệu khác)
-     */
-    public MutableLiveData<User> login(String email, String password) {
-        MutableLiveData<User> userData = new MutableLiveData<>();
+    private final Context context;
 
-//        apiService.loginUser(email, password).enqueue(new Callback<User>() {
-//            @Override
-//            public void onResponse(Call<User> call, Response<User> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    // Đăng nhập thành công, server trả về User
-//                    userData.setValue(response.body());
-//                } else {
-//                    // Đăng nhập thất bại, trả về null hoặc xử lý lỗi
-//                    userData.setValue(null);
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<User> call, Throwable t) {
-//                // Lỗi kết nối hoặc ngoại lệ khác
-//                userData.setValue(null);
-//            }
-//        });
-
-        if (email.equals("trung@gmail.com") && password.equals("123456")) {
-            // Tạo đối tượng User mẫu (hoặc LoggedInUserView tùy theo thiết kế của bạn)
-            User user = new User();
-            user.setId(1);
-            user.setUsername("test@example.com");
-            user.setEmail("test@example.com");
-            user.setFullname("Test User");
-            // Các thuộc tính khác nếu cần...
-
-            userData.setValue(user);
-        } else {
-            // Nếu đăng nhập không đúng, trả về null
-            userData.setValue(null);
-        }
-
-        return userData;
+    public AuthRepository(Context context) {
+        this.context = context.getApplicationContext();
     }
 
-    /**
-     * Hàm register gọi API đăng ký, trả về MutableLiveData<User>
-     * - Nếu đăng ký thành công: giá trị User != null
-     * - Nếu thất bại: User = null (hoặc bạn có thể trả về thêm thông tin lỗi)
-     */
-    public MutableLiveData<User> register(String email, String fullname, String password) {
-        MutableLiveData<User> userData = new MutableLiveData<>();
 
-        // Gọi API đăng ký
-//        apiService.registerUser(email, fullname, password).enqueue(new Callback<User>() {
-//            @Override
-//            public void onResponse(Call<User> call, Response<User> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    // Đăng ký thành công
-//                    userData.setValue(response.body());
-//                } else {
-//                    // Đăng ký thất bại
-//                    userData.setValue(null);
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<User> call, Throwable t) {
-//                // Lỗi kết nối hoặc ngoại lệ khác
-//                userData.setValue(null);
-//            }
-//        });
+    // Interface callback cho đăng nhập Google (trả về JSONObject)
+    public interface AuthJsonCallback {
+        void onSuccess(JSONObject response);
+        void onError(VolleyError error);
+    }
 
-        // Nếu bạn muốn demo mà chưa có API, có thể dùng hard-code như sau:
-         if(email.equals("t@g.c")) {
-             User user = new User();
-             user.setId(2);
-             user.setEmail(email);
-             user.setFullname(fullname);
-             userData.setValue(user);
-         } else {
-             userData.setValue(null);
-         }
+    // Đăng nhập bằng email, password
+    public void login(String email, String password, AuthCallback callback) {
+        AuthService.login(context, email, password, response -> {
+            try {
+                Log.d("AuthRepository", "Response: " + response); // Đã là JSONObject
 
-        return userData;
+                String status = response.optString("status", "error");
+
+                if ("success".equals(status)) {
+                    // Đăng nhập thành công, lấy thông tin user từ "data"
+                    JSONObject data = response.optJSONObject("data");
+                    if (data != null) {
+                        User user = new User();
+                        user.setId(data.optInt("id", -1));
+                        user.setUsername(data.optString("name", "")); // API trả về "name"
+                        user.setEmail(data.optString("email", ""));
+                        callback.onSuccess(user);
+                    } else {
+                        callback.onError("Dữ liệu trả về không hợp lệ (thiếu data)");
+                    }
+                } else {
+                    // Lấy message lỗi từ "error" hoặc "message"
+                    String errorMsg = response.optString("error",
+                            response.optString("message", "Đăng nhập thất bại!"));
+                    callback.onError(errorMsg);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                callback.onError("Lỗi phân tích dữ liệu: " + e.getMessage());
+            }
+        }, error -> {
+            // Lấy thông tin lỗi từ Volley
+            String errorMessage = "Lỗi không xác định";
+            if (error.networkResponse != null && error.networkResponse.data != null) {
+                try {
+                    String errorBody = new String(error.networkResponse.data, "UTF-8");
+                    errorMessage = "Lỗi: " + errorBody;
+                } catch (Exception ignored) {}
+            } else if (error.getMessage() != null) {
+                errorMessage = error.getMessage();
+            }
+            callback.onError(errorMessage);
+        });
+    }
+
+
+    // Đăng ký
+    public void register(String name, String email, String password, AuthCallback callback) {
+        AuthService.register(context, name, email, password, response -> {
+            try {
+                JSONObject obj = new JSONObject(response);
+                User user = new User();
+                user.setId(obj.optInt("id"));
+                user.setUsername(obj.optString("username"));
+                user.setEmail(obj.optString("email"));
+                callback.onSuccess(user);
+            } catch (Exception e) {
+                callback.onError("Lỗi khi phân tích dữ liệu");
+            }
+        }, error -> {
+            callback.onError("Đăng ký thất bại");
+        });
+    }
+
+    // Đăng nhập Google (nếu cần)
+    public interface AuthGoogleCallback {
+        void onSuccess(User user);
+        void onError(String errorMsg);
+    }
+    public void loginWithGoogle(String googleIdToken, AuthGoogleCallback callback) {
+        AuthService.loginWithGoogle(context, googleIdToken, response -> {
+            try {
+                User user = new User();
+                user.setId(response.optInt("id"));
+                user.setUsername(response.optString("username"));
+                user.setEmail(response.optString("email"));
+                callback.onSuccess(user);
+            } catch (Exception e) {
+                callback.onError("Lỗi khi phân tích dữ liệu");
+            }
+        }, error -> callback.onError("Đăng nhập Google thất bại"));
     }
 }

@@ -1,19 +1,25 @@
 package com.example.projectmanagement.api;
 
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import android.content.Context;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
 
 public class ApiClient {
-    private static final String BASE_URL = "https://your-domain.com/api/";
-    private static Retrofit retrofit = null;
+    private static ApiClient instance;
+    private RequestQueue requestQueue;
 
-    public static Retrofit getClient() {
-        if (retrofit == null) {
-            retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())  // Chuyển đổi JSON
-                    .build();
+    private ApiClient(Context context) {
+        requestQueue = Volley.newRequestQueue(context.getApplicationContext());
+    }
+
+    public static synchronized ApiClient getInstance(Context context) {
+        if (instance == null) {
+            instance = new ApiClient(context);
         }
-        return retrofit;
+        return instance;
+    }
+
+    public RequestQueue getRequestQueue() {
+        return requestQueue;
     }
 }

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -81,13 +82,19 @@ public class LoginActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
                     startActivity(new Intent(LoginActivity.this, HomeActivity.class));
                     finish();
-                } else {
-                    // Đăng nhập thất bại: hiển thị thông báo lỗi
-                    Toast.makeText(getApplicationContext(), "Không thể đăng nhập do sai email hoặc mật khẩu", Toast.LENGTH_SHORT).show();
                 }
             }, 3000);
 
 
+        });
+
+        loginViewModel.getLoginError().observe(this, message -> {
+            if (message != null && !message.isEmpty()) {
+                // Bạn có thể delay hoặc dismiss loadingDialog ở đây nếu muốn
+                loadingDialog.dismiss();
+                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                Log.d("Looix >>>>>>>>>>>>>", message);
+            }
         });
 
         // Quan sát trạng thái loading nếu cần hiển thị/hide ProgressBar

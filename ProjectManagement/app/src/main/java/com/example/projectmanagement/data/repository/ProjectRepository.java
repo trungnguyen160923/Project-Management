@@ -20,7 +20,8 @@ public class ProjectRepository {
     private final ProjectService apiService;
 
     private ProjectRepository() {
-        apiService = ApiClient.getClient().create(ProjectService.class);
+//        apiService = ApiClient.getClient().create(ProjectService.class);
+        apiService = null;
         projectsLiveData.setValue(new ArrayList<>());
     }
 
