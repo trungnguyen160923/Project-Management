@@ -21,6 +21,13 @@ public class User {
     public User() {
     }
 
+    public User(int id, String username, String email, String avatar) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.avatar = avatar;
+    }
+
     public User(int id, String username, String password, String email, String fullname,
                 String gender, Date birthday, String social_links, String avatar, String bio,
                 Date created_at, Boolean email_verified) {

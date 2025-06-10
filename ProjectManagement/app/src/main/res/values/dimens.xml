@@ -6,4 +6,9 @@
     <dimen name="nav_header_height">176dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="avatar_size">40dp</dimen>
+    <dimen name="avatar_margin">8dp</dimen>
+    <dimen name="toolbar_content_inset">16dp</dimen>
+    <dimen name="search_view_height">36dp</dimen>
+    <dimen name="search_view_padding">8dp</dimen>
+    <dimen name="search_view_padding_vertical">4dp</dimen>
 </resources>

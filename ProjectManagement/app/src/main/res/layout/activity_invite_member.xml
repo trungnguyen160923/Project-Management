@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFF">
+
+    <!-- Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar_invite"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimary"
+        app:navigationIcon="@drawable/ic_close"
+        app:title="Mời tham gia Hehe"
+        app:titleTextColor="@android:color/white" />
+
+    <!-- Search -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp">
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/search_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:queryHint="Tên, Email, Tên đăng nhập"/>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Tạo liên kết mời -->
+    <LinearLayout
+        android:id="@+id/layout_create_link"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#E3F0FF"
+        android:padding="16dp"
+        android:layout_margin="12dp"
+        android:gravity="center_vertical">
+
+        <!-- Bên trái: TextView dọc -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tạo liên kết mời bảng"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bất kỳ ai có đường liên kết đều có thể tham gia"
+                android:textColor="#4A6783"
+                android:textSize="14sp"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+
+        <!-- Bên phải: Icon căn giữa dọc -->
+        <ImageView
+            android:id="@+id/btn_create_link"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_plus"
+            android:layout_gravity="center_vertical"
+            android:padding="4dp"/>
+    </LinearLayout>
+
+
+    <!-- Layout hiển thị link mời (ẩn mặc định) -->
+    <LinearLayout
+        android:id="@+id/layout_invite_link"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#E3F0FF"
+        android:padding="16dp"
+        android:layout_margin="12dp"
+        android:visibility="gone"
+        android:gravity="center_vertical">
+
+        <!-- Bên trái: 2 TextView xếp dọc -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_project_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hehe"
+                android:textColor="@color/colorPrimary"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"/>
+            <TextView
+                android:id="@+id/tv_invite_permission"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Các quyền mời"
+                android:drawableEnd="@drawable/ic_expand_more"
+                android:textColor="@color/colorPrimary"/>
+        </LinearLayout>
+
+        <!-- Bên phải: Icon ở giữa theo trục dọc -->
+        <ImageView
+            android:id="@+id/btn_copy_link"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_copy"
+            android:layout_gravity="center_vertical"
+            android:padding="4dp"/>
+    </LinearLayout>
+
+
+    <!-- Danh sách thành viên -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Thành viên của bảng thông tin (2)"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:padding="16dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_members"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"/>
+</LinearLayout>

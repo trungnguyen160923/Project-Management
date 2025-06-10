@@ -28,7 +28,9 @@ public class LoadingDialog {
     // Hiển thị dialog
     public void show() {
         if (!dialog.isShowing()) {
-            dialog.show();
+            if (dialog.getContext() instanceof Activity && !((Activity)dialog.getContext()).isFinishing()) {
+                dialog.show();
+            }
         }
     }
 
@@ -37,5 +39,8 @@ public class LoadingDialog {
         if (dialog.isShowing()) {
             dialog.dismiss();
         }
+    }
+    public boolean isShowing() {
+        return dialog.isShowing();
     }
 }

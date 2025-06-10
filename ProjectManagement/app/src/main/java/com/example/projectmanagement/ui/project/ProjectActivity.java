@@ -1,18 +1,29 @@
 package com.example.projectmanagement.ui.project;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,8 +40,10 @@ import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
+import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.ui.adapter.PhaseAdapter;
+import com.example.projectmanagement.ui.notification.NotificationActivity;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.utils.PhaseDragListener;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -39,6 +52,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 public class ProjectActivity extends AppCompatActivity implements
         PhaseAdapter.OnAddPhaseListener,
@@ -64,7 +78,9 @@ public class ProjectActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_project);
 
-        project = getIntent().getParcelableExtra("project");
+//        project = getIntent().getParcelableExtra("project");
+        // dùng project holder:
+        project = ProjectHolder.get();
         if (project == null) {
             Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
             finish();
@@ -87,9 +103,10 @@ public class ProjectActivity extends AppCompatActivity implements
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
-        toolbar.setTitle(project.getProjectName());
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setTitle(project.getProjectName());
         toolbar.setNavigationIcon(R.drawable.ic_back);
-        toolbar.inflateMenu(R.menu.menu_project_toolbar);
 
         toolbar.setNavigationOnClickListener(v -> {
             if (inInputMode) exitInputMode(); else finish();
@@ -97,15 +114,99 @@ public class ProjectActivity extends AppCompatActivity implements
 
         toolbar.setOnMenuItemClickListener(this::handleToolbarItem);
     }
+    
 
     private boolean handleToolbarItem(MenuItem item) {
-        if (inInputMode && item.getItemId() == R.id.action_confirm_add) {
-            if (pendingPhase >= 0) onTaskAddConfirmed(pendingPhase, phaseAdapter.getNewTaskName());
-            exitInputMode();
+        int id = item.getItemId();
+        if (id == R.id.action_search) {
+            showSearchView();
+            return true;
+        } else if (id == R.id.action_notifications) {
+            startActivity(new Intent(this, NotificationActivity.class));
+            return true;
+        } else if (id == R.id.action_more) {
+            startActivity(new Intent(this, MenuProjectActivity.class));
+            return true;
+        }else if (id == R.id.action_confirm_add) {
+            String name = phaseAdapter.getNewTaskName();
+            if (name == null || name.trim().isEmpty()) {
+                Toast.makeText(this, "Tên thẻ không được để trống!", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            onTaskAddConfirmed(pendingPhase, name);
             return true;
         }
-        // handle sort, notifications, more here if needed
         return false;
+    }
+
+    private void showSearchView() {
+        // Ẩn tiêu đề
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        // Tạo EditText tùy chỉnh
+        EditText searchEditText = new EditText(this);
+        searchEditText.setHint("Tìm kiếm...");
+        searchEditText.setSingleLine(true);
+        searchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        searchEditText.setBackgroundColor(Color.TRANSPARENT);
+        searchEditText.setTextColor(Color.WHITE);
+        searchEditText.setHintTextColor(Color.WHITE);
+        
+        // Thiết lập kích thước và vị trí
+        Toolbar.LayoutParams params = new Toolbar.LayoutParams(
+                Toolbar.LayoutParams.WRAP_CONTENT,
+                getResources().getDimensionPixelSize(R.dimen.search_view_height)
+        );
+        params.gravity = android.view.Gravity.START | android.view.Gravity.CENTER_VERTICAL;
+        params.leftMargin = getResources().getDimensionPixelSize(R.dimen.toolbar_content_inset);
+        searchEditText.setLayoutParams(params);
+
+        // Thêm padding
+        int horizontalPadding = getResources().getDimensionPixelSize(R.dimen.search_view_padding);
+        int verticalPadding = getResources().getDimensionPixelSize(R.dimen.search_view_padding_vertical);
+        searchEditText.setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
+
+        // Thêm vào toolbar
+        toolbar.addView(searchEditText);
+
+        // Xử lý sự kiện tìm kiếm
+        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                // Xử lý tìm kiếm
+                return true;
+            }
+            return false;
+        });
+
+        searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Xử lý khi text thay đổi
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+
+        });
+
+        // Xử lý khi đóng
+        searchEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                toolbar.removeView(searchEditText);
+                getSupportActionBar().setDisplayShowTitleEnabled(true);
+            }
+        });
+
+        // Hiển thị keyboard
+        searchEditText.requestFocus();
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
     }
 
     private void setupBoard() {
@@ -114,7 +215,7 @@ public class ProjectActivity extends AppCompatActivity implements
         phaseAdapter = new PhaseAdapter(phases, this, this, this, this, rvBoard);
         rvBoard.setAdapter(phaseAdapter);
 
-        PhaseDragListener.OnCardDropListener dropListener = (target, dropIndex, info) -> {
+        @SuppressLint("NotifyDataSetChanged") PhaseDragListener.OnCardDropListener dropListener = (target, dropIndex, info) -> {
             List<Task> src = info.getPhase().getTasks();
             List<Task> dst = target.getTasks();
             Task task = info.getTask();
@@ -241,6 +342,8 @@ public class ProjectActivity extends AppCompatActivity implements
         String today = ParseDateUtil.formatDate(new Date());
         tasks.add(new Task("Task mới", "", "WORKING", today, new ArrayList<>(), new ArrayList<>()));
     }
+
+
     @Override public void onTaskAddRequested(int pos) { pendingPhase=pos; phaseAdapter.startEditing(pos); enterInputMode(); }
     @Override public void onTaskAddConfirmed(int pos,String name) { onAddTaskGeneric(pos); exitInputMode(); }
     @Override public void onTaskAddCanceled() { exitInputMode(); }
@@ -255,5 +358,11 @@ public class ProjectActivity extends AppCompatActivity implements
         Task t=info.getTask(); int orig=info.getOriginalPosition();
         if(src.remove(t)&& target==info.getPhase()&& idx>orig) idx--;
         idx=Math.max(0,Math.min(idx,dst.size())); dst.add(idx,t); phaseAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_project_toolbar, menu);
+        return true;
     }
 }

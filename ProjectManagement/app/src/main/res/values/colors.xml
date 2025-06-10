@@ -14,6 +14,8 @@
     <color name="unread_bg">#FFFDE7</color>       <!-- nền nhạt cho item chưa đọc -->
     <color name="text_primary">#212121</color>   <!-- chữ đậm -->
     <color name="text_secondary">#757575</color> <!-- chữ nhạt cho đã đọc -->
+    <color name="divider_color">#DDDDDD</color>
+    <color name="colorWarning">#FFD600</color>
 
 
 

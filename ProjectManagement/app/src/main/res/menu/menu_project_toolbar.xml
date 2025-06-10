@@ -2,24 +2,27 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Sort icon, luôn hiện -->
+    <!-- Search icon -->
     <item
-        android:id="@+id/action_sort"
+        android:id="@+id/action_search"
         android:icon="@drawable/ic_sort"
-        android:title="Sort"
+        android:title="Search"
+        app:iconTint="@android:color/white"
         app:showAsAction="always"/>
 
-    <!-- Notifications icon, luôn hiện -->
+    <!-- Notifications icon -->
     <item
         android:id="@+id/action_notifications"
         android:icon="@drawable/ic_notification"
         android:title="Notifications"
+        app:iconTint="@android:color/white"
         app:showAsAction="always"/>
 
-    <!-- Một item để toolbar sinh overflow (3-chấm) -->
+    <!-- More options -->
     <item
         android:id="@+id/action_more"
         android:title="More"
         android:icon="@drawable/ic_more_vert"
+        app:iconTint="@android:color/white"
         app:showAsAction="always"/>
 </menu>

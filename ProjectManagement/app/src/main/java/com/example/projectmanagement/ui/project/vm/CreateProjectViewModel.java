@@ -1,4 +1,4 @@
-package com.example.projectmanagement.viewmodel;
+package com.example.projectmanagement.ui.project.vm;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;

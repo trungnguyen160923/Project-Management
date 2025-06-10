@@ -15,13 +15,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.bumptech.glide.Glide;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.databinding.ActivityCreateProjectBinding;
 import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.utils.LoadingDialog;
 import com.example.projectmanagement.utils.ParseDateUtil;
-import com.example.projectmanagement.viewmodel.CreateProjectViewModel;
+import com.example.projectmanagement.ui.project.vm.CreateProjectViewModel;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;

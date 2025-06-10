@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.databinding.FragmentHomeBinding;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.ui.adapter.ProjectAdapter;
@@ -68,8 +69,10 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
     public void onItemClick(Project project) {
         // Khi click vào 1 project, chuyển sang màn hình chi tiết và truyền dữ liệu
         Intent intent = new Intent(requireContext(), ProjectActivity.class);
-        intent.putExtra("project",project);
+//        intent.putExtra("project",project);
         startActivity(intent);
+        // dung project holder:
+        ProjectHolder.set(project);
     }
 
     @Override
