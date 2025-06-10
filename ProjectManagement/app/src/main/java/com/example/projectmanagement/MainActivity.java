@@ -68,9 +68,9 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "onCreate finished");
 
-//        dialog_signUp_Option();
-//        dialog_signIn_Option();
-        startActivity(new Intent(MainActivity.this, HomeActivity.class));
+        dialog_signUp_Option();
+        dialog_signIn_Option();
+//        startActivity(new Intent(MainActivity.this, MainActivity.class));
     }
 
     /**

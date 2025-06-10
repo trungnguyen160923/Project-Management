@@ -50,6 +50,9 @@ dependencies {
     annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
     implementation("com.google.android.material:material:1.9.0")
 
+    implementation ("com.android.volley:volley:1.2.1")
+
+
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.navigation.fragment)
