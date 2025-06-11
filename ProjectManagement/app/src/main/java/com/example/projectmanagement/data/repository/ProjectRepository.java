@@ -104,4 +104,26 @@ public class ProjectRepository {
     public LiveData<String> getMessageLiveData() {
         return messageLiveData;
     }
+
+    /** Lấy chi tiết project theo ID */
+    public LiveData<Project> getProjectDetail(String projectId) {
+        ProjectService.getProjectDetail(context, projectId, response -> {
+            try {
+                if ("success".equals(response.optString("status"))) {
+                    projectLiveData.setValue(ProjectService.parseProject(response));
+                } else {
+                    String err = response.optString("message", "Lấy project thất bại");
+                    Log.e(TAG, err);
+                    projectLiveData.setValue(null);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Parsing error", e);
+                projectLiveData.setValue(null);
+            }
+        }, error -> {
+            Log.e(TAG, "Network error", error);
+            projectLiveData.setValue(null);
+        });
+        return projectLiveData;
+    }
 }

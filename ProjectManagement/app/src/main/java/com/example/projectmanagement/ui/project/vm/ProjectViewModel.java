@@ -129,4 +129,14 @@ public class ProjectViewModel extends ViewModel {
             project.setValue(currentProject);
         }
     }
+
+    public void loadProjectDetail(String projectId) {
+        projectRepository.getProjectDetail(projectId).observeForever(projectData -> {
+            if (projectData != null) {
+                this.project.setValue(projectData);
+                // TODO: Load phases from API
+                phases.setValue(new ArrayList<>());
+            }
+        });
+    }
 } 

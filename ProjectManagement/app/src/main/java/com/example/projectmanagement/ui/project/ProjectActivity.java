@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -45,10 +46,12 @@ import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.ui.adapter.PhaseAdapter;
 import com.example.projectmanagement.ui.helper.PhaseOrderTouchCallback;
 import com.example.projectmanagement.ui.notification.NotificationActivity;
+import com.example.projectmanagement.ui.project.vm.ProjectViewModel;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.ui.helper.PhaseDragListener;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -74,13 +77,14 @@ public class ProjectActivity extends AppCompatActivity implements
     private boolean inInputMode = false;
     private int pendingPhase = -1;
 
+    private ProjectViewModel viewModel;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_project);
 
-//        project = getIntent().getParcelableExtra("project");
-        // dùng project holder:
+        // Lấy project từ ProjectHolder
         project = ProjectHolder.get();
         if (project == null) {
             Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
@@ -89,9 +93,9 @@ public class ProjectActivity extends AppCompatActivity implements
         }
 
         bindViews();
-        setupToolbar();
-        applyProjectBackground(project.getBackgroundImg());
+        setupInitialToolbar();
         setupBoard();
+        applyProjectBackground(project.getBackgroundImg());
     }
 
     private void bindViews() {
@@ -102,20 +106,18 @@ public class ProjectActivity extends AppCompatActivity implements
         fabZoom          = findViewById(R.id.fabZoom);
     }
 
-    private void setupToolbar() {
+    private void setupInitialToolbar() {
         setSupportActionBar(toolbar);
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setTitle(project.getProjectName());
         toolbar.setNavigationIcon(R.drawable.ic_back);
-
         toolbar.setNavigationOnClickListener(v -> {
             if (inInputMode) exitInputMode(); else finish();
         });
-
         toolbar.setOnMenuItemClickListener(this::handleToolbarItem);
+        toolbar.inflateMenu(R.menu.menu_project_toolbar);
     }
-
 
     private boolean handleToolbarItem(MenuItem item) {
         int id = item.getItemId();
@@ -212,7 +214,6 @@ public class ProjectActivity extends AppCompatActivity implements
 
     private void setupBoard() {
         rvBoard.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        initData();
 
         // Debug log
         android.util.Log.d("ProjectActivity", "setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
@@ -247,138 +248,98 @@ public class ProjectActivity extends AppCompatActivity implements
         phaseTouchHelper.attachToRecyclerView(rvBoard);
     }
 
-    private void initData() {
-        // 1. Sample comments
-        List<Comment> comments = new ArrayList<>();
-        comments.add(new Comment(1, "Hello mọi người!",    1, 123, new Date()));
-        comments.add(new Comment(2, "Đã xong bước này.",   1, 123, new Date()));
-        comments.add(new Comment(3, "Cần bổ sung thêm X.", 1, 123, new Date()));
-
-        // 2. Sample files
-        List<File> files = new ArrayList<>();
-        files.add(new File(1,
-                "Report.pdf",
-                "content://com.example.projectmanagement/files/Report.pdf",
-                2300L,
-                "pdf",
-                1,
-                123));
-        files.add(new File(2,
-                "Note.txt",
-                "content://com.example.projectmanagement/files/Note.txt",
-                121L,
-                "txt",
-                1,
-                123));
-
-        // 3. Build phases
-        phases = new ArrayList<>();  // Reinitialize phases list
-        int phaseID   = 1;
-        int projectID = project.getProjectID();  // hoặc 1 nếu chưa có getter
-        Date now      = new Date();
-
-        for (int i = 1; i <= 3; i++, phaseID++) {
-            // – Tạo 1 task mẫu cho mỗi phase
-            List<Task> tasks = new ArrayList<>();
-            int taskID = i;
-            Task t = new Task(
-                    /* taskID */        taskID,
-                    /* phaseID */       phaseID,
-                    /* taskName */      "Task " + taskID,
-                    /* taskDescription*/"Mô tả cho task " + taskID,
-                    /* assignedTo */    123,
-                    /* status */        "WORKING",
-                    /* priority */      "MEDIUM",
-                    /* dueDate */       now,
-                    /* allowSelfAssign*/ true,
-                    /* orderIndex */    0,
-                    /* createAt */      now,
-                    /* lastUpdate */    now,
-                    /* comments */      new ArrayList<>(comments),
-                    /* files */         new ArrayList<>(files)
-            );
-            tasks.add(t);
-
-            // – Tạo phase với constructor mới
-            Phase p = new Phase(
-                    /* phaseID */    phaseID,
-                    /* projectID */  projectID,
-                    /* phaseName */  "Ds" + phaseID,
-                    /* description */"Mô tả phase " + phaseID,
-                    /* orderIndex */ phaseID - 1,
-                    /* createAt */   now,
-                    /* tasks */      tasks
-            );
-            phases.add(p);
-        }
-
-        // Debug log
-        android.util.Log.d("ProjectActivity", "initData: Created " + phases.size() + " phases");
-        for (Phase phase : phases) {
-            android.util.Log.d("ProjectActivity", "Phase: " + phase.getPhaseName() + " with " + phase.getTasks().size() + " tasks");
-        }
-
-        // 4. Gán lên project và lưu vào holder
-        project.setPhases(phases);
-        ProjectHolder.set(project);
-    }
-
-
     private void applyProjectBackground(String bgImg) {
-        if (bgImg == null) return;
-        if (bgImg.startsWith("COLOR;")) {
-            int color = Color.parseColor(bgImg.substring(6));
+        if (bgImg == null || bgImg.isEmpty()) {
+            // Set default background if no image is provided
             ivBackground.setVisibility(View.GONE);
-            coordinatorLayout.setBackgroundColor(color);
-            toolbar.setBackgroundColor(color);
+            coordinatorLayout.setBackgroundColor(Color.parseColor("#0C90F1")); // Default blue color
+            toolbar.setBackgroundColor(Color.parseColor("#0C90F1"));
+            return;
+        }
+
+        if (bgImg.startsWith("COLOR;")) {
+            try {
+                int color = Color.parseColor(bgImg.substring(6));
+                ivBackground.setVisibility(View.GONE);
+                coordinatorLayout.setBackgroundColor(color);
+                toolbar.setBackgroundColor(color);
+            } catch (Exception e) {
+                Log.e("ProjectActivity", "Error parsing color: " + e.getMessage());
+                // Set default color on error
+                coordinatorLayout.setBackgroundColor(Color.parseColor("#0C90F1"));
+                toolbar.setBackgroundColor(Color.parseColor("#0C90F1"));
+            }
         } else if (bgImg.startsWith("GRADIENT;")) {
-            String[] parts = bgImg.substring("GRADIENT;".length()).split(";");
-            String[] cols  = parts[0].split(",");
-            int ori        = Integer.parseInt(parts[1]);
-            GradientDrawable gd = new GradientDrawable(
-                    GradientDrawable.Orientation.values()[ori],
-                    new int[]{ Color.parseColor(cols[0]), Color.parseColor(cols[1]) }
-            );
-            gd.setCornerRadius(0f);
+            try {
+                String[] parts = bgImg.substring("GRADIENT;".length()).split(";");
+                String[] cols = parts[0].split(",");
+                int ori = Integer.parseInt(parts[1]);
+                GradientDrawable gd = new GradientDrawable(
+                        GradientDrawable.Orientation.values()[ori],
+                        new int[]{Color.parseColor(cols[0]), Color.parseColor(cols[1])}
+                );
+                gd.setCornerRadius(0f);
 
-            // 2. Hiển thị gradient full‐screen qua ImageView nền
-            ivBackground.setVisibility(View.VISIBLE);
-            ivBackground.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            ivBackground.setImageDrawable(gd);
-
-            // 3. Coi coordinatorLayout trong suốt để lộ gradient
-            coordinatorLayout.setBackgroundColor(Color.TRANSPARENT);
-
-            // 4. Giữ gradient trên toolbar để header hòa quyện
-            toolbar.setBackground(gd);
+                ivBackground.setVisibility(View.VISIBLE);
+                ivBackground.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                ivBackground.setImageDrawable(gd);
+                coordinatorLayout.setBackgroundColor(Color.TRANSPARENT);
+                toolbar.setBackground(gd);
+            } catch (Exception e) {
+                Log.e("ProjectActivity", "Error parsing gradient: " + e.getMessage());
+                // Set default gradient on error
+                GradientDrawable gd = new GradientDrawable(
+                        GradientDrawable.Orientation.TOP_BOTTOM,
+                        new int[]{Color.parseColor("#0C90F1"), Color.parseColor("#0A7BC8")}
+                );
+                ivBackground.setImageDrawable(gd);
+                toolbar.setBackground(gd);
+            }
         } else {
             // IMAGE cases
             ivBackground.setVisibility(View.VISIBLE);
             coordinatorLayout.setBackgroundColor(Color.TRANSPARENT);
             toolbar.setBackgroundColor(Color.TRANSPARENT);
-            String source = bgImg.substring(bgImg.indexOf(';') + 1);
-            Object model = bgImg.startsWith("URI;") ? Uri.parse(source) : Integer.parseInt(source);
+            
+            try {
+                String source = bgImg.substring(bgImg.indexOf(';') + 1);
+                Object model = bgImg.startsWith("URI;") ? Uri.parse(source) : Integer.parseInt(source);
 
-            Glide.with(this)
-                    .load(model)
-                    .format(DecodeFormat.PREFER_ARGB_8888)
-                    .listener(new RequestListener<Drawable>() {
-                        @Override public boolean onLoadFailed(@Nullable GlideException e, Object m, Target<Drawable> t, boolean i) { return false; }
-                        @Override public boolean onResourceReady(Drawable res, Object m, Target<Drawable> t, DataSource ds, boolean i) {
-                            ivBackground.post(() -> {
-                                ivBackground.setScaleType(ImageView.ScaleType.MATRIX);
-                                ivBackground.setImageDrawable(res);
-                                int vw = ivBackground.getWidth(), vh = ivBackground.getHeight();
-                                int iw = res.getIntrinsicWidth(), ih = res.getIntrinsicHeight();
-                                float scale = Math.max((float)vw/iw, (float)vh/ih);
-                                float dx = (vw - iw*scale)/2f, dy = (vh - ih*scale)/2f;
-                                Matrix mtx = new Matrix(); mtx.setScale(scale, scale); mtx.postTranslate(dx, dy);
-                                ivBackground.setImageMatrix(mtx);
-                            });
-                            return true;
-                        }
-                    })
-                    .into(ivBackground);
+                Glide.with(this)
+                        .load(model)
+                        .format(DecodeFormat.PREFER_ARGB_8888)
+                        .listener(new RequestListener<Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable GlideException e, Object m, Target<Drawable> t, boolean i) {
+                                Log.e("ProjectActivity", "Error loading image: " + e.getMessage());
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(Drawable res, Object m, Target<Drawable> t, DataSource ds, boolean i) {
+                                ivBackground.post(() -> {
+                                    ivBackground.setScaleType(ImageView.ScaleType.MATRIX);
+                                    ivBackground.setImageDrawable(res);
+                                    int vw = ivBackground.getWidth(), vh = ivBackground.getHeight();
+                                    int iw = res.getIntrinsicWidth(), ih = res.getIntrinsicHeight();
+                                    float scale = Math.max((float) vw / iw, (float) vh / ih);
+                                    float dx = (vw - iw * scale) / 2f, dy = (vh - ih * scale) / 2f;
+                                    Matrix mtx = new Matrix();
+                                    mtx.setScale(scale, scale);
+                                    mtx.postTranslate(dx, dy);
+                                    ivBackground.setImageMatrix(mtx);
+                                });
+                                return true;
+                            }
+                        })
+                        .into(ivBackground);
+            } catch (Exception e) {
+                Log.e("ProjectActivity", "Error loading image: " + e.getMessage());
+                // Set default background on error
+                ivBackground.setVisibility(View.GONE);
+                coordinatorLayout.setBackgroundColor(Color.parseColor("#0C90F1"));
+                toolbar.setBackgroundColor(Color.parseColor("#0C90F1"));
+            }
         }
     }
 

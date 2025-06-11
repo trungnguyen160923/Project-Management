@@ -178,14 +178,45 @@ public class ProjectService {
                                         String projectId,
                                         Response.Listener<JSONObject> listener,
                                         Response.ErrorListener errorListener) {
-        JsonObjectRequest req = makeRequest(
+        JsonObjectRequest req = new JsonObjectRequest(
                 Request.Method.GET,
-                "/projects/" + projectId,
+                API_PREFIX + "/projects/" + projectId,
                 null,
-                context,
-                listener,
-                errorListener
-        );
+                response -> {
+                    Log.d(TAG, "Project detail response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Error getting project detail: " + error.toString());
+                    if (error.networkResponse != null) {
+                        try {
+                            String bodys = new String(error.networkResponse.data, "UTF-8");
+                            Log.e(TAG, "Error response body: " + bodys);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing error response", e);
+                        }
+                    }
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                String token = new UserPreferences(context).getJwtToken();
+                if (token != null && !token.isEmpty()) {
+                    headers.put("Cookie", "user_auth_token=" + token);
+                }
+                return headers;
+            }
+        };
+
+        req.setRetryPolicy(new DefaultRetryPolicy(
+                10000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        ));
+
         ApiClient.getInstance(context).addToRequestQueue(req);
     }
 

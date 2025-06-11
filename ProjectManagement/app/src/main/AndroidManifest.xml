@@ -38,6 +38,7 @@
         <activity
             android:name=".ui.project.ProjectActivity"
             android:exported="false"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity
             android:name=".ui.project.BGProjectImgActivity"

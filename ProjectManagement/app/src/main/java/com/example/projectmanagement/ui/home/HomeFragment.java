@@ -1,10 +1,12 @@
 package com.example.projectmanagement.ui.home;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +19,8 @@ import com.example.projectmanagement.databinding.FragmentHomeBinding;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.ui.adapter.ProjectAdapter;
 import com.example.projectmanagement.ui.project.ProjectActivity;
+import com.example.projectmanagement.data.repository.ProjectRepository;
+import com.example.projectmanagement.utils.LoadingDialog;
 
 import java.io.Serializable;
 import java.util.List;
@@ -25,6 +29,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
     private FragmentHomeBinding binding;
     private HomeViewModel viewModel;
     private ProjectAdapter adapter;
+    private boolean isNavigating = false;
 
     @Nullable
     @Override
@@ -68,11 +73,29 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
 
     @Override
     public void onItemClick(Project project) {
-        // Khi click vào 1 project, chuyển sang màn hình chi tiết và truyền dữ liệu
-        Intent intent = new Intent(requireContext(), ProjectActivity.class);
-        startActivity(intent);
-        // dung project holder:
-        ProjectHolder.set(project);
+        // Prevent multiple clicks
+        if (isNavigating) return;
+        isNavigating = true;
+
+        // Hiển thị loading dialog
+        LoadingDialog loadingDialog = new LoadingDialog((Activity) requireContext());
+        loadingDialog.show();
+
+        // Lấy chi tiết project trước
+        ProjectRepository.getInstance(requireContext())
+            .getProjectDetail(String.valueOf(project.getProjectID()))
+            .observe(getViewLifecycleOwner(), projectData -> {
+                loadingDialog.dismiss();
+                isNavigating = false;
+                if (projectData != null) {
+                    // Lưu project vào holder
+                    ProjectHolder.set(projectData);
+                    // Mở activity
+                    startActivity(new Intent(requireContext(), ProjectActivity.class));
+                } else {
+                    Toast.makeText(requireContext(), "Không thể tải thông tin project", Toast.LENGTH_SHORT).show();
+                }
+            });
     }
 
     @Override
