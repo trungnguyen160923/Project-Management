@@ -593,28 +593,28 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"/>
-
         <ImageButton
-            android:id="@+id/btn_cancel"
+            android:id="@+id/btn_cancel_des"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_cancel"
             android:contentDescription="Hủy"
             android:layout_marginRight="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="@color/colorAccent" />
+            app:tint="@color/red" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"/>
 
         <ImageButton
-            android:id="@+id/btn_confirm"
+            android:id="@+id/btn_confirm_des"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_check"
             android:contentDescription="Xác nhận"
             android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="@color/red" />
+            app:tint="@color/colorAccent" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

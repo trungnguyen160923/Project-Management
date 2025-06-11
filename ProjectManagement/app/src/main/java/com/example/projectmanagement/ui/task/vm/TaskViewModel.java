@@ -1,5 +1,6 @@
 package com.example.projectmanagement.ui.task.vm;
 
+import android.net.Uri;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -10,16 +11,19 @@ import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.repository.TaskRepository;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class TaskViewModel extends ViewModel {
     private final TaskRepository taskRepository;
     private final MutableLiveData<Task> task = new MutableLiveData<>();
-    private final MutableLiveData<List<Comment>> comments = new MutableLiveData<>();
-    private final MutableLiveData<List<File>> files = new MutableLiveData<>();
+    private final MutableLiveData<List<Comment>> comments = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<File>> files = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<Uri>> imageUris = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Boolean> isImagesExpanded = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> isFilesExpanded = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> isCommentsExpanded = new MutableLiveData<>(false);
+    private final MutableLiveData<String> taskDescription = new MutableLiveData<>("");
 
     public TaskViewModel() {
         taskRepository = TaskRepository.getInstance();
@@ -27,24 +31,34 @@ public class TaskViewModel extends ViewModel {
 
     public void setTask(Task task) {
         this.task.setValue(task);
-        loadComments();
-        loadFiles();
+        if (task != null) {
+            taskDescription.setValue(task.getTaskDescription());
+            loadComments();
+            loadFiles();
+        }
     }
 
     private void loadComments() {
         Task currentTask = task.getValue();
         if (currentTask != null) {
-            comments.setValue(currentTask.getComments());
+            List<Comment> taskComments = currentTask.getComments();
+            if (taskComments != null) {
+                comments.setValue(taskComments);
+            }
         }
     }
 
     private void loadFiles() {
         Task currentTask = task.getValue();
         if (currentTask != null) {
-            files.setValue(currentTask.getFiles());
+            List<File> taskFiles = currentTask.getFiles();
+            if (taskFiles != null) {
+                files.setValue(taskFiles);
+            }
         }
     }
 
+    // Getters for LiveData
     public LiveData<Task> getTask() {
         return task;
     }
@@ -55,6 +69,10 @@ public class TaskViewModel extends ViewModel {
 
     public LiveData<List<File>> getFiles() {
         return files;
+    }
+
+    public LiveData<List<Uri>> getImageUris() {
+        return imageUris;
     }
 
     public LiveData<Boolean> getIsImagesExpanded() {
@@ -69,6 +87,36 @@ public class TaskViewModel extends ViewModel {
         return isCommentsExpanded;
     }
 
+    public LiveData<String> getTaskDescription() {
+        return taskDescription;
+    }
+
+    // Update methods for LiveData
+    public void updateComments(List<Comment> newComments) {
+        comments.setValue(newComments);
+        Task currentTask = task.getValue();
+        if (currentTask != null) {
+            currentTask.setComments(newComments);
+            task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
+        }
+    }
+
+    public void updateFiles(List<File> newFiles) {
+        files.setValue(newFiles);
+        Task currentTask = task.getValue();
+        if (currentTask != null) {
+            currentTask.setFiles(newFiles);
+            task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
+        }
+    }
+
+    public void updateImageUris(List<Uri> newUris) {
+        imageUris.setValue(newUris);
+    }
+
+    // Toggle methods for sections
     public void toggleImagesExpanded() {
         isImagesExpanded.setValue(!isImagesExpanded.getValue());
     }
@@ -81,19 +129,20 @@ public class TaskViewModel extends ViewModel {
         isCommentsExpanded.setValue(!isCommentsExpanded.getValue());
     }
 
+    // Comment operations
     public void addComment(String content) {
-        Task currentTask = task.getValue();
         List<Comment> currentComments = comments.getValue();
+        Task currentTask = task.getValue();
         if (currentTask != null && currentComments != null) {
             Comment newComment = new Comment(
                 currentComments.size() + 1,
                 content,
                 currentTask.getTaskID(),
                 1, // TODO: Replace with actual user ID
-                new java.util.Date()
+                new Date()
             );
             currentComments.add(newComment);
-            comments.setValue(currentComments);
+            updateComments(currentComments);
         }
     }
 
@@ -103,8 +152,8 @@ public class TaskViewModel extends ViewModel {
             for (int i = 0; i < currentComments.size(); i++) {
                 if (currentComments.get(i).getId() == comment.getId()) {
                     currentComments.get(i).setContent(newContent);
-                    currentComments.get(i).setUpdateAt(new java.util.Date());
-                    comments.setValue(currentComments);
+                    currentComments.get(i).setUpdateAt(new Date());
+                    updateComments(currentComments);
                     break;
                 }
             }
@@ -115,15 +164,16 @@ public class TaskViewModel extends ViewModel {
         List<Comment> currentComments = comments.getValue();
         if (currentComments != null) {
             currentComments.removeIf(c -> c.getId() == comment.getId());
-            comments.setValue(currentComments);
+            updateComments(currentComments);
         }
     }
 
+    // File operations
     public void addFile(File file) {
         List<File> currentFiles = files.getValue();
         if (currentFiles != null) {
             currentFiles.add(file);
-            files.setValue(currentFiles);
+            updateFiles(currentFiles);
         }
     }
 
@@ -131,25 +181,52 @@ public class TaskViewModel extends ViewModel {
         List<File> currentFiles = files.getValue();
         if (currentFiles != null) {
             currentFiles.removeIf(f -> f.getId() == file.getId());
-            files.setValue(currentFiles);
+            updateFiles(currentFiles);
         }
     }
 
+    // Image operations
+    public void addImageUri(Uri uri) {
+        List<Uri> currentUris = imageUris.getValue();
+        if (currentUris != null) {
+            currentUris.add(uri);
+            updateImageUris(currentUris);
+        }
+    }
+
+    public void removeImageUri(int position) {
+        List<Uri> currentUris = imageUris.getValue();
+        if (currentUris != null && position >= 0 && position < currentUris.size()) {
+            currentUris.remove(position);
+            updateImageUris(currentUris);
+        }
+    }
+
+    // Task operations
     public void updateTaskStatus(String status) {
         Task currentTask = task.getValue();
         if (currentTask != null) {
             currentTask.setStatus(status);
-            currentTask.setLastUpdate(new java.util.Date());
+            currentTask.setLastUpdate(new Date());
             task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
         }
     }
 
     public void updateTaskDescription(String description) {
+        taskDescription.setValue(description);
         Task currentTask = task.getValue();
         if (currentTask != null) {
             currentTask.setTaskDescription(description);
-            currentTask.setLastUpdate(new java.util.Date());
+            currentTask.setLastUpdate(new Date());
             task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
         }
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        // Clean up any resources if needed
     }
 } 

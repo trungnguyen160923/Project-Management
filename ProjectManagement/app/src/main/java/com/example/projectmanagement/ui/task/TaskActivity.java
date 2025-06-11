@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -42,64 +43,42 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
+import com.example.projectmanagement.databinding.ActivityTaskBinding;
 import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
+import com.example.projectmanagement.ui.task.vm.TaskViewModel;
 import com.example.projectmanagement.viewmodel.AvatarView;
 
 public class TaskActivity extends AppCompatActivity {
-    // Detail items
-    private View rowMember, rowStartDate, rowDueDate, rowCmts;
-
-    // Image attachments
-    private View rowImageAttachments, separatorImage;
-    private RecyclerView rvImageAttachments;
-    private ImageView ivExpandImages;
-
-    // File attachments
-    private View rowFileAttachments, separatorFile;
-    private RecyclerView rvFileAttachments;
-    private ImageView ivExpandFiles;
-
-    // Comments
-    private LinearLayout commentContainer;
-    private ImageView ivExpandComments;
-
-    // Data
-    private final List<Uri> imageUris = new ArrayList<>();
-    private final List<File> files = new ArrayList<>();
-    private List<Comment> commentList;
-
-    // State
-    private boolean isImagesExpanded;
-    private boolean isFilesExpanded;
-    private boolean isCmtExpanded;
-
-    // Pickers
-    private ActivityResultLauncher<String[]> imagePickerLauncher;
-    private ActivityResultLauncher<String[]> filePickerLauncher;
-
-    // Adapters
+    private ActivityTaskBinding binding;
+    private TaskViewModel viewModel;
+    private InputMethodManager imm;
     private ImageAttachmentAdapter imageAdapter;
     private FileAttachmentAdapter fileAdapter;
-    private AvatarView avatarView;
+    private ActivityResultLauncher<String[]> imagePickerLauncher;
+    private ActivityResultLauncher<String[]> filePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_task);
-
+        binding = ActivityTaskBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        
+        viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        
         initEdgeToEdge();
         setupToolbar();
-        bindViews();
         initAdapters();
         registerPickers();
         setupListeners();
+        setupObservers();
 
         hideImageSection();
         hideFileSection();
@@ -107,60 +86,128 @@ public class TaskActivity extends AppCompatActivity {
 
         loadSampleData();
         loadComments();
-        // Initially, only comments if present
         toggleCmtSection();
 
-//        EditText et = findViewById(R.id.et_description);
-//        LinearLayout commentBar = findViewById(R.id.comment_bar);
-//        final View root = findViewById(android.R.id.content);
-//        et.requestFocus();
-//        InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-//        imm.showSoftInput(et, InputMethodManager.SHOW_IMPLICIT);
-//        View confirmBar = findViewById(R.id.confirm_bar);
-//
-//        et.setOnFocusChangeListener((v, hasFocus) -> {
-//            confirmBar.setVisibility(hasFocus ? View.VISIBLE : View.GONE);
-//            commentBar.setVisibility(View.GONE);
-//        });
-//        root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-//            Rect r = new Rect();
-//            root.getWindowVisibleDisplayFrame(r);
-//            int screenHeight = root.getRootView().getHeight();
-//            int keypadHeight = screenHeight - r.bottom;
-//
-//            // Nếu bàn phím chiếm > 15% màn hình thì coi như đã bật
-//            if (keypadHeight > screenHeight * 0.15) {
-//                // Đẩy confirm_bar lên trên keyboard
-//                confirmBar.setTranslationY(-keypadHeight);
-//            } else {
-//                // Trả nó về đáy
-//                confirmBar.setTranslationY(0);
-//            }
-//        });
+        imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.showSoftInput(binding.etDescription, InputMethodManager.SHOW_IMPLICIT);
 
+        binding.etDescription.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                binding.confirmBar.setVisibility(View.VISIBLE);
+                binding.commentBar.setVisibility(View.GONE);
+                imm.showSoftInput(binding.etDescription, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
+        View.OnClickListener hideAndReset = v -> {
+            binding.etDescription.clearFocus();
+            imm.hideSoftInputFromWindow(binding.etDescription.getWindowToken(), 0);
+            binding.confirmBar.setVisibility(View.GONE);
+            binding.commentBar.setVisibility(View.VISIBLE);
+        };
+
+        binding.btnCancelDes.setOnClickListener(hideAndReset);
+        binding.btnConfirmDes.setOnClickListener(v -> {
+            String text = binding.etDescription.getText().toString().trim();
+            viewModel.updateTaskDescription(text);
+            hideAndReset.onClick(v);
+        });
+
+        binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            Rect r = new Rect();
+            binding.getRoot().getWindowVisibleDisplayFrame(r);
+            int screenHeight = binding.getRoot().getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+            int barH = binding.confirmBar.getHeight();
+
+            if (keypadHeight > screenHeight * 0.15) {
+                binding.confirmBar.setY(r.bottom - barH);
+            } else {
+                binding.confirmBar.setY(screenHeight - barH);
+            }
+        });
+    }
+
+    private void setupObservers() {
+        viewModel.getIsImagesExpanded().observe(this, isExpanded -> {
+            if (isExpanded) {
+                showImageSection();
+            } else {
+                hideImageSection();
+            }
+        });
+
+        viewModel.getIsFilesExpanded().observe(this, isExpanded -> {
+            if (isExpanded) {
+                showFileSection();
+            } else {
+                hideFileSection();
+            }
+        });
+
+        viewModel.getIsCommentsExpanded().observe(this, isExpanded -> {
+            if (isExpanded) {
+                showAllComments();
+            } else {
+                hideCmtSection();
+            }
+        });
+
+        viewModel.getComments().observe(this, comments -> {
+            if (comments != null) {
+                showAllComments();
+            }
+        });
+
+        viewModel.getTaskDescription().observe(this, description -> {
+            if (description != null) {
+                binding.etDescription.setText(description);
+            }
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            View focused = getCurrentFocus();
+            if (focused instanceof EditText) {
+                Rect outRect = new Rect();
+                focused.getGlobalVisibleRect(outRect);
+                if (!outRect.contains((int)ev.getRawX(), (int)ev.getRawY())) {
+                    focused.clearFocus();
+                    imm.hideSoftInputFromWindow(focused.getWindowToken(), 0);
+                    binding.confirmBar.setVisibility(View.GONE);
+                    binding.commentBar.setVisibility(View.VISIBLE);
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     private void loadComments() {
-        commentList = new ArrayList<>();
+        List<Comment> commentList = new ArrayList<>();
         commentList.add(new Comment(1, "Hello mọi người!", 123, 10, new Date()));
         commentList.add(new Comment(2, "Đã xong bước này.", 123, 11, new Date()));
         commentList.add(new Comment(3, "Cần bổ sung thêm phần X.", 123, 12, new Date()));
+        viewModel.updateComments(commentList);
     }
 
     private void showAllComments() {
+        List<Comment> commentList = viewModel.getComments().getValue();
         if (commentList == null || commentList.isEmpty()) return;
-        commentContainer.setVisibility(View.VISIBLE);
-        commentContainer.removeAllViews();
+        
+        binding.commentContainer.setVisibility(View.VISIBLE);
+        binding.commentContainer.removeAllViews();
 
         LayoutInflater inflater = LayoutInflater.from(this);
         SimpleDateFormat fmt = new SimpleDateFormat("d MMM yyyy 'lúc' HH:mm", Locale.getDefault());
 
         for (Comment c : commentList) {
-            View item = inflater.inflate(R.layout.item_comment, commentContainer, false);
+            View item = inflater.inflate(R.layout.item_comment, binding.commentContainer, false);
             AvatarView avatar = item.findViewById(R.id.ivCommentAvatar);
-            TextView tvName  = item.findViewById(R.id.tvCommentName);
-            TextView tvTime  = item.findViewById(R.id.tvCommentTime);
-            TextView tvText  = item.findViewById(R.id.tvCommentText);
+            TextView tvName = item.findViewById(R.id.tvCommentName);
+            TextView tvTime = item.findViewById(R.id.tvCommentTime);
+            TextView tvText = item.findViewById(R.id.tvCommentText);
             ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
 
             tvText.setText(c.getContent());
@@ -168,28 +215,26 @@ public class TaskActivity extends AppCompatActivity {
             tvName.setText("Nguyễn Thành Trung");
             avatar.setName("Nguyễn Thành Trung");
 
-            btnOpt.setOnClickListener(v -> showCommentOptions(v,c));
-            commentContainer.addView(item);
+            btnOpt.setOnClickListener(v -> showCommentOptions(v, c));
+            binding.commentContainer.addView(item);
         }
-
-        isCmtExpanded = true;
-        ivExpandComments.setImageResource(R.drawable.ic_expand_less);
     }
 
     private void hideCmtSection() {
-        commentContainer.removeAllViews();
-        commentContainer.setVisibility(View.GONE);
-        isCmtExpanded = false;
-        ivExpandComments.setImageResource(R.drawable.ic_expand_more);
+        binding.commentContainer.removeAllViews();
+        binding.commentContainer.setVisibility(View.GONE);
     }
 
     private void toggleCmtSection() {
-        if (commentList == null || commentList.isEmpty()) {
+        List<Comment> comments = viewModel.getComments().getValue();
+        if (comments == null || comments.isEmpty()) {
             hideCmtSection();
-        } else if (isCmtExpanded) {
+        } else if (viewModel.getIsCommentsExpanded().getValue()) {
             hideCmtSection();
+            viewModel.toggleCommentsExpanded();
         } else {
             showAllComments();
+            viewModel.toggleCommentsExpanded();
         }
     }
 
@@ -206,23 +251,20 @@ public class TaskActivity extends AppCompatActivity {
             }
             return false;
         });
-
         popup.show();
     }
 
     private void editComment(Comment c) {
-        // Hiển thị dialog chỉnh sửa, cập nhật dữ liệu và gọi showAllComments() lại
+        // TODO: Implement edit comment dialog
     }
 
     private void deleteComment(Comment c) {
-        // Xóa khỏi danh sách, notify UI
-        commentList.remove(c);
-        showAllComments();
+        viewModel.deleteComment(c);
     }
 
     private void initEdgeToEdge() {
         EdgeToEdge.enable(this);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main),
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(),
                 (view, insets) -> {
                     Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                     view.setPadding(sys.left, sys.top, sys.right, sys.bottom);
@@ -232,74 +274,67 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     private void setupToolbar() {
-        Toolbar toolbar = findViewById(R.id.toolbar_task);
-        setSupportActionBar(toolbar);
-        Drawable nav = toolbar.getNavigationIcon();
+        setSupportActionBar(binding.toolbarTask);
+        Drawable nav = binding.toolbarTask.getNavigationIcon();
         if (nav != null) {
             nav.setTint(ContextCompat.getColor(this, R.color.black));
-            toolbar.setNavigationIcon(nav);
+            binding.toolbarTask.setNavigationIcon(nav);
         }
-        toolbar.setNavigationOnClickListener(v -> finish());
-    }
-
-    private void bindViews() {
-        rowMember = findViewById(R.id.row_member);
-        rowStartDate = findViewById(R.id.row_start_date);
-        rowDueDate = findViewById(R.id.row_due_date);
-        rowCmts = findViewById(R.id.row_comments);
-
-        rowImageAttachments = findViewById(R.id.row_image_attachments);
-        separatorImage = findViewById(R.id.separator_image);
-        rvImageAttachments = findViewById(R.id.rv_image_attachments);
-        ivExpandImages = findViewById(R.id.iv_expand_images);
-
-        rowFileAttachments = findViewById(R.id.row_file_attachments);
-        separatorFile = findViewById(R.id.separator_file);
-        rvFileAttachments = findViewById(R.id.rv_file_attachments);
-        ivExpandFiles = findViewById(R.id.iv_expand_files);
-
-        commentContainer = findViewById(R.id.commentContainer);
-        ivExpandComments = findViewById(R.id.iv_expand_comments);
-
-        avatarView = findViewById(R.id.img_avatar);
+        binding.toolbarTask.setNavigationOnClickListener(v -> finish());
     }
 
     private void initAdapters() {
-        rvImageAttachments.setLayoutManager(
+        binding.rvImageAttachments.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         );
-        rvImageAttachments.setNestedScrollingEnabled(false);
-        imageAdapter = new ImageAttachmentAdapter(imageUris, new ImageAttachmentAdapter.OnAttachmentActionListener() {
+        binding.rvImageAttachments.setNestedScrollingEnabled(false);
+        imageAdapter = new ImageAttachmentAdapter(new ArrayList<>(), new ImageAttachmentAdapter.OnAttachmentActionListener() {
             @Override
             public void onDownloadClicked(int position) {
-                Uri uri = imageUris.get(position);
-                // TODO: xử lý tải xuống ảnh
+                List<Uri> uris = viewModel.getImageUris().getValue();
+                if (uris != null && position < uris.size()) {
+                    Uri uri = uris.get(position);
+                    // TODO: xử lý tải xuống ảnh
+                }
             }
             @Override
             public void onDeleteClicked(int position) {
-                imageUris.remove(position);
-                imageAdapter.notifyItemRemoved(position);
+                viewModel.removeImageUri(position);
             }
         });
-        rvImageAttachments.setAdapter(imageAdapter);
+        binding.rvImageAttachments.setAdapter(imageAdapter);
 
-        rvFileAttachments.setLayoutManager(
+        binding.rvFileAttachments.setLayoutManager(
                 new LinearLayoutManager(this)
         );
-        rvFileAttachments.setNestedScrollingEnabled(false);
-        fileAdapter = new FileAttachmentAdapter(files, new FileAttachmentAdapter.OnAttachmentActionListener() {
+        binding.rvFileAttachments.setNestedScrollingEnabled(false);
+        fileAdapter = new FileAttachmentAdapter(new ArrayList<>(), new FileAttachmentAdapter.OnAttachmentActionListener() {
             @Override
             public void onDownloadClicked(int position) {
-//                Uri uri = files.get(position).getUri();
-                // TODO: download logic
+                List<File> files = viewModel.getFiles().getValue();
+                if (files != null && position < files.size()) {
+                    // TODO: download logic
+                }
             }
             @Override
             public void onDeleteClicked(int position) {
-                files.remove(position);
-                fileAdapter.notifyItemRemoved(position);
+                List<File> files = viewModel.getFiles().getValue();
+                if (files != null && position < files.size()) {
+                    viewModel.deleteFile(files.get(position));
+                }
             }
         });
-        rvFileAttachments.setAdapter(fileAdapter);
+        binding.rvFileAttachments.setAdapter(fileAdapter);
+
+        // Observe image URIs
+        viewModel.getImageUris().observe(this, uris -> {
+//            imageAdapter.updateUris(uris);
+        });
+
+        // Observe files
+        viewModel.getFiles().observe(this, files -> {
+//            fileAdapter.updateFiles(files);
+        });
     }
 
     private void registerPickers() {
@@ -307,8 +342,10 @@ public class TaskActivity extends AppCompatActivity {
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
                     if (uris != null && !uris.isEmpty()) {
-                        imageUris.addAll(uris);
-                        toggleImageSection();
+                        for (Uri uri : uris) {
+                            viewModel.addImageUri(uri);
+                        }
+                        viewModel.toggleImagesExpanded();
                     }
                 }
         );
@@ -318,26 +355,34 @@ public class TaskActivity extends AppCompatActivity {
                 uris -> {
                     if (uris != null && !uris.isEmpty()) {
                         for (Uri uri : uris) {
-                            String name = "File_" + (files.size() + 1);
+                            String name = "File_" + (viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1);
                             String ext = DocumentsContract.getDocumentId(uri).contains(".pdf")
                                     ? "pdf" : "bin";
-                            String size = "?? KB";
-//                            files.add(new File(name, ext, size, uri));
+                            File file = new File(
+                                viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1,
+                                name,
+                                uri.toString(),
+                                0,
+                                ext,
+                                1,
+                                1
+                            );
+                            viewModel.addFile(file);
                         }
-                        toggleFileSection();
+                        viewModel.toggleFilesExpanded();
                     }
                 }
         );
     }
 
     private void setupListeners() {
-        rowMember.setOnClickListener(v -> showToast("Thành viên"));
-        rowStartDate.setOnClickListener(v -> showToast("Ngày bắt đầu"));
-        rowDueDate.setOnClickListener(v -> showToast("Ngày hết hạn"));
+        binding.rowMember.setOnClickListener(v -> showToast("Thành viên"));
+        binding.rowStartDate.setOnClickListener(v -> showToast("Ngày bắt đầu"));
+        binding.rowDueDate.setOnClickListener(v -> showToast("Ngày hết hạn"));
 
-        rowImageAttachments.setOnClickListener(v -> toggleImageSection());
-        rowFileAttachments.setOnClickListener(v -> toggleFileSection());
-        rowCmts.setOnClickListener(v -> toggleCmtSection());
+        binding.rowImageAttachments.setOnClickListener(v -> viewModel.toggleImagesExpanded());
+        binding.rowFileAttachments.setOnClickListener(v -> viewModel.toggleFilesExpanded());
+        binding.rowComments.setOnClickListener(v -> viewModel.toggleCommentsExpanded());
     }
 
     @Override
@@ -367,50 +412,32 @@ public class TaskActivity extends AppCompatActivity {
 
     @SuppressLint("NotifyDataSetChanged")
     private void showImageSection() {
-        rowImageAttachments.setVisibility(View.VISIBLE);
-        separatorImage.setVisibility(View.VISIBLE);
-        rvImageAttachments.setVisibility(View.VISIBLE);
-        ivExpandImages.setImageResource(R.drawable.ic_expand_less);
-        isImagesExpanded = true;
+        binding.rowImageAttachments.setVisibility(View.VISIBLE);
+        binding.separatorImage.setVisibility(View.VISIBLE);
+        binding.rvImageAttachments.setVisibility(View.VISIBLE);
+        binding.ivExpandImages.setImageResource(R.drawable.ic_expand_less);
         imageAdapter.notifyDataSetChanged();
     }
 
     private void hideImageSection() {
-//        rowImageAttachments.setVisibility(View.GONE);
-        separatorImage.setVisibility(View.GONE);
-        rvImageAttachments.setVisibility(View.GONE);
-        ivExpandImages.setImageResource(R.drawable.ic_expand_more);
-        isImagesExpanded = false;
-//        imageUris.clear();
-    }
-
-    private void toggleImageSection() {
-        if (isImagesExpanded) hideImageSection();
-        else                   showImageSection();
+        binding.separatorImage.setVisibility(View.GONE);
+        binding.rvImageAttachments.setVisibility(View.GONE);
+        binding.ivExpandImages.setImageResource(R.drawable.ic_expand_more);
     }
 
     @SuppressLint("NotifyDataSetChanged")
     private void showFileSection() {
-        rowFileAttachments.setVisibility(View.VISIBLE);
-        separatorFile.setVisibility(View.VISIBLE);
-        rvFileAttachments.setVisibility(View.VISIBLE);
-        ivExpandFiles.setImageResource(R.drawable.ic_expand_less);
-        isFilesExpanded = true;
+        binding.rowFileAttachments.setVisibility(View.VISIBLE);
+        binding.separatorFile.setVisibility(View.VISIBLE);
+        binding.rvFileAttachments.setVisibility(View.VISIBLE);
+        binding.ivExpandFiles.setImageResource(R.drawable.ic_expand_less);
         fileAdapter.notifyDataSetChanged();
     }
 
     private void hideFileSection() {
-//        rowFileAttachments.setVisibility(View.GONE);
-        separatorFile.setVisibility(View.GONE);
-        rvFileAttachments.setVisibility(View.GONE);
-        ivExpandFiles.setImageResource(R.drawable.ic_expand_more);
-        isFilesExpanded = false;
-//        files.clear();
-    }
-
-    private void toggleFileSection() {
-        if (isFilesExpanded) hideFileSection();
-        else                 showFileSection();
+        binding.separatorFile.setVisibility(View.GONE);
+        binding.rvFileAttachments.setVisibility(View.GONE);
+        binding.ivExpandFiles.setImageResource(R.drawable.ic_expand_more);
     }
 
     private void showImageUploadDialog() {
@@ -434,28 +461,30 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     private void loadSampleData() {
-        //        if (user.hasPhoto()) {
-//            avatarView.setImage(user.getPhotoUri());
-//        } else {
-//            avatarView.setName(user.getFullName());
-//        }
-        avatarView.setName("Nguyễn Thành Trung");
-        // giả lập vài URI từ drawable
-        imageUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
-        imageUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.clock));
-        imageUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
-        imageUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
-        imageUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.clock));
-        imageUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
-        files.add(new File(1,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
-        files.add(new File(2,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1 ));
-        files.add(new File(3,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
-        files.add(new File(4,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1 ));
-        files.add(new File(5,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
-        files.add(new File(6,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1 ));
+        binding.imgAvatar.setName("Nguyễn Thành Trung");
+        
+        // Sample image URIs
+        List<Uri> sampleUris = new ArrayList<>();
+        sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
+        sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.clock));
+        sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
+        sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
+        sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.clock));
+        sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
+        viewModel.updateImageUris(sampleUris);
 
-        // hiển thị section
-        showImageSection();
-        showFileSection();
+        // Sample files
+        List<File> sampleFiles = new ArrayList<>();
+        sampleFiles.add(new File(1,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
+        sampleFiles.add(new File(2,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1));
+        sampleFiles.add(new File(3,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
+        sampleFiles.add(new File(4,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1));
+        sampleFiles.add(new File(5,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
+        sampleFiles.add(new File(6,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1));
+        viewModel.updateFiles(sampleFiles);
+
+        // Show sections
+        viewModel.toggleImagesExpanded();
+        viewModel.toggleFilesExpanded();
     }
 }
