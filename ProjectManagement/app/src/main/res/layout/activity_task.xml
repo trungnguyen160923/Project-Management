@@ -502,14 +502,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-<!--        <ImageView-->
-<!--            android:id="@+id/img_avatar"-->
-<!--            android:layout_width="40dp"-->
-<!--            android:layout_height="40dp"-->
-<!--            android:src="@drawable/ic_person"-->
-<!--            android:scaleType="centerInside"-->
-<!--            android:background="@drawable/bg_avatar_circle"-->
-<!--            app:tint="@android:color/white" />-->
         <com.example.projectmanagement.viewmodel.AvatarView
             android:id="@+id/img_avatar"
             android:layout_width="40dp"

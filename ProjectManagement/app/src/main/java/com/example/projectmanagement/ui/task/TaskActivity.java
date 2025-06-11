@@ -15,8 +15,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
+import android.text.Layout;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -79,6 +81,8 @@ import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
 import com.example.projectmanagement.viewmodel.AvatarView;
 import com.example.projectmanagement.data.model.ProjectMemberHolder;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 
 public class TaskActivity extends AppCompatActivity {
     private ActivityTaskBinding binding;
@@ -112,6 +116,7 @@ public class TaskActivity extends AppCompatActivity {
         registerPickers();
         setupListeners();
         setupObservers();
+        setupCommentBar();
 
         hideImageSection();
         hideFileSection();
@@ -271,13 +276,232 @@ public class TaskActivity extends AppCompatActivity {
             TextView tvText = item.findViewById(R.id.tvCommentText);
             ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
 
-            tvText.setText(c.getContent());
             tvTime.setText(fmt.format(c.getCreateAt()));
             tvName.setText("Nguyễn Thành Trung");
             avatar.setName("Nguyễn Thành Trung");
 
+            // Handle file/image in comment
+            String content = c.getContent();
+            SpannableString spannableString = new SpannableString(content);
+            
+            // Xử lý file
+            if (content.contains("[File]")) {
+                int fileStart = content.indexOf("[File]");
+                int nameStart = fileStart + 6; // Sau "[File]"
+                int nameEnd = content.indexOf("[/File]", nameStart);
+                if (nameEnd == -1) nameEnd = content.length();
+                
+                // Lấy tên file gốc
+                String fileName = content.substring(nameStart, nameEnd);
+                
+                // Thu gọn tên file
+                String truncatedName = truncateFileName(fileName, 20);
+                
+                // Cập nhật nội dung với tên đã thu gọn
+                content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
+                spannableString = new SpannableString(content);
+                
+                // Thêm style cho tên file
+                spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
+                spannableString.setSpan(
+                    new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
+                    nameStart, nameStart + truncatedName.length(), 0
+                );
+                
+                // Thêm click listener cho file
+                final String finalFileName = fileName;
+                ClickableSpan fileClickableSpan = new ClickableSpan() {
+                    @Override
+                    public void onClick(View widget) {
+                        showFileDetailDialog(finalFileName);
+                    }
+                };
+                spannableString.setSpan(fileClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
+            }
+            
+            // Xử lý ảnh
+            if (content.contains("[Image]")) {
+                int imageStart = content.indexOf("[Image]");
+                int nameStart = imageStart + 7; // Sau "[Image]"
+                int nameEnd = content.indexOf("[/Image]", nameStart);
+                if (nameEnd == -1) nameEnd = content.length();
+                
+                // Lấy thông tin ảnh (tên file và URI)
+                String imageInfo = content.substring(nameStart, nameEnd);
+                
+                // Thu gọn tên ảnh để hiển thị
+                String fileName = imageInfo.split("\\|")[0];
+                String truncatedName = truncateFileName(fileName, 20);
+                
+                // Cập nhật nội dung với tên đã thu gọn
+                content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
+                spannableString = new SpannableString(content);
+                
+                // Thêm style cho tên ảnh
+                spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
+                spannableString.setSpan(
+                    new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
+                    nameStart, nameStart + truncatedName.length(), 0
+                );
+                
+                // Thêm click listener cho ảnh
+                final String finalImageInfo = imageInfo;
+                ClickableSpan imageClickableSpan = new ClickableSpan() {
+                    @Override
+                    public void onClick(View widget) {
+                        showImageDetailDialog(finalImageInfo);
+                    }
+                };
+                spannableString.setSpan(imageClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
+            }
+            
+            tvText.setText(spannableString);
+            tvText.setMovementMethod(LinkMovementMethod.getInstance());
+            tvText.setHighlightColor(Color.TRANSPARENT); // Xóa highlight khi click
+
             btnOpt.setOnClickListener(v -> showCommentOptions(v, c));
             binding.commentContainer.addView(item);
+        }
+    }
+
+    private String truncateFileName(String fileName, int maxLength) {
+        if (fileName == null || fileName.isEmpty()) {
+            return "";
+        }
+        
+        if (fileName.length() <= maxLength) {
+            return fileName;
+        }
+
+        // Tìm vị trí dấu chấm cuối cùng (phần mở rộng)
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex == -1) {
+            // Nếu không có phần mở rộng, cắt bớt ở cuối
+            return fileName.substring(0, maxLength - 3) + "...";
+        }
+
+        // Lấy phần mở rộng
+        String extension = fileName.substring(lastDotIndex);
+        // Lấy phần tên file (không có phần mở rộng)
+        String nameWithoutExt = fileName.substring(0, lastDotIndex);
+        
+        // Tính toán độ dài tối đa cho phần tên file
+        int maxNameLength = maxLength - extension.length() - 3; // 3 là độ dài của "..."
+        
+        if (nameWithoutExt.length() <= maxNameLength) {
+            return fileName;
+        }
+
+        // Cắt bớt phần tên file và thêm "..."
+        return nameWithoutExt.substring(0, maxNameLength) + "..." + extension;
+    }
+
+    private void showFileDetailDialog(String fileName) {
+        List<File> files = viewModel.getFiles().getValue();
+        if (files == null) return;
+
+        // Tìm file dựa trên tên file (không phân biệt hoa thường)
+        final File targetFile = files.stream()
+                .filter(file -> {
+                    // Lấy tên file gốc
+                    String originalName = file.getFileName();
+                    // Thu gọn tên file để so sánh
+                    String truncatedName = truncateFileName(originalName, 20);
+                    // So sánh với tên file đã thu gọn
+                    return truncatedName.equalsIgnoreCase(fileName);
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (targetFile == null) {
+            showToast("Không tìm thấy file: " + fileName);
+            return;
+        }
+
+        // Create and show dialog
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_file_detail);
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        // Set file information
+        ImageView ivFileIcon = dialog.findViewById(R.id.ivFileIcon);
+        TextView tvFileName = dialog.findViewById(R.id.tvFileName);
+        TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
+        TextView tvFileType = dialog.findViewById(R.id.tvFileType);
+        TextView tvFileDate = dialog.findViewById(R.id.tvFileDate);
+        Button btnDownload = dialog.findViewById(R.id.btnDownload);
+        Button btnDelete = dialog.findViewById(R.id.btnDelete);
+
+        // Set file icon based on type
+        int iconRes = getFileIconResource(targetFile.getFileType());
+        ivFileIcon.setImageResource(iconRes);
+
+        // Thu gọn tên file nếu quá dài (giới hạn 30 ký tự)
+        String truncatedName = truncateFileName(targetFile.getFileName(), 30);
+        tvFileName.setText(truncatedName);
+        tvFileSize.setText("Kích thước: " + formatFileSize(targetFile.getFileSize()));
+        tvFileType.setText("Loại file: " + targetFile.getFileType().toUpperCase());
+        tvFileDate.setText("Ngày tạo: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                .format(targetFile.getCreatedAt()));
+
+        // Handle download button
+        btnDownload.setOnClickListener(v -> {
+            // TODO: Implement file download
+            showToast("Đang tải xuống file...");
+        });
+
+        // Handle delete button
+        btnDelete.setOnClickListener(v -> {
+            // Xóa file
+            viewModel.deleteFile(targetFile);
+            
+            // Cập nhật comment chứa file này
+            List<Comment> comments = viewModel.getComments().getValue();
+            if (comments != null) {
+                for (Comment comment : comments) {
+                    String content = comment.getContent();
+                    if (content.contains("[File]" + fileName + "[/File]")) {
+                        // Xóa phần [File] và tên file khỏi comment
+                        String newContent = content.replace("[File]" + fileName + "[/File]", "").trim();
+                        if (newContent.isEmpty()) {
+                            // Nếu comment trống sau khi xóa file, xóa luôn comment
+                            viewModel.deleteComment(comment);
+                        } else {
+                            // Cập nhật nội dung comment
+                            viewModel.editComment(comment, newContent);
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private int getFileIconResource(String fileType) {
+        switch (fileType.toLowerCase()) {
+            case "pdf":
+                return R.drawable.ic_pdf;
+            case "doc":
+            case "docx":
+                return R.drawable.ic_word;
+            case "xls":
+            case "xlsx":
+                return R.drawable.ic_excel;
+            case "ppt":
+            case "pptx":
+                return R.drawable.ic_powerpoint;
+            case "txt":
+                return R.drawable.ic_text;
+            case "zip":
+            case "rar":
+                return R.drawable.ic_zip;
+            default:
+                return R.drawable.ic_file;
         }
     }
 
@@ -403,18 +627,20 @@ public class TaskActivity extends AppCompatActivity {
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
                     if (uris != null && !uris.isEmpty()) {
-                        boolean hasValidImages = false;
                         for (Uri uri : uris) {
+                            String fileName = getFileName(uri);
                             String mimeType = getContentResolver().getType(uri);
                             if (mimeType != null && mimeType.startsWith("image/")) {
+                                // Add image to task
                                 viewModel.addImageUri(uri);
-                                hasValidImages = true;
-                            } else {
-                                showToast("File không phải là ảnh: " + getFileName(uri));
+                                
+                                // Add image reference to comment
+                                String imageComment = String.format("[Image] %s", fileName);
+                                appendToComment(imageComment, true);
+                                
+                                // Show image section
+                                viewModel.toggleImagesExpanded();
                             }
-                        }
-                        if (hasValidImages) {
-                            viewModel.toggleImagesExpanded();
                         }
                     }
                 }
@@ -424,32 +650,36 @@ public class TaskActivity extends AppCompatActivity {
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
                     if (uris != null && !uris.isEmpty()) {
-                        boolean hasValidFiles = false;
                         for (Uri uri : uris) {
+                            String fileName = getFileName(uri);
                             String mimeType = getContentResolver().getType(uri);
+                            
                             if (mimeType != null && mimeType.startsWith("image/")) {
-                                showToast("File là ảnh, vui lòng chọn trong phần tải ảnh: " + getFileName(uri));
+                                showToast("File là ảnh, vui lòng chọn trong phần tải ảnh: " + fileName);
                                 continue;
                             }
 
-                            String name = getFileName(uri);
+                            // Add file to task
                             String ext = getFileExtension(uri);
                             long size = getFileSize(uri);
                             File file = new File(
                                 viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1,
-                                name,
+                                fileName,
                                 uri.toString(),
                                 size,
                                 ext,
                                 1,
                                 1,
-                                new Date(), // createdAt
-                                new Date()  // updateAt
+                                new Date(),
+                                new Date()
                             );
                             viewModel.addFile(file);
-                            hasValidFiles = true;
-                        }
-                        if (hasValidFiles) {
+                            
+                            // Add file reference to comment
+                            String fileComment = String.format("[File] %s", fileName);
+                            appendToComment(fileComment, true);
+                            
+                            // Show file section
                             viewModel.toggleFilesExpanded();
                         }
                     }
@@ -927,5 +1157,211 @@ public class TaskActivity extends AppCompatActivity {
         // Set minimum date to today
         datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis());
         datePickerDialog.show();
+    }
+
+    private void setupCommentBar() {
+        // Handle keyboard visibility
+        binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            Rect r = new Rect();
+            binding.getRoot().getWindowVisibleDisplayFrame(r);
+            int screenHeight = binding.getRoot().getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+
+            if (keypadHeight > screenHeight * 0.15) {
+                // Keyboard is visible
+                binding.commentBar.setTranslationY(-keypadHeight + binding.commentBar.getHeight());
+            } else {
+                // Keyboard is hidden
+                binding.commentBar.setTranslationY(0);
+            }
+        });
+
+        // Handle comment input focus
+        binding.etComment.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                imm.showSoftInput(binding.etComment, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
+        // Handle send button
+        binding.btnSend.setOnClickListener(v -> {
+            String commentText = binding.etComment.getText().toString().trim();
+            if (!commentText.isEmpty()) {
+                viewModel.addComment(commentText);
+                binding.etComment.setText("");
+                imm.hideSoftInputFromWindow(binding.etComment.getWindowToken(), 0);
+            }
+        });
+
+        // Handle attach button
+        binding.btnAttach.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                .setTitle("Tải file lên")
+                .setItems(new String[]{"Chọn ảnh", "Chọn file", "Hủy"}, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Chọn ảnh
+                            imagePickerLauncher.launch(new String[]{"image/*"});
+                            break;
+                        case 1: // Chọn file
+                            filePickerLauncher.launch(new String[]{"*/*"});
+                            break;
+                    }
+                })
+                .show();
+        });
+    }
+
+    private void appendToComment(String text, boolean isFile) {
+        String currentText = binding.etComment.getText().toString();
+        
+        if (isFile) {
+            // Nếu là file, kiểm tra xem đã có file trong comment chưa
+            if (currentText.contains("[File]")) {
+                // Nếu đã có file, thay thế file cũ
+                int fileStart = currentText.indexOf("[File]");
+                int fileEnd = currentText.indexOf("[/File]", fileStart);
+                if (fileEnd == -1) fileEnd = currentText.length();
+                
+                // Thu gọn tên file mới
+                String fileName = text.substring(text.indexOf("]") + 2);
+                String truncatedName = truncateFileName(fileName, 20);
+                String newFileText = "[File]" + truncatedName + "[/File]";
+                
+                // Thay thế file cũ bằng file mới
+                currentText = currentText.substring(0, fileStart) + newFileText + currentText.substring(fileEnd + 7);
+            } else {
+                // Nếu chưa có file, thêm file mới
+                String fileName = text.substring(text.indexOf("]") + 2);
+                String truncatedName = truncateFileName(fileName, 20);
+                text = "[File]" + truncatedName + "[/File]";
+                currentText = currentText.isEmpty() ? text : currentText + text;
+            }
+            
+            // Tạo SpannableString với style cho tên file
+            SpannableString spannableString = new SpannableString(currentText);
+            int fileStart = currentText.indexOf("[File]");
+            int nameStart = fileStart + 6; // Sau "[File]"
+            int nameEnd = currentText.indexOf("[/File]", nameStart);
+            if (nameEnd == -1) nameEnd = currentText.length();
+            
+            // Thêm style cho tên file
+            spannableString.setSpan(new UnderlineSpan(), nameStart, nameEnd, 0);
+            spannableString.setSpan(
+                new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
+                nameStart, nameEnd, 0
+            );
+            
+            binding.etComment.setText(spannableString);
+        } else {
+            // Nếu là text thông thường
+            if (currentText.contains("[File]")) {
+                // Nếu đã có file, thêm text vào sau file
+                int fileEnd = currentText.indexOf("[/File]", currentText.indexOf("[File]")) + 7;
+                if (fileEnd == -1) fileEnd = currentText.length();
+                
+                // Thêm text vào sau file
+                currentText = currentText.substring(0, fileEnd) + text;
+            } else {
+                // Nếu chưa có file, thêm text bình thường
+                currentText = currentText.isEmpty() ? text : currentText + text;
+            }
+            binding.etComment.setText(currentText);
+        }
+        
+        // Move cursor to end
+        binding.etComment.setSelection(binding.etComment.getText().length());
+    }
+
+    private void showImageDetailDialog(String imageName) {
+        List<Uri> imageUris = viewModel.getImageUris().getValue();
+        if (imageUris == null) return;
+
+        // Tìm ảnh dựa trên tên file (không phân biệt hoa thường)
+        final Uri targetImage = imageUris.stream()
+                .filter(uri -> {
+                    // Lấy tên file gốc
+                    String originalName = getFileName(uri);
+                    // Thu gọn tên file để so sánh
+                    String truncatedName = truncateFileName(originalName, 20);
+                    // So sánh với tên file đã thu gọn
+                    return truncatedName.equalsIgnoreCase(imageName);
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (targetImage == null) {
+            showToast("Không tìm thấy ảnh: " + imageName);
+            return;
+        }
+
+        // Create and show dialog
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_image_detail);
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        // Set file information
+        ImageView imgPreview = dialog.findViewById(R.id.imgPreview);
+        TextView tvFileName = dialog.findViewById(R.id.tvFileName);
+        TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
+        TextView tvFileType = dialog.findViewById(R.id.tvFileType);
+        TextView tvCreatedAt = dialog.findViewById(R.id.tvCreatedAt);
+        Button btnDownload = dialog.findViewById(R.id.btnDownload);
+        Button btnDelete = dialog.findViewById(R.id.btnDelete);
+        ImageButton btnClose = dialog.findViewById(R.id.btnClose);
+
+        // Set image preview
+        imgPreview.setImageURI(targetImage);
+
+        // Set file details
+        String fileName = getFileName(targetImage);
+        tvFileName.setText(fileName);
+        tvFileSize.setText("Kích thước: " + formatFileSize(getFileSize(targetImage)));
+        tvFileType.setText("Loại file: IMAGE");
+        tvCreatedAt.setText("Ngày tạo: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                .format(new Date()));
+
+        // Handle close button
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        // Handle download button
+        btnDownload.setOnClickListener(v -> {
+            // TODO: Implement image download
+            showToast("Đang tải xuống ảnh...");
+            dialog.dismiss();
+        });
+
+        // Handle delete button
+        btnDelete.setOnClickListener(v -> {
+            // Xóa ảnh
+            int index = imageUris.indexOf(targetImage);
+            if (index != -1) {
+                viewModel.removeImageUri(index);
+            }
+            
+            // Cập nhật comment chứa ảnh này
+            List<Comment> comments = viewModel.getComments().getValue();
+            if (comments != null) {
+                for (Comment comment : comments) {
+                    String content = comment.getContent();
+                    if (content.contains("[Image]" + imageName + "[/Image]")) {
+                        // Xóa phần [Image] và tên ảnh khỏi comment
+                        String newContent = content.replace("[Image]" + imageName + "[/Image]", "").trim();
+                        if (newContent.isEmpty()) {
+                            // Nếu comment trống sau khi xóa ảnh, xóa luôn comment
+                            viewModel.deleteComment(comment);
+                        } else {
+                            // Cập nhật nội dung comment
+                            viewModel.editComment(comment, newContent);
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 }
