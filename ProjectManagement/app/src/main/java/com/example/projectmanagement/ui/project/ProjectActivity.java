@@ -18,7 +18,6 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -47,7 +46,7 @@ import com.example.projectmanagement.ui.adapter.PhaseAdapter;
 import com.example.projectmanagement.ui.helper.PhaseOrderTouchCallback;
 import com.example.projectmanagement.ui.notification.NotificationActivity;
 import com.example.projectmanagement.utils.ParseDateUtil;
-import com.example.projectmanagement.utils.PhaseDragListener;
+import com.example.projectmanagement.ui.helper.PhaseDragListener;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 

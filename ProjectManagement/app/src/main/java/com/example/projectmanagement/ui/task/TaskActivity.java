@@ -300,7 +300,7 @@ public class TaskActivity extends AppCompatActivity {
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         );
         binding.rvImageAttachments.setNestedScrollingEnabled(false);
-        imageAdapter = new ImageAttachmentAdapter(new ArrayList<>(), new ImageAttachmentAdapter.OnAttachmentActionListener() {
+        imageAdapter = new ImageAttachmentAdapter(this, new ArrayList<>(), new ImageAttachmentAdapter.OnAttachmentActionListener() {
             @Override
             public void onDownloadClicked(int position) {
                 List<Uri> uris = viewModel.getImageUris().getValue();
@@ -320,7 +320,7 @@ public class TaskActivity extends AppCompatActivity {
                 new LinearLayoutManager(this)
         );
         binding.rvFileAttachments.setNestedScrollingEnabled(false);
-        fileAdapter = new FileAttachmentAdapter(new ArrayList<>(), new FileAttachmentAdapter.OnAttachmentActionListener() {
+        fileAdapter = new FileAttachmentAdapter(this, new ArrayList<>(), new FileAttachmentAdapter.OnAttachmentActionListener() {
             @Override
             public void onDownloadClicked(int position) {
                 List<File> files = viewModel.getFiles().getValue();

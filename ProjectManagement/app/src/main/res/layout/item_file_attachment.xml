@@ -1,53 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:paddingVertical="8dp"
-    android:layout_margin="8dp"
-    android:gravity="center_vertical">
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
 
-    <!-- Icon loại file -->
-    <ImageView
-        android:id="@+id/img_file_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:contentDescription="File icon"
-        android:src="@drawable/ic_file" />
-
-    <View
-        android:layout_width="8dp"
-        android:layout_height="match_parent" />
-
-    <!-- Tên và kích thước file -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
 
-        <TextView
-            android:id="@+id/tv_file_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Example.pdf"
-            style="@style/TextAppearance.MaterialComponents.Body1" />
+        <!-- Icon kẹp giấy -->
+        <ImageView
+            android:id="@+id/ivFileIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="File icon"
+            android:layout_marginEnd="16dp" />
 
-        <TextView
-            android:id="@+id/tv_file_size"
-            android:layout_width="wrap_content"
+        <!-- Thông tin file -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="121 KB"
-            style="@style/TextAppearance.MaterialComponents.Caption"
-            android:textColor="#666" />
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvFileName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="Trung_accounts.txt" />
+
+            <TextView
+                android:id="@+id/tvFileInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/gray"
+                android:textSize="14sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="121 B, 6 ngày trước" />
+        </LinearLayout>
+
+        <!-- Dấu 3 chấm -->
+        <ImageView
+            android:id="@+id/btnMore"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_more_vert"
+            android:contentDescription="Tùy chọn"
+            android:padding="4dp"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
-
-    <!-- Nút 3 chấm -->
-    <ImageButton
-        android:id="@+id/btn_file_more"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_more_vert"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Tùy chọn file" />
-</LinearLayout>
+</androidx.cardview.widget.CardView>

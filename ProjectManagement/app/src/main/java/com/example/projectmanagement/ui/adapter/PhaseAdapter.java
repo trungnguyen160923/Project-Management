@@ -22,7 +22,7 @@ import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.utils.DetailPhaseDialogUtil;
-import com.example.projectmanagement.utils.PhaseTouchHelperCallback;
+import com.example.projectmanagement.ui.helper.PhaseTouchHelperCallback;
 
 import java.util.Collections;
 import java.util.List;

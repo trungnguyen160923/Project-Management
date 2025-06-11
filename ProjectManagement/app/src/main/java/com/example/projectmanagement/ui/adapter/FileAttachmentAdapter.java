@@ -1,9 +1,12 @@
 package com.example.projectmanagement.ui.adapter;
 
+import android.app.Dialog;
+import android.content.Context;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -13,94 +16,129 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.File;
+import com.example.projectmanagement.utils.ParseDateUtil;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class FileAttachmentAdapter
-        extends RecyclerView.Adapter<FileAttachmentAdapter.ViewHolder> {
-
-    public interface OnAttachmentActionListener {
-        void onDownloadClicked(int position);
-        void onDeleteClicked(int position);
-    }
-
-    private List<File> files;
+public class FileAttachmentAdapter extends RecyclerView.Adapter<FileAttachmentAdapter.ViewHolder> {
+    private final List<File> files;
     private final OnAttachmentActionListener listener;
+    private final Context context;
+    private final SimpleDateFormat dateFormat;
 
-    public FileAttachmentAdapter(List<File> files, OnAttachmentActionListener listener) {
+    public FileAttachmentAdapter(Context context, List<File> files, OnAttachmentActionListener listener) {
+        this.context = context;
         this.files = files;
         this.listener = listener;
+        this.dateFormat = new SimpleDateFormat("d MMM yyyy 'lúc' HH:mm", Locale.getDefault());
     }
 
-    public void updateFiles(List<File> newFiles) {
-        this.files = newFiles;
-        notifyDataSetChanged();
-    }
-
-    @NonNull @Override
+    @NonNull
+    @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext())
+        View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_file_attachment, parent, false);
-        return new ViewHolder(v);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
-        File f = files.get(pos);
-        h.imgIcon.setImageResource(getIconForExtension(f.getFileType()));
-        h.tvName.setText(f.getFileName());
-        h.tvSize.setText(formatFileSize(f.getFileSize()));
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        File file = files.get(position);
+        holder.tvFileName.setText(file.getFileName());
+        // Ví dụ: "121 B, 6 ngày trước"
+        String info = formatFileSize(file.getFileSize()) + ", " + ParseDateUtil.formatDate((file.getCreatedAt()));
+        holder.tvFileInfo.setText(info);
 
-        h.btnMore.setOnClickListener(v -> {
-            PopupMenu popup = new PopupMenu(v.getContext(), v);
+        // Set icon theo loại file
+        holder.ivFileIcon.setImageResource(getFileIconResource(file.getFileType()));
+
+        holder.btnMore.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(context, holder.btnMore);
             popup.inflate(R.menu.menu_attachment_item);
-
-            // Ép hiển thị icon trong menu (Android P+)
-            try {
-                Field mField = popup.getClass().getDeclaredField("mPopup");
-                mField.setAccessible(true);
-                Object menuHelper = mField.get(popup);
-                Method setForceIcons = menuHelper.getClass()
-                        .getDeclaredMethod("setForceShowIcon", boolean.class);
-                setForceIcons.invoke(menuHelper, true);
-            } catch (Exception ignored) {}
-
             popup.setOnMenuItemClickListener(item -> {
-                if(item.getItemId() == R.id.action_download){
-                    listener.onDownloadClicked(pos);
+                if (item.getItemId() == R.id.action_download) {
+                    listener.onDownloadClicked(position);
                     return true;
-                }else if(item.getItemId() == R.id.action_delete){
-                    listener.onDeleteClicked(pos);
+                } else if (item.getItemId() == R.id.action_delete) {
+                    listener.onDeleteClicked(position);
                     return true;
                 }
                 return false;
             });
             popup.show();
         });
+
+        // Click vào toàn bộ item để hiển thị dialog chi tiết
+        holder.itemView.setOnClickListener(v -> showFileDetailDialog(position));
     }
 
-    @Override public int getItemCount() {
-        return files != null ? files.size() : 0;
-    }
+    private void showFileDetailDialog(int position) {
+        File file = files.get(position);
+        Dialog dialog = new Dialog(context);
+        dialog.setContentView(R.layout.dialog_file_detail);
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgIcon;
-        TextView tvName, tvSize;
-        ImageButton btnMore;
-        ViewHolder(View item) {
-            super(item);
-            imgIcon = item.findViewById(R.id.img_file_icon);
-            tvName  = item.findViewById(R.id.tv_file_name);
-            tvSize  = item.findViewById(R.id.tv_file_size);
-            btnMore = item.findViewById(R.id.btn_file_more);
+        // Set dialog width to match parent
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
+
+        ImageView ivFileIcon = dialog.findViewById(R.id.ivFileIcon);
+        TextView tvFileName = dialog.findViewById(R.id.tvFileName);
+        TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
+        TextView tvFileType = dialog.findViewById(R.id.tvFileType);
+        TextView tvFileDate = dialog.findViewById(R.id.tvFileDate);
+        Button btnDownload = dialog.findViewById(R.id.btnDownload);
+        Button btnDelete = dialog.findViewById(R.id.btnDelete);
+
+        // Set file icon
+        int iconResId = getFileIconResource(file.getFileType());
+        ivFileIcon.setImageResource(iconResId);
+
+        // Set file details
+        tvFileName.setText(file.getFileName());
+        tvFileSize.setText("Kích thước: " + formatFileSize(file.getFileSize()));
+        tvFileType.setText("Loại file: " + file.getFileType().toUpperCase());
+        tvFileDate.setText("Ngày tạo: " + dateFormat.format(new Date()));
+
+        // Set click listeners
+        btnDownload.setOnClickListener(v -> {
+            listener.onDownloadClicked(position);
+            dialog.dismiss();
+        });
+
+        btnDelete.setOnClickListener(v -> {
+            listener.onDeleteClicked(position);
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
-    private int getIconForExtension(String ext) {
-        return R.drawable.ic_file;
+    private int getFileIconResource(String fileType) {
+        switch (fileType.toLowerCase()) {
+            case "pdf":
+                return R.drawable.ic_pdf;
+            case "doc":
+            case "docx":
+                return R.drawable.ic_word;
+            case "xls":
+            case "xlsx":
+                return R.drawable.ic_excel;
+            case "ppt":
+            case "pptx":
+                return R.drawable.ic_powerpoint;
+            case "txt":
+                return R.drawable.ic_text;
+            case "zip":
+            case "rar":
+                return R.drawable.ic_zip;
+            default:
+                return R.drawable.ic_file;
+        }
     }
 
     private String formatFileSize(long size) {
@@ -110,5 +148,36 @@ public class FileAttachmentAdapter
         return String.format(Locale.getDefault(), "%.1f %s", 
             size / Math.pow(1024, digitGroups), 
             units[digitGroups]);
+    }
+
+    @Override
+    public int getItemCount() {
+        return files.size();
+    }
+
+    public void updateFiles(List<File> newFiles) {
+        files.clear();
+        if (newFiles != null) {
+            files.addAll(newFiles);
+        }
+        notifyDataSetChanged();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivFileIcon, btnMore;
+        TextView tvFileName, tvFileInfo;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            ivFileIcon = itemView.findViewById(R.id.ivFileIcon);
+            tvFileName = itemView.findViewById(R.id.tvFileName);
+            tvFileInfo = itemView.findViewById(R.id.tvFileInfo);
+            btnMore = itemView.findViewById(R.id.btnMore);
+        }
+    }
+
+    public interface OnAttachmentActionListener {
+        void onDownloadClicked(int position);
+        void onDeleteClicked(int position);
     }
 }
