@@ -1,10 +1,13 @@
 package com.example.projectmanagement.ui.task;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -26,6 +29,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -57,17 +61,21 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.model.ProjectHolder;
+import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.databinding.ActivityTaskBinding;
 import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
+import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
 import com.example.projectmanagement.viewmodel.AvatarView;
+import com.example.projectmanagement.data.model.ProjectMemberHolder;
 
 public class TaskActivity extends AppCompatActivity {
     private ActivityTaskBinding binding;
@@ -511,7 +519,7 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        binding.rowMember.setOnClickListener(v -> showToast("Thành viên"));
+        binding.rowMember.setOnClickListener(v -> showMemberSelectionDialog());
         binding.rowStartDate.setOnClickListener(v -> showToast("Ngày bắt đầu"));
         binding.rowDueDate.setOnClickListener(v -> showToast("Ngày hết hạn"));
         binding.llMainFiles.setOnClickListener(v->uploadFileFromDevice());
@@ -785,5 +793,82 @@ public class TaskActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    private void showMemberSelectionDialog() {
+        Task currentTask = viewModel.getTask().getValue();
+        if (currentTask == null) return;
+
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_select_member);
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        RecyclerView rvMembers = dialog.findViewById(R.id.rv_members);
+        Button btnComplete = dialog.findViewById(R.id.btn_complete);
+
+        // Lấy danh sách thành viên từ ProjectMemberHolder
+        List<ProjectMember> projectMembers = ProjectMemberHolder.get().getMembers();
+        TaskMemberAdapter adapter = new TaskMemberAdapter(projectMembers, member -> {
+            // Handle member selection
+        });
+
+        rvMembers.setLayoutManager(new LinearLayoutManager(this));
+        rvMembers.setAdapter(adapter);
+
+        // Set initial selection if task has assigned member
+        if (currentTask.getAssignedTo() != 0) {
+            int position = adapter.getPositionById(currentTask.getAssignedTo());
+            if (position != -1) {
+                adapter.selectMember(position);
+            }
+        }
+
+        btnComplete.setOnClickListener(v -> {
+            ProjectMember selectedMember = adapter.getSelectedMember();
+            if (selectedMember != null) {
+                viewModel.assignTaskToMember(currentTask.getTaskID(), selectedMember.getUser().getId());
+                updateMemberUI(selectedMember.getUser());
+            }
+            dialog.dismiss();
+        });
+
+        dialog.setOnDismissListener(dialogInterface -> {
+            // Handle dialog dismiss
+        });
+
+        dialog.show();
+    }
+
+    private void updateMemberUI(User member) {
+        if (member != null) {
+            binding.tvThanhvien.setVisibility(View.GONE);
+            binding.avThanhvien.setVisibility(View.VISIBLE);
+            
+            if (member.getAvatar() != null && !member.getAvatar().isEmpty()) {
+                // TODO: Load avatar using your image loading library
+                // Glide.with(binding.avThanhVien).load(member.getAvatar()).into(binding.avThanhVien);
+            } else {
+                binding.avThanhvien.setName(member.getFullname());
+            }
+        } else {
+            binding.tvThanhvien.setVisibility(View.VISIBLE);
+            binding.avThanhvien.setVisibility(View.GONE);
+        }
+    }
+
+    private void initMemberUI() {
+        Task currentTask = viewModel.getTask().getValue();
+        if (currentTask == null) return;
+
+        if (currentTask.getAssignedTo() != 0) {
+            User assignedMember = viewModel.getMemberById(currentTask.getAssignedTo());
+            if (assignedMember != null) {
+                updateMemberUI(assignedMember);
+            }
+        } else {
+            binding.tvThanhvien.setVisibility(View.VISIBLE);
+            binding.avThanhvien.setVisibility(View.GONE);
+        }
     }
 }

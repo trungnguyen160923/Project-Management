@@ -10,6 +10,7 @@ import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.data.repository.TaskRepository;
 
 import java.util.ArrayList;
@@ -27,10 +28,50 @@ public class TaskViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isCommentsExpanded = new MutableLiveData<>(false);
     private final MutableLiveData<String> taskDescription = new MutableLiveData<>("");
     private final MutableLiveData<List<Phase>> allProjectPhases = new MutableLiveData<>();
+    private List<User> projectMembers;
 
     public TaskViewModel() {
         taskRepository = TaskRepository.getInstance();
         fetchPhases();
+        loadProjectMembers();
+    }
+
+    private void loadProjectMembers() {
+        // TODO: Load project members from your data source
+        // This is a sample implementation
+        projectMembers = new ArrayList<>();
+        projectMembers.add(new User(1, "Nguyễn Thành Trung", "trung@example.com", null));
+        projectMembers.add(new User(2, "Lê Văn A", "a@example.com",null));
+        projectMembers.add(new User(3, "Trần Thị B", "b@example.com", null));
+    }
+
+    public List<User> getProjectMembers() {
+        if (projectMembers == null) {
+            loadProjectMembers();
+        }
+        return projectMembers;
+    }
+
+    public User getMemberById(int userId) {
+        if (projectMembers == null) {
+            loadProjectMembers();
+        }
+        for (User member : projectMembers) {
+            if (member.getId() == userId) {
+                return member;
+            }
+        }
+        return null;
+    }
+
+    public void assignTaskToMember(int taskId, int userId) {
+        Task currentTask = task.getValue();
+        if (currentTask != null && currentTask.getTaskID() == taskId) {
+            currentTask.setAssignedTo(userId);
+            currentTask.setLastUpdate(new Date());
+            task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
+        }
     }
 
     public void setTask(Task task) {

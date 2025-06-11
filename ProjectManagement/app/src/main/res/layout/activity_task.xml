@@ -217,12 +217,19 @@
                                 app:tint="@color/black" />
 
                             <TextView
+                                android:id="@+id/tv_thanhvien"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="16dp"
                                 android:text="Thành viên"
                                 style="@style/TextAppearance.MaterialComponents.Body1"
                                 android:textColor="@color/black" />
+                            <com.example.projectmanagement.viewmodel.AvatarView
+                                android:id="@+id/av_thanhvien"
+                                android:layout_width="35dp"
+                                android:layout_height="35dp"
+                                android:visibility="gone"
+                                android:layout_margin="12dp"/>
                         </LinearLayout>
 
                         <View

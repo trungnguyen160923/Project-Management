@@ -45,4 +45,5 @@
         android:textColor="@color/colorPrimary"
         android:textStyle="bold"
         android:textSize="13sp"/>
+
 </LinearLayout>
