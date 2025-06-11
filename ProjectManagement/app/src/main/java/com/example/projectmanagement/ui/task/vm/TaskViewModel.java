@@ -290,6 +290,17 @@ public class TaskViewModel extends ViewModel {
         }
     }
 
+
+    public void updateTaskDueDate(Date dueDate) {
+        Task currentTask = task.getValue();
+        if (currentTask != null) {
+            currentTask.setDueDate(dueDate);
+            currentTask.setLastUpdate(new Date());
+            task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
+        }
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();

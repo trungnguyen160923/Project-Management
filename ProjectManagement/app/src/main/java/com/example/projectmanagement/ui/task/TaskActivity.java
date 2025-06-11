@@ -1,7 +1,9 @@
 package com.example.projectmanagement.ui.task;
 
 import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -43,6 +45,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -520,8 +523,7 @@ public class TaskActivity extends AppCompatActivity {
 
     private void setupListeners() {
         binding.rowMember.setOnClickListener(v -> showMemberSelectionDialog());
-        binding.rowStartDate.setOnClickListener(v -> showToast("Ngày bắt đầu"));
-        binding.rowDueDate.setOnClickListener(v -> showToast("Ngày hết hạn"));
+        binding.rowDueDate.setOnClickListener(v -> showDateTimePicker());
         binding.llMainFiles.setOnClickListener(v->uploadFileFromDevice());
 
         binding.rowImageAttachments.setOnClickListener(v -> viewModel.toggleImagesExpanded());
@@ -870,5 +872,60 @@ public class TaskActivity extends AppCompatActivity {
             binding.tvThanhvien.setVisibility(View.VISIBLE);
             binding.avThanhvien.setVisibility(View.GONE);
         }
+    }
+
+    private void showDateTimePicker() {
+        // Show date picker first
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+            this,
+            (view, year, month, dayOfMonth) -> {
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(year, month, dayOfMonth);
+                
+                // Check if selected date is in the past
+                Calendar now = Calendar.getInstance();
+                if (calendar.before(now)) {
+                    showToast("Ngày hết hạn phải lớn hơn thời gian hiện tại");
+                    return;
+                }
+                
+                // After selecting date, show time picker
+                TimePickerDialog timePickerDialog = new TimePickerDialog(
+                    this,
+                    (view1, hourOfDay, minute) -> {
+                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                        calendar.set(Calendar.MINUTE, minute);
+                        
+                        // Check if selected date and time is in the past
+                        if (calendar.before(now)) {
+                            showToast("Thời gian hết hạn phải lớn hơn thời gian hiện tại");
+                            return;
+                        }
+                        
+                        // Format date and time
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                        
+                        String dateStr = dateFormat.format(calendar.getTime());
+                        String timeStr = timeFormat.format(calendar.getTime());
+                        
+                        // Update UI and ViewModel
+                        binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
+                        viewModel.updateTaskDueDate(calendar.getTime());
+                    },
+                    calendar.get(Calendar.HOUR_OF_DAY),
+                    calendar.get(Calendar.MINUTE),
+                    true
+                );
+                timePickerDialog.show();
+            },
+            Calendar.getInstance().get(Calendar.YEAR),
+            Calendar.getInstance().get(Calendar.MONTH),
+            Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+        );
+
+        // Set minimum date to today
+        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis());
+        datePickerDialog.show();
     }
 }
