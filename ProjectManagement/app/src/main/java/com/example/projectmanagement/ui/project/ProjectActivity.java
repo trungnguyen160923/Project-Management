@@ -246,8 +246,8 @@ public class ProjectActivity extends AppCompatActivity implements
         comments.add(new Comment(3, "Cần bổ sung thêm phần X.", 123, 12, new Date()));
 
         List<File> files = new ArrayList<>();
-        files.add(new File(1, "Report.pdf", "content://.../Report.pdf", 2300, "pdf", 1, 1));
-        files.add(new File(2, "Note.txt", "content://.../Note.txt", 121, "txt", 1, 1));
+        files.add(new File(1, "Report.pdf", "content://.../Report.pdf", 2300L, "pdf", 1, 1));
+        files.add(new File(2, "Note.txt", "content://.../Note.txt", 121L, "txt", 1, 1));
 
         phases = new ArrayList<>();
         for (int i = 1; i <= 3; i++) {

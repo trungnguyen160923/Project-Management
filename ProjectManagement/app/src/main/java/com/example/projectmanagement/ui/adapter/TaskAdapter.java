@@ -3,6 +3,7 @@ package com.example.projectmanagement.ui.adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -180,7 +181,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             itemView.setOnClickListener(v -> {
                 Context ctx = v.getContext();
                 Intent intent = new Intent(ctx, TaskActivity.class);
-                intent.putExtra("task", t);
+                Bundle bundle = new Bundle();
+                bundle.putParcelable("task", t);
+                intent.putExtras(bundle);
                 ctx.startActivity(intent);
             });
 

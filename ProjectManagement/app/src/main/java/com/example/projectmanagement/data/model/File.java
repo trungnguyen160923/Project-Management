@@ -12,7 +12,7 @@ public class File implements Parcelable {
     private int id;
     private String fileName;
     private String filePath;
-    private int fileSize;
+    private Long fileSize;
     private String fileType;
     private int taskID;
     private int userID;
@@ -22,7 +22,7 @@ public class File implements Parcelable {
     public File() {
     }
 
-    public File(int id, String fileName, String filePath, int fileSize, String fileType, int taskID, int userID) {
+    public File(int id, String fileName, String filePath, Long fileSize, String fileType, int taskID, int userID) {
         this.id = id;
         this.fileName = fileName;
         this.filePath = filePath;
@@ -35,7 +35,7 @@ public class File implements Parcelable {
     public File(int id,
                 String fileName,
                 String filePath,
-                int fileSize,
+                Long fileSize,
                 String fileType,
                 int taskID,
                 int userID,
@@ -56,7 +56,7 @@ public class File implements Parcelable {
         id        = in.readInt();
         fileName  = in.readString();
         filePath  = in.readString();
-        fileSize  = in.readInt();
+        fileSize  = in.readLong();
         fileType  = in.readString();
         taskID    = in.readInt();
         userID    = in.readInt();
@@ -71,7 +71,7 @@ public class File implements Parcelable {
         dest.writeInt(id);
         dest.writeString(fileName);
         dest.writeString(filePath);
-        dest.writeInt(fileSize);
+        dest.writeLong(fileSize);
         dest.writeString(fileType);
         dest.writeInt(taskID);
         dest.writeInt(userID);
@@ -106,8 +106,8 @@ public class File implements Parcelable {
     public String getFilePath() { return filePath; }
     public void setFilePath(String filePath) { this.filePath = filePath; }
 
-    public int getFileSize() { return fileSize; }
-    public void setFileSize(int fileSize) { this.fileSize = fileSize; }
+    public Long getFileSize() { return fileSize; }
+    public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
 
     public String getFileType() { return fileType; }
     public void setFileType(String fileType) { this.fileType = fileType; }

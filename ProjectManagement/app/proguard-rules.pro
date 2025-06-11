@@ -19,3 +19,15 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep Parcelable classes
+-keep class com.example.projectmanagement.data.model.** { *; }
+-keepclassmembers class com.example.projectmanagement.data.model.** { *; }
+
+# Keep Parcelable implementations
+-keepclassmembers class * implements android.os.Parcelable {
+    static ** CREATOR;
+}
+
+# Keep custom application class
+-keep class com.example.projectmanagement.** { *; }

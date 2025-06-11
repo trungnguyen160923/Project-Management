@@ -3,11 +3,13 @@ package com.example.projectmanagement.ui.task;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
+import android.provider.OpenableColumns;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
@@ -50,6 +52,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
+import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.databinding.ActivityTaskBinding;
 import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
@@ -72,6 +75,15 @@ public class TaskActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        
+        // Get task from intent
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            Task task = extras.getParcelable("task");
+            if (task != null) {
+                viewModel.setTask(task);
+            }
+        }
         
         initEdgeToEdge();
         setupToolbar();
@@ -342,10 +354,19 @@ public class TaskActivity extends AppCompatActivity {
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
                     if (uris != null && !uris.isEmpty()) {
+                        boolean hasValidImages = false;
                         for (Uri uri : uris) {
-                            viewModel.addImageUri(uri);
+                            String mimeType = getContentResolver().getType(uri);
+                            if (mimeType != null && mimeType.startsWith("image/")) {
+                                viewModel.addImageUri(uri);
+                                hasValidImages = true;
+                            } else {
+                                showToast("File không phải là ảnh: " + getFileName(uri));
+                            }
                         }
-                        viewModel.toggleImagesExpanded();
+                        if (hasValidImages) {
+                            viewModel.toggleImagesExpanded();
+                        }
                     }
                 }
         );
@@ -354,31 +375,106 @@ public class TaskActivity extends AppCompatActivity {
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
                     if (uris != null && !uris.isEmpty()) {
+                        boolean hasValidFiles = false;
                         for (Uri uri : uris) {
-                            String name = "File_" + (viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1);
-                            String ext = DocumentsContract.getDocumentId(uri).contains(".pdf")
-                                    ? "pdf" : "bin";
+                            String mimeType = getContentResolver().getType(uri);
+                            if (mimeType != null && mimeType.startsWith("image/")) {
+                                showToast("File là ảnh, vui lòng chọn trong phần tải ảnh: " + getFileName(uri));
+                                continue;
+                            }
+
+                            String name = getFileName(uri);
+                            String ext = getFileExtension(uri);
+                            long size = getFileSize(uri);
                             File file = new File(
                                 viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1,
                                 name,
                                 uri.toString(),
-                                0,
+                                size,
                                 ext,
                                 1,
                                 1
                             );
                             viewModel.addFile(file);
+                            hasValidFiles = true;
                         }
-                        viewModel.toggleFilesExpanded();
+                        if (hasValidFiles) {
+                            viewModel.toggleFilesExpanded();
+                        }
                     }
                 }
         );
+    }
+
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (nameIndex != -1) {
+                        result = cursor.getString(nameIndex);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf(java.io.File.separator);
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
+
+    private String getFileExtension(Uri uri) {
+        String mimeType = getContentResolver().getType(uri);
+        if (mimeType != null) {
+            if (mimeType.contains("pdf")) return "pdf";
+            if (mimeType.contains("word")) return "doc";
+            if (mimeType.contains("excel") || mimeType.contains("spreadsheet")) return "xls";
+            if (mimeType.contains("powerpoint") || mimeType.contains("presentation")) return "ppt";
+            if (mimeType.contains("text")) return "txt";
+            if (mimeType.contains("zip") || mimeType.contains("compressed")) return "zip";
+        }
+        return "bin";
+    }
+
+    private long getFileSize(Uri uri) {
+        try {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                if (sizeIndex != -1) {
+                    return cursor.getLong(sizeIndex);
+                }
+            }
+            if (cursor != null) {
+                cursor.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    private String formatFileSize(long size) {
+        if (size <= 0) return "0 B";
+        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+        return String.format(Locale.getDefault(), "%.1f %s", 
+            size / Math.pow(1024, digitGroups), 
+            units[digitGroups]);
     }
 
     private void setupListeners() {
         binding.rowMember.setOnClickListener(v -> showToast("Thành viên"));
         binding.rowStartDate.setOnClickListener(v -> showToast("Ngày bắt đầu"));
         binding.rowDueDate.setOnClickListener(v -> showToast("Ngày hết hạn"));
+        binding.llMainFiles.setOnClickListener(v->uploadFileFromDevice());
 
         binding.rowImageAttachments.setOnClickListener(v -> viewModel.toggleImagesExpanded());
         binding.rowFileAttachments.setOnClickListener(v -> viewModel.toggleFilesExpanded());
@@ -460,6 +556,22 @@ public class TaskActivity extends AppCompatActivity {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
+    private void uploadFileFromDevice() {
+        new AlertDialog.Builder(this)
+                .setTitle("Tải file lên")
+                .setItems(new String[]{"Chọn ảnh", "Chọn file", "Hủy"}, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Chọn ảnh
+                            imagePickerLauncher.launch(new String[]{"image/*"});
+                            break;
+                        case 1: // Chọn file
+                            filePickerLauncher.launch(new String[]{"*/*"});
+                            break;
+                    }
+                })
+                .show();
+    }
+
     private void loadSampleData() {
         binding.imgAvatar.setName("Nguyễn Thành Trung");
         
@@ -475,12 +587,12 @@ public class TaskActivity extends AppCompatActivity {
 
         // Sample files
         List<File> sampleFiles = new ArrayList<>();
-        sampleFiles.add(new File(1,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
-        sampleFiles.add(new File(2,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1));
-        sampleFiles.add(new File(3,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
-        sampleFiles.add(new File(4,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1));
-        sampleFiles.add(new File(5,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300,"pdf",1,1));
-        sampleFiles.add(new File(6,"Note.txt","content://com.example.yourapp/files/Note.txt",121,"txt",1,1));
+        sampleFiles.add(new File(1,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300L,"pdf",1,1));
+        sampleFiles.add(new File(2,"Note.txt","content://com.example.yourapp/files/Note.txt", 121L,"txt",1,1));
+        sampleFiles.add(new File(3,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300L,"pdf",1,1));
+        sampleFiles.add(new File(4,"Note.txt","content://com.example.yourapp/files/Note.txt",121L,"txt",1,1));
+        sampleFiles.add(new File(5,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300L,"pdf",1,1));
+        sampleFiles.add(new File(6,"Note.txt","content://com.example.yourapp/files/Note.txt",121L,"txt",1,1));
         viewModel.updateFiles(sampleFiles);
 
         // Show sections

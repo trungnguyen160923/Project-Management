@@ -17,6 +17,7 @@ import com.example.projectmanagement.data.model.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Locale;
 
 public class FileAttachmentAdapter
         extends RecyclerView.Adapter<FileAttachmentAdapter.ViewHolder> {
@@ -51,7 +52,7 @@ public class FileAttachmentAdapter
         File f = files.get(pos);
         h.imgIcon.setImageResource(getIconForExtension(f.getFileType()));
         h.tvName.setText(f.getFileName());
-        h.tvSize.setText(String.valueOf(f.getFileSize()));
+        h.tvSize.setText(formatFileSize(f.getFileSize()));
 
         h.btnMore.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(v.getContext(), v);
@@ -100,5 +101,14 @@ public class FileAttachmentAdapter
 
     private int getIconForExtension(String ext) {
         return R.drawable.ic_file;
+    }
+
+    private String formatFileSize(long size) {
+        if (size <= 0) return "0 B";
+        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+        return String.format(Locale.getDefault(), "%.1f %s", 
+            size / Math.pow(1024, digitGroups), 
+            units[digitGroups]);
     }
 }
