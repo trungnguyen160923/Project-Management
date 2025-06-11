@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.utils.DetailPhaseDialogUtil;
 import com.example.projectmanagement.utils.PhaseTouchHelperCallback;
 
 import java.util.Collections;
@@ -225,8 +226,16 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         popup.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_about_phase) {
-                // Xử lý "Về task này"
-                // Ví dụ: Toast.makeText(anchor.getContext(), "Về phase " + phases.get(phasePosition).getPhaseName(), Toast.LENGTH_SHORT).show();
+                DetailPhaseDialogUtil.showPhaseDetailDialog(anchor.getContext(), phases.get(phasePosition), new DetailPhaseDialogUtil.PhaseDialogListener() {
+                    @Override
+                    public void onPhaseUpdated(Phase updatedPhase) {
+                        // xử lý cập nhật
+                    }
+                    @Override
+                    public void onPhaseDeleted(Phase phaseToDelete) {
+                        // xử lý xóa
+                    }
+                });
                 return true;
             }
             if (id == R.id.action_sort) {
