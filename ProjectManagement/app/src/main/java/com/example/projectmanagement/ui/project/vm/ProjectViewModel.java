@@ -1,5 +1,7 @@
 package com.example.projectmanagement.ui.project.vm;
 
+import android.content.Context;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -13,26 +15,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectViewModel extends ViewModel {
-    private final ProjectRepository projectRepository;
+    private ProjectRepository projectRepository;
     private final MutableLiveData<Project> project = new MutableLiveData<>();
     private final MutableLiveData<List<Phase>> phases = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isInputMode = new MutableLiveData<>(false);
     private int pendingPhase = -1;
 
-    public ProjectViewModel() {
-        projectRepository = ProjectRepository.getInstance();
+    public void init(Context context) {
+        projectRepository = ProjectRepository.getInstance(context);
+        phases.setValue(new ArrayList<>());
     }
 
     public void setProject(Project project) {
         this.project.setValue(project);
-        initPhases();
-    }
-
-    private void initPhases() {
-        Project currentProject = project.getValue();
-        if (currentProject != null) {
-            phases.setValue(currentProject.getPhases());
-        }
+        // TODO: Load phases from API
     }
 
     public LiveData<Project> getProject() {
@@ -45,6 +41,32 @@ public class ProjectViewModel extends ViewModel {
 
     public LiveData<Boolean> getIsInputMode() {
         return isInputMode;
+    }
+
+    public void addPhase(int phaseId) {
+        List<Phase> currentPhases = phases.getValue();
+        if (currentPhases != null) {
+            // TODO: Add phase to API
+            Phase newPhase = new Phase();
+            newPhase.setPhaseID(phaseId);
+            newPhase.setPhaseName("Phase " + phaseId);
+            currentPhases.add(newPhase);
+            phases.setValue(currentPhases);
+        }
+    }
+
+    public void deletePhase(int position) {
+        List<Phase> currentPhases = phases.getValue();
+        if (currentPhases != null && position >= 0 && position < currentPhases.size()) {
+            // TODO: Delete phase from API
+            currentPhases.remove(position);
+            phases.setValue(currentPhases);
+        }
+    }
+
+    public void toggleInputMode() {
+        Boolean current = isInputMode.getValue();
+        isInputMode.setValue(current != null && !current);
     }
 
     public void enterInputMode() {
@@ -62,16 +84,6 @@ public class ProjectViewModel extends ViewModel {
 
     public int getPendingPhase() {
         return pendingPhase;
-    }
-
-    public void addPhase() {
-        List<Phase> currentPhases = phases.getValue();
-        if (currentPhases == null) {
-            currentPhases = new ArrayList<>();
-        }
-        Phase newPhase = new Phase("New Phase", new ArrayList<>());
-        currentPhases.add(newPhase);
-        phases.setValue(currentPhases);
     }
 
     public void addTask(int phasePosition, String taskName) {

@@ -1,20 +1,90 @@
 package com.example.projectmanagement.ui.user;
 
+import android.content.Context;
+import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-
+import com.example.projectmanagement.api.UserService;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.utils.ParseDateUtil;
-
+import com.example.projectmanagement.utils.UserPreferences;
+import org.json.JSONObject;
 import java.util.regex.Pattern;
 
 public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<User> user = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isEditing = new MutableLiveData<>(false);
+    private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    private Context context;
+    private UserPreferences userPreferences;
 
     public LiveData<User> getUser() { return user; }
     public LiveData<Boolean> getIsEditing() { return isEditing; }
+    public LiveData<String> getErrorMessage() { return errorMessage; }
+
+    public void init(Context context) {
+        this.context = context;
+        this.userPreferences = new UserPreferences(context);
+        loadUserProfile();
+    }
+
+    private void loadUserProfile() {
+        // Lấy thông tin user từ UserPreferences
+        User savedUser = userPreferences.getUser();
+        if (savedUser != null) {
+            user.setValue(savedUser);
+            Log.d("ProfileViewModel", "Loaded user from preferences: " + savedUser.getFullname());
+        } else {
+            errorMessage.setValue("Không tìm thấy thông tin người dùng");
+        }
+    }
+
+    public void updateProfile(User updatedUser) {
+        try {
+            JSONObject userData = new JSONObject();
+            userData.put("fullname", updatedUser.getFullname());
+            userData.put("birthday", updatedUser.getBirthday());
+            userData.put("gender", updatedUser.getGender());
+            userData.put("socialLinks", updatedUser.getSocial_links());
+            userData.put("bio", updatedUser.getBio());
+
+            UserService.updateUserProfile(context, userData, response -> {
+                try {
+                    String status = response.optString("status", "error");
+                    if ("success".equals(status)) {
+                        JSONObject data = response.optJSONObject("data");
+                        if (data != null) {
+                            User user = new User();
+                            user.setId(data.optInt("id", -1));
+                            user.setUsername(data.optString("username", ""));
+                            user.setEmail(data.optString("email", ""));
+                            user.setFullname(data.optString("fullname", ""));
+                            user.setBirthday(ParseDateUtil.parseDate(data.optString("birthday", "")));
+                            user.setGender(data.optString("gender", ""));
+                            user.setSocial_links(data.optString("socialLinks", ""));
+                            user.setAvatar(data.optString("avatar", ""));
+                            user.setBio(data.optString("bio", ""));
+                            user.setEmail_verified(data.optBoolean("emailVerified", false));
+                            
+                            // Lưu user mới vào preferences
+                            userPreferences.saveUser(user);
+                            this.user.setValue(user);
+                            errorMessage.setValue(null);
+                        }
+                    } else {
+                        errorMessage.setValue(response.optString("error", "Không thể cập nhật thông tin"));
+                    }
+                } catch (Exception e) {
+                    errorMessage.setValue("Lỗi: " + e.getMessage());
+                }
+            }, error -> {
+                errorMessage.setValue("Lỗi kết nối: " + error.getMessage());
+            });
+        } catch (Exception e) {
+            errorMessage.setValue("Lỗi: " + e.getMessage());
+        }
+    }
 
     // Để lấy trường riêng (nếu cần)
     public String getFullname()  { return user.getValue() != null ? user.getValue().getFullname() : ""; }

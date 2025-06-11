@@ -85,24 +85,24 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
                 tvDeadline.setText("Hạn: "+ParseDateUtil.formatDate(p.getDeadline()));
             } else tvDeadline.setVisibility(View.GONE);
 
-            String bg = p.getBackgroundImg();
-            if (bg.startsWith("http")) {
-                Glide.with(ivBg.getContext()).load(bg).into(ivBg);
-            } else if (bg.startsWith("COLOR;")) {
-                ivBg.setBackgroundColor(Color.parseColor(bg.split(";",2)[1]));
-            } else if (bg.startsWith("GRADIENT;")) {
-                String[] parts = bg.split(";",3);
-                String[] cols  = parts[1].split(",");
-                int c1 = Color.parseColor(cols[0]);
-                int c2 = Color.parseColor(cols[1]);
-                int ori = Integer.parseInt(parts[2]);
-                GradientDrawable gd = new GradientDrawable(
-                        GradientDrawable.Orientation.values()[ori],
-                        new int[]{c1,c2});
-                ivBg.setBackground(gd);
-            } else if (bg.startsWith("RESOURCE;")) {
-                ivBg.setImageResource(Integer.parseInt(bg.split(";",2)[1]));
-            }
+//            String bg = p.getBackgroundImg();
+//            if (bg.startsWith("http")) {
+//                Glide.with(ivBg.getContext()).load(bg).into(ivBg);
+//            } else if (bg.startsWith("COLOR;")) {
+//                ivBg.setBackgroundColor(Color.parseColor(bg.split(";",2)[1]));
+//            } else if (bg.startsWith("GRADIENT;")) {
+//                String[] parts = bg.split(";",3);
+//                String[] cols  = parts[1].split(",");
+//                int c1 = Color.parseColor(cols[0]);
+//                int c2 = Color.parseColor(cols[1]);
+//                int ori = Integer.parseInt(parts[2]);
+//                GradientDrawable gd = new GradientDrawable(
+//                        GradientDrawable.Orientation.values()[ori],
+//                        new int[]{c1,c2});
+//                ivBg.setBackground(gd);
+//            } else if (bg.startsWith("RESOURCE;")) {
+//                ivBg.setImageResource(Integer.parseInt(bg.split(";",2)[1]));
+//            }
         }
     }
 }

@@ -1,11 +1,13 @@
-package com.example.projectmanagement.viewmodel;
+package com.example.projectmanagement.ui.auth.vm;
 
 import android.app.Application;
 import android.util.Patterns;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.data.repository.AuthRepository;
@@ -40,7 +42,7 @@ public class LoginViewModel extends AndroidViewModel {
             @Override
             public void onError(String errorMsg) {
                 userLiveData.setValue(null);
-                loginError.setValue(errorMsg != null ? errorMsg : "Đăng nhập thất bại 345");
+                loginError.setValue(errorMsg != null ? errorMsg : "Đăng nhập thất bại");
                 isLoading.setValue(false);
             }
         });
@@ -98,5 +100,17 @@ public class LoginViewModel extends AndroidViewModel {
         public Integer getUsernameError() { return usernameError; }
         public Integer getPasswordError() { return passwordError; }
         public boolean isDataValid() { return isDataValid; }
+    }
+
+    public boolean isLoggedIn() {
+        return authRepository.isLoggedIn();
+    }
+
+    public User getCurrentUser() {
+        return authRepository.getCurrentUser();
+    }
+
+    public void logout() {
+        authRepository.logout();
     }
 }

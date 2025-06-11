@@ -33,14 +33,14 @@ public final class ParseDateUtil {
         return fmts;
     });
 
-    // Formatter for outputting date-only strings (dd/MM/yyyy)
+    // Formatter for outputting date-only strings (yyyy-MM-dd)
     private static final ThreadLocal<SimpleDateFormat> DATE_ONLY_FORMATTER = ThreadLocal.withInitial(() ->
-            new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     );
 
-    // Formatter for outputting date-time strings (dd/MM/yyyy HH:mm)
+    // Formatter for outputting date-time strings (yyyy-MM-dd'T'HH:mm:ss)
     private static final ThreadLocal<SimpleDateFormat> DATETIME_FORMATTER = ThreadLocal.withInitial(() ->
-            new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
     );
 
     private ParseDateUtil() { /* Utility class */ }
@@ -67,24 +67,17 @@ public final class ParseDateUtil {
     }
 
     /**
-     * Formats a Date into a string. If the time component is zero (00:00),
-     * returns "dd/MM/yyyy"; otherwise returns "dd/MM/yyyy HH:mm".
+     * Formats a Date into a string in ISO 8601 format (yyyy-MM-dd'T'HH:mm:ss).
+     * If time component is zero, it will be set to 00:00:00.
      * Returns empty string if date is null.
      */
     public static String formatDate(Date date) {
         if (date == null) {
             return "";
         }
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        int hour = cal.get(Calendar.HOUR_OF_DAY);
-        int minute = cal.get(Calendar.MINUTE);
-        if (hour == 0 && minute == 0) {
-            return DATE_ONLY_FORMATTER.get().format(date);
-        } else {
-            return DATETIME_FORMATTER.get().format(date);
-        }
+        return DATETIME_FORMATTER.get().format(date);
     }
+
     /**
      * Parses the input string into a Calendar using multiple date patterns.
      * Returns null if parsing fails.

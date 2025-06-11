@@ -4,16 +4,18 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.projectmanagement.ui.auth.vm.RegisterViewModel;
 import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.utils.LoadingDialog;
-import com.example.projectmanagement.viewmodel.RegisterViewModel;
+
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -48,6 +50,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         // Khởi tạo ViewModel
         registerViewModel = new ViewModelProvider(this).get(RegisterViewModel.class);
+        registerViewModel.init(this);
         loadingDialog = new LoadingDialog(this);
 
         // Quan sát trạng thái form đăng ký để hiển thị lỗi (cho mỗi trường)
@@ -137,9 +140,15 @@ public class RegisterActivity extends AppCompatActivity {
                     finish();
                 } else {
                     // Đăng ký thất bại
-                    Toast.makeText(getApplicationContext(), "Đăng ký thất bại, vui lòng kiểm tra lại thông tin", Toast.LENGTH_SHORT).show();
+                    String errorMessage = registerViewModel.getErrorMessage();
+                    if (errorMessage != null && !errorMessage.isEmpty()) {
+                        Toast.makeText(getApplicationContext(), "Đăng ký thất bại: " + errorMessage, Toast.LENGTH_LONG).show();
+                        Log.d(".........>>>>>>>>>>>", errorMessage);
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Đăng ký thất bại, vui lòng kiểm tra lại thông tin", Toast.LENGTH_LONG).show();
+                    }
                 }
-            },3000);
+            }, 3000);
         });
     }
 }

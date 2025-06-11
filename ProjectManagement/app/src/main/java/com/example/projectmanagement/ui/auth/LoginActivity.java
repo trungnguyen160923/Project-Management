@@ -13,10 +13,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.projectmanagement.ui.auth.vm.LoginViewModel;
 import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.utils.LoadingDialog;
-import com.example.projectmanagement.viewmodel.LoginViewModel;
 import com.google.android.material.textfield.TextInputLayout;
 
 public class LoginActivity extends AppCompatActivity {
@@ -43,11 +43,16 @@ public class LoginActivity extends AppCompatActivity {
         email_login_til = findViewById(R.id.email_login_til);
         password_login_til = findViewById(R.id.password_login_til);
 
-
-
-        // Khởi tạo ViewModel (nếu cần factory, thêm vào tham số)
+        // Khởi tạo ViewModel
         loginViewModel = new ViewModelProvider(this).get(LoginViewModel.class);
         loadingDialog = new LoadingDialog(this);
+
+        // Kiểm tra trạng thái đăng nhập sau khi đã khởi tạo ViewModel
+        if (loginViewModel.isLoggedIn()) {
+            startActivity(new Intent(LoginActivity.this, HomeActivity.class));
+            finish();
+            return;
+        }
 
         // Quan sát trạng thái form đăng nhập để hiện thị lỗi cho từng ô
         loginViewModel.getLoginFormState().observe(this, loginFormState -> {
@@ -56,7 +61,6 @@ public class LoginActivity extends AppCompatActivity {
             }
             // Hiển thị lỗi cho ô email nếu có
             if (loginFormState.getUsernameError() != null) {
-//                etEmail.setError(getString(loginFormState.getUsernameError()));
                 email_login_til.setError(getString(loginFormState.getUsernameError()));
             } else {
                 email_login_til.setError(null);
@@ -71,11 +75,10 @@ public class LoginActivity extends AppCompatActivity {
             btnLogin.setEnabled(loginFormState.isDataValid());
         });
 
-        // Quan sát kết quả đăng nhập (nếu đăng nhập thành công, trả về User, nếu thất bại trả về null hoặc error code)
+        // Quan sát kết quả đăng nhập
         loginViewModel.getUserLiveData().observe(this, user -> {
             // Ẩn loading dialog khi có kết quả đăng nhập
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                // Đoạn code bạn muốn thực thi sau 3 giây
                 loadingDialog.dismiss();
                 if (user != null) {
                     // Đăng nhập thành công: hiển thị thông báo thành công và chuyển màn hình
@@ -84,27 +87,21 @@ public class LoginActivity extends AppCompatActivity {
                     finish();
                 }
             }, 3000);
-
-
         });
 
         loginViewModel.getLoginError().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                // Bạn có thể delay hoặc dismiss loadingDialog ở đây nếu muốn
                 loadingDialog.dismiss();
                 Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-                Log.d("Looix >>>>>>>>>>>>>", message);
+                Log.d("LoginError", message);
             }
         });
 
-        // Quan sát trạng thái loading nếu cần hiển thị/hide ProgressBar
+        // Quan sát trạng thái loading
         loginViewModel.getIsLoading().observe(this, isLoading -> {
             if (isLoading) {
-                // Nếu sử dụng ProgressBar:
-                // progressBar.setVisibility(View.VISIBLE);
                 btnLogin.setEnabled(false);
             } else {
-                // progressBar.setVisibility(View.GONE);
                 btnLogin.setEnabled(true);
             }
         });

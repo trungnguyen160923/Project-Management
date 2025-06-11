@@ -16,9 +16,22 @@ public class Project implements Parcelable {
     private Date deadline;
     private String status;
     private Date createAt;
+
+    private Date startDate;
     private String accessLevel;
     private String inviteLinkToken;
     private String backgroundImg;
+
+    private Date updateAt;
+
+    public Date getUpdateAt() {
+        return updateAt;
+    }
+
+    public void setUpdateAt(Date updateAt) {
+        this.updateAt = updateAt;
+    }
+
     private List<Phase> phases;
 
     public Project() { }
@@ -51,6 +64,28 @@ public class Project implements Parcelable {
         this.inviteLinkToken = inviteLinkToken;
         this.backgroundImg = backgroundImg;
         this.phases = phases != null ? phases : new ArrayList<>();
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public Project(int projectID, String projectName, String projectDescription, Date deadline, String status, Date createAt, String accessLevel, Date startDate, String inviteLinkToken, String backgroundImg, List<Phase> phases) {
+        this.projectID = projectID;
+        this.projectName = projectName;
+        this.projectDescription = projectDescription;
+        this.deadline = deadline;
+        this.status = status;
+        this.createAt = createAt;
+        this.accessLevel = accessLevel;
+        this.startDate = startDate;
+        this.inviteLinkToken = inviteLinkToken;
+        this.backgroundImg = backgroundImg;
+        this.phases = phases;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
     }
 
     protected Project(Parcel in) {

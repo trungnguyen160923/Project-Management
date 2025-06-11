@@ -115,7 +115,7 @@ public class ProjectActivity extends AppCompatActivity implements
 
         toolbar.setOnMenuItemClickListener(this::handleToolbarItem);
     }
-    
+
 
     private boolean handleToolbarItem(MenuItem item) {
         int id = item.getItemId();
@@ -153,7 +153,7 @@ public class ProjectActivity extends AppCompatActivity implements
         searchEditText.setBackgroundColor(Color.TRANSPARENT);
         searchEditText.setTextColor(Color.WHITE);
         searchEditText.setHintTextColor(Color.WHITE);
-        
+
         // Thiết lập kích thước và vị trí
         Toolbar.LayoutParams params = new Toolbar.LayoutParams(
                 Toolbar.LayoutParams.WRAP_CONTENT,
@@ -213,16 +213,16 @@ public class ProjectActivity extends AppCompatActivity implements
     private void setupBoard() {
         rvBoard.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         initData();
-        
+
         // Debug log
         android.util.Log.d("ProjectActivity", "setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
-        
+
         phaseAdapter = new PhaseAdapter(phases, this, this, this, this, rvBoard);
         rvBoard.setAdapter(phaseAdapter);
-        
+
         // Force adapter to refresh
         phaseAdapter.notifyDataSetChanged();
-        
+
         // Debug log
         android.util.Log.d("ProjectActivity", "setupBoard: Adapter created and set");
 
@@ -311,7 +311,7 @@ public class ProjectActivity extends AppCompatActivity implements
             );
             phases.add(p);
         }
-        
+
         // Debug log
         android.util.Log.d("ProjectActivity", "initData: Created " + phases.size() + " phases");
         for (Phase phase : phases) {

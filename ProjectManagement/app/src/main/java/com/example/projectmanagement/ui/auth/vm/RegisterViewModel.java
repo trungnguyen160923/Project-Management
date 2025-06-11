@@ -1,5 +1,6 @@
-package com.example.projectmanagement.viewmodel;
+package com.example.projectmanagement.ui.auth.vm;
 
+import android.content.Context;
 import android.util.Patterns;
 
 import androidx.lifecycle.LiveData;
@@ -9,6 +10,7 @@ import androidx.lifecycle.ViewModel;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.data.repository.AuthRepository;
+import com.example.projectmanagement.viewmodel.UserView;
 
 public class RegisterViewModel extends ViewModel {
 
@@ -16,12 +18,18 @@ public class RegisterViewModel extends ViewModel {
     private MutableLiveData<UserView> userLiveData;
     private MutableLiveData<Boolean> isLoading;
     private MutableLiveData<RegisterFormState> registerFormState = new MutableLiveData<>();
+    private String errorMessage;
 
     public RegisterViewModel() {
-//        authRepository = AuthRepository.getInstance();
-        authRepository = null;
         userLiveData = new MutableLiveData<>();
         isLoading = new MutableLiveData<>(false);
+    }
+
+    // Thêm phương thức init để cập nhật context
+    public void init(Context context) {
+        if (authRepository == null) {
+            authRepository = AuthRepository.getInstance(context);
+        }
     }
 
     public LiveData<RegisterFormState> getRegisterFormState() {
@@ -36,21 +44,50 @@ public class RegisterViewModel extends ViewModel {
         return isLoading;
     }
 
+    // Thêm getter cho errorMessage
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
     /**
      * Gọi hàm đăng ký thông qua AuthRepository.
      * Nếu đăng ký thành công, trả về User thông qua LiveData dưới dạng RegisteredUserView.
      * Nếu thất bại, trả về null (hoặc bạn có thể xử lý error theo cách khác).
      */
     public void register(String email, String fullname, String password, String confirmPassword) {
+        if (authRepository == null) {
+            errorMessage = "Không thể kết nối đến server";
+            userLiveData.setValue(null);
+            isLoading.setValue(false);
+            return;
+        }
+
         isLoading.setValue(true);
-//        authRepository.register(email, fullname, password).observeForever(user -> {
-//            if (user != null) {
-//                userLiveData.setValue(new UserView(user.getFullname()));
-//            } else {
-//                userLiveData.setValue(null);
-//            }
-//            isLoading.setValue(false);
-//        });
+        authRepository.register(
+            email, // username sẽ dùng email
+            email,
+            password,
+            fullname,
+            null, // birthday
+            "Other", // gender mặc định
+            null, // socialLinks
+            null, // bio
+            new AuthRepository.AuthCallback() {
+                @Override
+                public void onSuccess(User user) {
+                    errorMessage = null;
+                    userLiveData.setValue(new UserView(user.getFullname()));
+                    isLoading.setValue(false);
+                }
+
+                @Override
+                public void onError(String errorMsg) {
+                    errorMessage = errorMsg;
+                    userLiveData.setValue(null);
+                    isLoading.setValue(false);
+                }
+            }
+        );
     }
 
     /**

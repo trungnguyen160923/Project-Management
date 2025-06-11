@@ -31,11 +31,10 @@
         android:gravity="center_vertical">
 
         <!-- ImageView được hiển thị dưới dạng hình tròn -->
-        <ImageView
-            android:id="@+id/imageView"
+        <com.example.projectmanagement.viewmodel.AvatarView
+            android:id="@+id/avatar_view_nav"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@mipmap/ic_launcher_round"
             android:contentDescription="@string/nav_header_desc"
             android:scaleType="centerCrop"
             android:clipToOutline="true"
@@ -43,6 +42,7 @@
 
         <!-- TextView hiển thị tiêu đề -->
         <TextView
+            android:id="@+id/main_tv_nav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="8dp"
@@ -51,7 +51,7 @@
 
         <!-- TextView hiển thị phụ đề -->
         <TextView
-            android:id="@+id/textView"
+            android:id="@+id/tv_email_nav"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/nav_header_subtitle" />

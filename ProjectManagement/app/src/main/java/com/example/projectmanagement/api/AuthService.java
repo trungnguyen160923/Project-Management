@@ -17,70 +17,122 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AuthService {
-    static String apiPrefix = "http://10.0.2.2:8080/api";
+    private static final String TAG = "AuthService";
+    private static final String API_PREFIX = "http://10.0.2.2:8080/api";
 
     // Đăng nhập thường
     public static void login(Context context, String email, String password,
                              Response.Listener<JSONObject> listener,
                              Response.ErrorListener errorListener) {
-
-        String url = apiPrefix + "/auth/login";
-        JSONObject jsonBody = new JSONObject();
         try {
+            String url = API_PREFIX + "/auth/login";
+            JSONObject jsonBody = new JSONObject();
             jsonBody.put("usernameOrEmail", email);
             jsonBody.put("password", password);
+
+            Log.d(TAG, "Login request: " + jsonBody.toString());
+
+            JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, jsonBody, 
+                response -> {
+                    Log.d(TAG, "Login response: " + response.toString());
+                    listener.onResponse(response);
+                }, 
+                error -> {
+                    Log.e(TAG, "Login error: " + error.getMessage());
+                    errorListener.onErrorResponse(error);
+                }) {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+
+            ApiClient.getInstance(context).getRequestQueue().add(jsonRequest);
         } catch (JSONException e) {
-            e.printStackTrace();
-            errorListener.onErrorResponse(new VolleyError("JSON tạo body bị lỗi"));
-            return;
+            Log.e(TAG, "Error creating login request", e);
+            errorListener.onErrorResponse(new VolleyError("Lỗi tạo request: " + e.getMessage()));
         }
-
-        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, jsonBody, listener, errorListener) {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/json");
-                return headers;
-            }
-        };
-
-        ApiClient.getInstance(context).getRequestQueue().add(jsonRequest);
     }
 
     // Đăng ký tài khoản mới
-    public static void register(Context context, String name, String email, String password,
-                                Response.Listener<String> listener,
-                                Response.ErrorListener errorListener) {
-        String url = "https://api.example.com/auth/register";
-        StringRequest postRequest = new StringRequest(Request.Method.POST, url, listener, errorListener) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("name", name);
-                params.put("email", email);
-                params.put("password", password);
-                return params;
-            }
-        };
-        ApiClient.getInstance(context).getRequestQueue().add(postRequest);
+    public static void register(Context context, String username, String email, String password,
+                              String fullname, String birthday, String gender, 
+                              String socialLinks, String bio,
+                              Response.Listener<JSONObject> listener,
+                              Response.ErrorListener errorListener) {
+        try {
+            String url = API_PREFIX + "/auth/signup";
+            JSONObject jsonBody = new JSONObject();
+            jsonBody.put("username", username);
+            jsonBody.put("email", email);
+            jsonBody.put("password", password);
+            jsonBody.put("fullname", fullname);
+            jsonBody.put("birthday", birthday);
+            jsonBody.put("gender", gender);
+            jsonBody.put("socialLinks", socialLinks);
+            jsonBody.put("bio", bio);
+
+            Log.d(TAG, "Register request: " + jsonBody.toString());
+
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, jsonBody,
+                response -> {
+                    Log.d(TAG, "Register response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Register error: " + error.getMessage());
+                    errorListener.onErrorResponse(error);
+                }) {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+
+            ApiClient.getInstance(context).getRequestQueue().add(request);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating register request", e);
+            errorListener.onErrorResponse(new VolleyError("Lỗi tạo request: " + e.getMessage()));
+        }
     }
 
     // Đăng nhập bằng Google (token từ Google Sign-In)
     public static void loginWithGoogle(Context context, String googleIdToken,
                                        Response.Listener<JSONObject> listener,
                                        Response.ErrorListener errorListener) {
-        String url = "https://api.example.com/auth/google-login";
+        String url = API_PREFIX + "/auth/google-login";
 
-        // Nếu backend nhận dạng body là JSON, dùng JsonObjectRequest:
-        JSONObject body = new JSONObject();
         try {
+            JSONObject body = new JSONObject();
             body.put("id_token", googleIdToken);
+
+            Log.d(TAG, "Google login request: " + body.toString());
+
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, body,
+                response -> {
+                    Log.d(TAG, "Google login response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Google login error: " + error.getMessage());
+                    errorListener.onErrorResponse(error);
+                }) {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+
+            ApiClient.getInstance(context).getRequestQueue().add(request);
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error creating Google login request", e);
+            errorListener.onErrorResponse(new VolleyError("Lỗi tạo request: " + e.getMessage()));
         }
-
-        JsonObjectRequest postRequest = new JsonObjectRequest(Request.Method.POST, url, body, listener, errorListener);
-
-        ApiClient.getInstance(context).getRequestQueue().add(postRequest);
     }
 }

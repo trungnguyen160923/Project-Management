@@ -46,6 +46,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
 
         // Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        viewModel.init(requireContext());
 
         // Khởi tạo Adapter và gán sự kiện click
         adapter = new ProjectAdapter(this);
@@ -69,7 +70,6 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
     public void onItemClick(Project project) {
         // Khi click vào 1 project, chuyển sang màn hình chi tiết và truyền dữ liệu
         Intent intent = new Intent(requireContext(), ProjectActivity.class);
-//        intent.putExtra("project",project);
         startActivity(intent);
         // dung project holder:
         ProjectHolder.set(project);

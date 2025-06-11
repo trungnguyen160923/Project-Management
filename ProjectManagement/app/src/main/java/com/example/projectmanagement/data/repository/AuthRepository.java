@@ -10,10 +10,13 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.example.projectmanagement.api.AuthService;
 import com.example.projectmanagement.data.model.User;
+import com.example.projectmanagement.utils.UserPreferences;
 
 import org.json.JSONObject;
 
 public class AuthRepository {
+
+    private static final String TAG = "AuthRepository";
 
     public interface AuthCallback {
         void onSuccess(User user);
@@ -29,9 +32,11 @@ public class AuthRepository {
     }
 
     private final Context context;
+    private final UserPreferences userPreferences;
 
     public AuthRepository(Context context) {
         this.context = context.getApplicationContext();
+        this.userPreferences = new UserPreferences(context);
     }
 
 
@@ -45,34 +50,57 @@ public class AuthRepository {
     public void login(String email, String password, AuthCallback callback) {
         AuthService.login(context, email, password, response -> {
             try {
-                Log.d("AuthRepository", "Response: " + response); // Đã là JSONObject
+                Log.d(TAG, "Response: " + response);
 
                 String status = response.optString("status", "error");
 
                 if ("success".equals(status)) {
-                    // Đăng nhập thành công, lấy thông tin user từ "data"
                     JSONObject data = response.optJSONObject("data");
                     if (data != null) {
-                        User user = new User();
-                        user.setId(data.optInt("id", -1));
-                        user.setUsername(data.optString("name", "")); // API trả về "name"
-                        user.setEmail(data.optString("email", ""));
-                        callback.onSuccess(user);
+                        // Parse user data
+                        JSONObject userData = data.optJSONObject("user");
+                        if (userData != null) {
+                            User user = new User();
+                            user.setId(userData.optInt("id", -1));
+                            user.setUsername(userData.optString("username", ""));
+                            user.setEmail(userData.optString("email", ""));
+                            user.setFullname(userData.optString("fullname", ""));
+                            user.setGender(userData.optString("gender", ""));
+                            user.setSocial_links(userData.optString("socialLinks", ""));
+                            user.setAvatar(userData.optString("avatar", ""));
+                            user.setBio(userData.optString("bio", ""));
+                            user.setEmail_verified(userData.optBoolean("emailVerified", false));
+
+                            // Lưu JWT token
+                            String jwtToken = data.optString("jwt", null);
+                            if (jwtToken != null && !jwtToken.isEmpty()) {
+                                userPreferences.saveJwtToken(jwtToken);
+                                Log.d(TAG, "JWT token saved: " + jwtToken);
+                            } else {
+                                Log.w(TAG, "No JWT token in response");
+                            }
+
+                            // Lưu thông tin user và trạng thái đăng nhập
+                            userPreferences.saveUser(user);
+                            userPreferences.setLoggedIn(true);
+
+                            callback.onSuccess(user);
+                        } else {
+                            callback.onError("Dữ liệu user không hợp lệ");
+                        }
                     } else {
                         callback.onError("Dữ liệu trả về không hợp lệ (thiếu data)");
                     }
                 } else {
-                    // Lấy message lỗi từ "error" hoặc "message"
                     String errorMsg = response.optString("error",
                             response.optString("message", "Đăng nhập thất bại!"));
                     callback.onError(errorMsg);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error parsing login response", e);
                 callback.onError("Lỗi phân tích dữ liệu: " + e.getMessage());
             }
         }, error -> {
-            // Lấy thông tin lỗi từ Volley
             String errorMessage = "Lỗi không xác định";
             if (error.networkResponse != null && error.networkResponse.data != null) {
                 try {
@@ -86,22 +114,94 @@ public class AuthRepository {
         });
     }
 
+    // Đăng xuất
+    public void logout() {
+        userPreferences.clearAll();
+    }
+
+    // Kiểm tra trạng thái đăng nhập
+    public boolean isLoggedIn() {
+        return userPreferences.isLoggedIn();
+    }
+
+    // Lấy thông tin user hiện tại
+    public User getCurrentUser() {
+        return userPreferences.getUser();
+    }
+
+    // Lấy JWT token hiện tại
+    public String getCurrentToken() {
+        return userPreferences.getJwtToken();
+    }
 
     // Đăng ký
-    public void register(String name, String email, String password, AuthCallback callback) {
-        AuthService.register(context, name, email, password, response -> {
+    public void register(String username, String email, String password, String fullname, 
+                        String birthday, String gender, String socialLinks, String bio,
+                        AuthCallback callback) {
+        AuthService.register(context, username, email, password, fullname, 
+                           birthday, gender, socialLinks, bio, response -> {
             try {
-                JSONObject obj = new JSONObject(response);
-                User user = new User();
-                user.setId(obj.optInt("id"));
-                user.setUsername(obj.optString("username"));
-                user.setEmail(obj.optString("email"));
-                callback.onSuccess(user);
+                Log.d(TAG, "Register Response: " + response);
+
+                String status = response.optString("status", "error");
+
+                if ("success".equals(status)) {
+                    JSONObject data = response.optJSONObject("data");
+                    if (data != null) {
+                        // Parse user data
+                        JSONObject userData = data.optJSONObject("user");
+                        if (userData != null) {
+                            User user = new User();
+                            user.setId(userData.optInt("id", -1));
+                            user.setUsername(userData.optString("username", ""));
+                            user.setEmail(userData.optString("email", ""));
+                            user.setFullname(userData.optString("fullname", ""));
+                            user.setGender(userData.optString("gender", ""));
+                            user.setSocial_links(userData.optString("socialLinks", ""));
+                            user.setAvatar(userData.optString("avatar", ""));
+                            user.setBio(userData.optString("bio", ""));
+                            user.setEmail_verified(userData.optBoolean("emailVerified", false));
+
+                            // Lưu JWT token
+                            String jwtToken = data.optString("jwt", null);
+                            if (jwtToken != null && !jwtToken.isEmpty()) {
+                                userPreferences.saveJwtToken(jwtToken);
+                                Log.d(TAG, "JWT token saved: " + jwtToken);
+                            } else {
+                                Log.w(TAG, "No JWT token in response");
+                            }
+
+                            // Lưu thông tin user và trạng thái đăng nhập
+                            userPreferences.saveUser(user);
+                            userPreferences.setLoggedIn(true);
+
+                            callback.onSuccess(user);
+                        } else {
+                            callback.onError("Dữ liệu user không hợp lệ");
+                        }
+                    } else {
+                        callback.onError("Dữ liệu trả về không hợp lệ (thiếu data)");
+                    }
+                } else {
+                    String errorMsg = response.optString("error",
+                            response.optString("message", "Đăng ký thất bại!"));
+                    callback.onError(errorMsg);
+                }
             } catch (Exception e) {
-                callback.onError("Lỗi khi phân tích dữ liệu");
+                Log.e(TAG, "Error parsing register response", e);
+                callback.onError("Lỗi phân tích dữ liệu: " + e.getMessage());
             }
         }, error -> {
-            callback.onError("Đăng ký thất bại");
+            String errorMessage = "Lỗi không xác định";
+            if (error.networkResponse != null && error.networkResponse.data != null) {
+                try {
+                    String errorBody = new String(error.networkResponse.data, "UTF-8");
+                    errorMessage = "Lỗi: " + errorBody;
+                } catch (Exception ignored) {}
+            } else if (error.getMessage() != null) {
+                errorMessage = error.getMessage();
+            }
+            callback.onError(errorMessage);
         });
     }
 
@@ -117,6 +217,17 @@ public class AuthRepository {
                 user.setId(response.optInt("id"));
                 user.setUsername(response.optString("username"));
                 user.setEmail(response.optString("email"));
+
+                // Lưu token nếu có
+                String token = response.optString("token", null);
+                if (token != null) {
+                    userPreferences.saveJwtToken(token);
+                }
+
+                // Lưu thông tin user và trạng thái đăng nhập
+                userPreferences.saveUser(user);
+                userPreferences.setLoggedIn(true);
+
                 callback.onSuccess(user);
             } catch (Exception e) {
                 callback.onError("Lỗi khi phân tích dữ liệu");

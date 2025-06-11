@@ -34,8 +34,7 @@ public class ProfileUserActivity extends AppCompatActivity {
         binding = ActivityProfileUserBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         vm = new ViewModelProvider(this).get(ProfileViewModel.class);
-
-        vm.initMockData();
+        vm.init(this); // Khởi tạo với context
 
         // Observe user LiveData để luôn sync UI
         vm.getUser().observe(this, user -> {
@@ -56,12 +55,18 @@ public class ProfileUserActivity extends AppCompatActivity {
             }
         });
 
-        // Back button (dùng finish thay vì onBackPressed)
-        binding.toolbarProfileUser.setNavigationOnClickListener(v -> {
-            Log.d("ProfileUserActivitykkk", "Navigation icon clicked");
-            finish();
+        // Observe error message
+        vm.getErrorMessage().observe(this, error -> {
+            if (error != null && !error.isEmpty()) {
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+            }
         });
 
+        // Back button (dùng finish thay vì onBackPressed)
+        binding.toolbarProfileUser.setNavigationOnClickListener(v -> {
+            Log.d("ProfileUserActivity", "Navigation icon clicked");
+            finish();
+        });
 
         // Spinner giới tính
         ArrayAdapter<CharSequence> genderAdapter = ArrayAdapter.createFromResource(
@@ -150,10 +155,9 @@ public class ProfileUserActivity extends AppCompatActivity {
                     user.setGender(binding.spinnerGender.getSelectedItem().toString());
                     user.setSocial_links(social);
                     user.setBio(binding.edtBio.getText().toString());
-                    vm.setUser(user); // cập nhật lại LiveData
+                    vm.updateProfile(user); // Gọi API cập nhật
                 }
                 setEditMode(false);
-                Toast.makeText(this, "Đã lưu thông tin", Toast.LENGTH_SHORT).show();
             }
         });
 

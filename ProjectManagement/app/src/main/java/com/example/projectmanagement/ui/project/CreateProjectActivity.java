@@ -1,16 +1,18 @@
 package com.example.projectmanagement.ui.project;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.View;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -18,9 +20,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.databinding.ActivityCreateProjectBinding;
 import com.example.projectmanagement.ui.main.HomeActivity;
+import com.example.projectmanagement.ui.project.vm.CreateProjectViewModel;
 import com.example.projectmanagement.utils.LoadingDialog;
 import com.example.projectmanagement.utils.ParseDateUtil;
-import com.example.projectmanagement.ui.project.vm.CreateProjectViewModel;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
@@ -40,60 +42,66 @@ public class CreateProjectActivity extends AppCompatActivity {
     private long selectedDateMillis;
     private int selectedHour, selectedMinute;
     private String bgImg = "COLOR;#0C90F1";
-    private boolean nameFieldTouched = false;
+    private boolean nameTouched = false;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityCreateProjectBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         loadingDialog = new LoadingDialog(this);
-        setUpBackBtn();
         setupViewModel();
-        setupBackgroundPicker();
-        setupDateTimePickers();
+        setupBackButton();
+        setupUI();
         setupCreateFlow();
-    }
-
-    private void setUpBackBtn(){
-        binding.btnCloseCreateProject.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
     }
 
     private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(CreateProjectViewModel.class);
+        viewModel.init(this);
 
-        viewModel.getCreateFormState().observe(this, state -> {
+        viewModel.getFormState().observe(this, state -> {
             binding.createProjectBtn.setEnabled(state.isValid());
-            if (state.getNameErrorRes() != null) {
-                binding.projectNameTIL.setError(getString(state.getNameErrorRes()));
-            } else {
-                binding.projectNameTIL.setError(null);
-            }
+            binding.projectNameTIL.setError(
+                    state.getNameErrorRes() != null ?
+                            getString(state.getNameErrorRes()) : null
+            );
         });
 
-        binding.projectNameTiet.addTextChangedListener(new SimpleWatcher() {
-            @Override public void afterTextChanged(Editable s) {
-
-                nameFieldTouched = true;
-                viewModel.dataChanged(s.toString());
-            }
+        viewModel.getIsLoading().observe(this, loading -> {
+            if (loading) loadingDialog.show(); else loadingDialog.dismiss();
         });
-        binding.projectNameTiet.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus && !nameFieldTouched) {
-                // Lần đầu họ chưa gõ gì mà chuyển đi: vẫn bật validate
-                viewModel.dataChanged(binding.projectNameTiet.getText().toString());
-                nameFieldTouched = true;
+
+        viewModel.getServerMessage().observe(this, msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void setupBackgroundPicker() {
+    private void setupBackButton() {
+        binding.btnCloseCreateProject.setOnClickListener(v -> finish());
+    }
+
+    private void setupUI() {
+        // Name validation
+        binding.projectNameTiet.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s,int st,int b,int c) {}
+            @Override public void onTextChanged(CharSequence s,int st,int b,int c) {}
+            @Override public void afterTextChanged(Editable s) {
+                nameTouched = true;
+                viewModel.dataChanged(s.toString());
+            }
+        });
+        binding.projectNameTiet.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus && !nameTouched) {
+                viewModel.dataChanged(binding.projectNameTiet.getText().toString());
+                nameTouched = true;
+            }
+        });
+
+        // Background picker
         bgLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
@@ -101,9 +109,52 @@ public class CreateProjectActivity extends AppCompatActivity {
                     }
                 }
         );
-
         binding.buttonImageCustom.compositeButton.setOnClickListener(v -> {
             bgLauncher.launch(new Intent(this, BackGroundProjectActivity.class));
+        });
+
+        // Date & Time pickers
+        selectedDateMillis = MaterialDatePicker.todayInUtcMilliseconds();
+        Calendar now = Calendar.getInstance();
+        selectedHour = now.get(Calendar.HOUR_OF_DAY);
+        selectedMinute = now.get(Calendar.MINUTE);
+
+        binding.projectDateTietDay.setFocusable(false);
+        binding.projectDateTietDay.setClickable(true);
+        binding.projectDateTietHour.setFocusable(false);
+        binding.projectDateTietHour.setClickable(true);
+
+        binding.projectDateTietDay.setOnClickListener(v -> openDatePicker());
+        binding.projectDateTietHour.setOnClickListener(v -> openTimePicker());
+    }
+
+    private void openDatePicker() {
+        MaterialDatePicker<Long> picker = MaterialDatePicker
+                .Builder.datePicker()
+                .setSelection(selectedDateMillis)
+                .build();
+        picker.show(getSupportFragmentManager(), "DATE");
+        picker.addOnPositiveButtonClickListener(sel -> {
+            selectedDateMillis = sel;
+            binding.projectDateTietDay.setText(
+                    android.text.format.DateFormat.format("yyyy-MM-dd", sel)
+            );
+        });
+    }
+
+    private void openTimePicker() {
+        MaterialTimePicker tp = new MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setHour(selectedHour)
+                .setMinute(selectedMinute)
+                .build();
+        tp.show(getSupportFragmentManager(), "TIME");
+        tp.addOnPositiveButtonClickListener(view -> {
+            selectedHour = tp.getHour();
+            selectedMinute = tp.getMinute();
+            binding.projectDateTietHour.setText(
+                    String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute)
+            );
         });
     }
 
@@ -127,8 +178,9 @@ public class CreateProjectActivity extends AppCompatActivity {
                 String hex2 = String.format("#%06X", 0xFFFFFF & c2);
                 bgImg = "GRADIENT;" + hex1 + "," + hex2 + ";" + ori;
             } else {
-                shape.setColor(ContextCompat.getColor(this, startRes));
-                String hex = String.format("#%06X", 0xFFFFFF & ContextCompat.getColor(this, startRes));
+                int c = ContextCompat.getColor(this, startRes);
+                shape.setColor(c);
+                String hex = String.format("#%06X", 0xFFFFFF & c);
                 bgImg = "COLOR;" + hex;
             }
             binding.buttonImageCustom.buttonIcon.setImageDrawable(shape);
@@ -143,96 +195,55 @@ public class CreateProjectActivity extends AppCompatActivity {
             }
             Uri uri = data.getParcelableExtra(EXTRA_IMG_URI);
             if (uri != null) {
-                com.bumptech.glide.Glide.with(this).load(uri).into(binding.buttonImageCustom.buttonIcon);
+                com.bumptech.glide.Glide.with(this)
+                        .load(uri)
+                        .into(binding.buttonImageCustom.buttonIcon);
                 bgImg = "URI;" + uri.toString();
             }
         }
     }
 
-    private void setupDateTimePickers() {
-        selectedDateMillis = MaterialDatePicker.todayInUtcMilliseconds();
-        Calendar now = Calendar.getInstance();
-        selectedHour = now.get(Calendar.HOUR_OF_DAY);
-        selectedMinute = now.get(Calendar.MINUTE);
-
-        binding.projectDateTietDay.setFocusable(false);
-        binding.projectDateTietDay.setClickable(true);
-        binding.projectDateTietHour.setFocusable(false);
-        binding.projectDateTietHour.setClickable(true);
-
-        binding.projectDateTietDay.setOnClickListener(v -> openDatePicker());
-        binding.projectDateTietHour.setOnClickListener(v -> openTimePicker());
-    }
-
-    private void openDatePicker() {
-        MaterialDatePicker<Long> picker = MaterialDatePicker
-                .Builder.datePicker()
-                .setTitleText("Chọn ngày")
-                .setSelection(selectedDateMillis)
-                .build();
-        picker.show(getSupportFragmentManager(), "DATE");
-        picker.addOnPositiveButtonClickListener(sel -> {
-            selectedDateMillis = sel;
-            binding.projectDateTietDay.setText(
-                    android.text.format.DateFormat.format("yyyy-MM-dd", sel)
-            );
-        });
-    }
-
-    private void openTimePicker() {
-        MaterialTimePicker tp = new MaterialTimePicker.Builder()
-                .setTimeFormat(TimeFormat.CLOCK_24H)
-                .setTitleText("Chọn giờ")
-                .setHour(selectedHour)
-                .setMinute(selectedMinute)
-                .build();
-        tp.show(getSupportFragmentManager(), "TIME");
-        tp.addOnPositiveButtonClickListener(view -> {
-            selectedHour = tp.getHour();
-            selectedMinute = tp.getMinute();
-            binding.projectDateTietHour.setText(
-                    String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute)
-            );
-        });
-    }
-
     private void setupCreateFlow() {
         binding.createProjectBtn.setOnClickListener(v -> {
+            // Hide keyboard
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(binding.getRoot().getWindowToken(), 0);
+            }
+
             Project p = new Project();
             p.setProjectName(binding.projectNameTiet.getText().toString().trim());
+            p.setProjectDescription(binding.projectDescTiet.getText().toString().trim());
+            p.setStartDate(new Date());
 
-            String desc = binding.projectDescTiet.getText().toString().trim();
-            if (!desc.isEmpty()) p.setProjectDescription(desc);
-
-            String dateStr = binding.projectDateTietDay.getText().toString().trim();
-            String timeStr = binding.projectDateTietHour.getText().toString().trim();
-            if (dateStr.isEmpty() && !timeStr.isEmpty()) {
-                Toast.makeText(this, "Vui lòng chọn ngày đến hạn", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            String d = binding.projectDateTietDay.getText().toString();
+            String t = binding.projectDateTietHour.getText().toString();
             Date deadline = ParseDateUtil.parseDate(
-                    dateStr + (timeStr.isEmpty() ? "" : " " + timeStr)
+                    d + (t.isEmpty() ? "" : " " + t)
             );
             p.setDeadline(deadline);
-
             p.setBackgroundImg(bgImg);
-            loadingDialog.show();
-            viewModel.createProject(p);
-        });
 
-        viewModel.getProjectLiveData().observe(this, proj -> {
-            loadingDialog.dismiss();
-            String msg = (proj != null) ? "Tạo project thành công" : "Tạo project thất bại";
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-            if (proj != null) {
-                startActivity(new Intent(this, HomeActivity.class));
-                finish();
+            // Add error handling
+            try {
+                viewModel.createProject(p).observe(this, success -> {
+                    if (success) {
+                        startActivity(new Intent(this, HomeActivity.class));
+                        finish();
+                    } else {
+                        Toast.makeText(this, "Failed to create project. Please try again.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (Exception e) {
+                Log.e("CreateProjectActivity", "Error creating project", e);
+                Toast.makeText(this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private abstract static class SimpleWatcher implements TextWatcher {
-        @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+        @Override public void beforeTextChanged(CharSequence s, int st, int b, int c) {}
         @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+        @Override public void afterTextChanged(Editable s) {}
     }
 }
