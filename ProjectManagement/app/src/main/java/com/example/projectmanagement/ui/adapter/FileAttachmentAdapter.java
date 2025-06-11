@@ -26,12 +26,17 @@ public class FileAttachmentAdapter
         void onDeleteClicked(int position);
     }
 
-    private final List<File> files;
+    private List<File> files;
     private final OnAttachmentActionListener listener;
 
     public FileAttachmentAdapter(List<File> files, OnAttachmentActionListener listener) {
         this.files = files;
         this.listener = listener;
+    }
+
+    public void updateFiles(List<File> newFiles) {
+        this.files = newFiles;
+        notifyDataSetChanged();
     }
 
     @NonNull @Override
@@ -44,7 +49,7 @@ public class FileAttachmentAdapter
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
         File f = files.get(pos);
-//        h.imgIcon.setImageResource(getIconForExtension(f.getExtension()));
+        h.imgIcon.setImageResource(getIconForExtension(f.getFileType()));
         h.tvName.setText(f.getFileName());
         h.tvSize.setText(String.valueOf(f.getFileSize()));
 
@@ -77,7 +82,7 @@ public class FileAttachmentAdapter
     }
 
     @Override public int getItemCount() {
-        return files.size();
+        return files != null ? files.size() : 0;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

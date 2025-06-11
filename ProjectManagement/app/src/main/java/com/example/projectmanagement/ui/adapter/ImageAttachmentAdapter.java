@@ -25,12 +25,17 @@ public class ImageAttachmentAdapter
         void onDeleteClicked(int position);
     }
 
-    private final List<Uri> images;
+    private List<Uri> images;
     private final OnAttachmentActionListener listener;
 
     public ImageAttachmentAdapter(List<Uri> images, OnAttachmentActionListener listener) {
         this.images = images;
         this.listener = listener;
+    }
+
+    public void updateUris(List<Uri> newUris) {
+        this.images = newUris;
+        notifyDataSetChanged();
     }
 
     @NonNull @Override
@@ -75,7 +80,7 @@ public class ImageAttachmentAdapter
 
     @Override
     public int getItemCount() {
-        return images.size();
+        return images != null ? images.size() : 0;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

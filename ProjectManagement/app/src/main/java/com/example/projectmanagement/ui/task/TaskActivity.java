@@ -328,12 +328,12 @@ public class TaskActivity extends AppCompatActivity {
 
         // Observe image URIs
         viewModel.getImageUris().observe(this, uris -> {
-//            imageAdapter.updateUris(uris);
+            imageAdapter.updateUris(uris);
         });
 
         // Observe files
         viewModel.getFiles().observe(this, files -> {
-//            fileAdapter.updateFiles(files);
+            fileAdapter.updateFiles(files);
         });
     }
 
