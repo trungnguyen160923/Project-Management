@@ -26,6 +26,7 @@ import com.example.projectmanagement.ui.helper.PhaseTouchHelperCallback;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         implements PhaseTouchHelperCallback.ItemTouchHelperAdapter {
@@ -88,7 +89,7 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             OnCardDropListener cardDropListener,
             RecyclerView board
     ) {
-        this.phases = phases;
+        this.phases = phases != null ? phases : new ArrayList<>();
         this.addPhaseListener = addPhaseListener;
         this.addTaskListener = addTaskListener;
         this.taskListener = taskListener;
@@ -194,7 +195,7 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     @Override
     public int getItemCount() {
         // +1 cho nút "+ Thêm phase"
-        return phases.size() + 1;
+        return (phases != null ? phases.size() : 0) + 1;
     }
 
     @Override

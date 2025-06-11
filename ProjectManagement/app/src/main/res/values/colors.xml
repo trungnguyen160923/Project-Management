@@ -17,8 +17,6 @@
     <color name="divider_color">#DDDDDD</color>
     <color name="colorWarning">#FFD600</color>
 
-
-
     <color name="gray">#B3B3B3</color>
     <color name="secondary_text_color">#7A8089</color>
     <color name="red">#EB0909</color>
@@ -64,4 +62,8 @@
     <color name="s61">#ED739C</color>
     <color name="s62">#42ACA2</color>
     <color name="s63">#2A3D5E</color>
+
+    <color name="md_theme_errorContainer">#FFDAD6</color>
+    <color name="md_theme_onErrorContainer">#410002</color>
+    <color name="completed_green">#4CAF50</color>
 </resources>

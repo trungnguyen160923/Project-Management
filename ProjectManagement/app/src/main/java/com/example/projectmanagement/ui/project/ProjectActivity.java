@@ -68,7 +68,7 @@ public class ProjectActivity extends AppCompatActivity implements
     private FloatingActionButton fabZoom;
 
     private Project project;
-    private List<Phase> phases;
+    private List<Phase> phases = new ArrayList<>();
     private PhaseAdapter phaseAdapter;
 
     private boolean inInputMode = false;
@@ -213,8 +213,18 @@ public class ProjectActivity extends AppCompatActivity implements
     private void setupBoard() {
         rvBoard.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         initData();
+        
+        // Debug log
+        android.util.Log.d("ProjectActivity", "setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
+        
         phaseAdapter = new PhaseAdapter(phases, this, this, this, this, rvBoard);
         rvBoard.setAdapter(phaseAdapter);
+        
+        // Force adapter to refresh
+        phaseAdapter.notifyDataSetChanged();
+        
+        // Debug log
+        android.util.Log.d("ProjectActivity", "setupBoard: Adapter created and set");
 
         @SuppressLint("NotifyDataSetChanged") PhaseDragListener.OnCardDropListener dropListener = (target, dropIndex, info) -> {
             List<Task> src = info.getPhase().getTasks();
@@ -238,24 +248,81 @@ public class ProjectActivity extends AppCompatActivity implements
     }
 
     private void initData() {
-        // Sample data setup
+        // 1. Sample comments
         List<Comment> comments = new ArrayList<>();
-        comments.add(new Comment(1, "Hello mọi người!", 123, 10, new Date()));
-        comments.add(new Comment(2, "Đã xong bước này.", 123, 11, new Date()));
-        comments.add(new Comment(3, "Cần bổ sung thêm phần X.", 123, 12, new Date()));
+        comments.add(new Comment(1, "Hello mọi người!",    1, 123, new Date()));
+        comments.add(new Comment(2, "Đã xong bước này.",   1, 123, new Date()));
+        comments.add(new Comment(3, "Cần bổ sung thêm X.", 1, 123, new Date()));
 
+        // 2. Sample files
         List<File> files = new ArrayList<>();
-        files.add(new File(1, "Report.pdf", "content://.../Report.pdf", 2300L, "pdf", 1, 1));
-        files.add(new File(2, "Note.txt", "content://.../Note.txt", 121L, "txt", 1, 1));
+        files.add(new File(1,
+                "Report.pdf",
+                "content://com.example.projectmanagement/files/Report.pdf",
+                2300L,
+                "pdf",
+                1,
+                123));
+        files.add(new File(2,
+                "Note.txt",
+                "content://com.example.projectmanagement/files/Note.txt",
+                121L,
+                "txt",
+                1,
+                123));
 
-        phases = new ArrayList<>();
-        for (int i = 1; i <= 3; i++) {
+        // 3. Build phases
+        phases = new ArrayList<>();  // Reinitialize phases list
+        int phaseID   = 1;
+        int projectID = project.getProjectID();  // hoặc 1 nếu chưa có getter
+        Date now      = new Date();
+
+        for (int i = 1; i <= 3; i++, phaseID++) {
+            // – Tạo 1 task mẫu cho mỗi phase
             List<Task> tasks = new ArrayList<>();
-            tasks.add(new Task("Task " + i, "Mô tả", "WORKING", ParseDateUtil.formatDate(new Date()), comments, files));
-            phases.add(new Phase("Ds" + i, tasks));
+            int taskID = i;
+            Task t = new Task(
+                    /* taskID */        taskID,
+                    /* phaseID */       phaseID,
+                    /* taskName */      "Task " + taskID,
+                    /* taskDescription*/"Mô tả cho task " + taskID,
+                    /* assignedTo */    123,
+                    /* status */        "WORKING",
+                    /* priority */      "MEDIUM",
+                    /* dueDate */       now,
+                    /* allowSelfAssign*/ true,
+                    /* orderIndex */    0,
+                    /* createAt */      now,
+                    /* lastUpdate */    now,
+                    /* comments */      new ArrayList<>(comments),
+                    /* files */         new ArrayList<>(files)
+            );
+            tasks.add(t);
+
+            // – Tạo phase với constructor mới
+            Phase p = new Phase(
+                    /* phaseID */    phaseID,
+                    /* projectID */  projectID,
+                    /* phaseName */  "Ds" + phaseID,
+                    /* description */"Mô tả phase " + phaseID,
+                    /* orderIndex */ phaseID - 1,
+                    /* createAt */   now,
+                    /* tasks */      tasks
+            );
+            phases.add(p);
         }
+        
+        // Debug log
+        android.util.Log.d("ProjectActivity", "initData: Created " + phases.size() + " phases");
+        for (Phase phase : phases) {
+            android.util.Log.d("ProjectActivity", "Phase: " + phase.getPhaseName() + " with " + phase.getTasks().size() + " tasks");
+        }
+
+        // 4. Gán lên project và lưu vào holder
         project.setPhases(phases);
+        ProjectHolder.set(project);
     }
+
 
     private void applyProjectBackground(String bgImg) {
         if (bgImg == null) return;
@@ -338,6 +405,8 @@ public class ProjectActivity extends AppCompatActivity implements
         String today = ParseDateUtil.formatDate(new Date());
         // ... tạo comments, files, task mẫu như bạn đã làm trước đó
         phases.add(new Phase("Ds" + (phases.size() + 1), tasks));
+        project.setPhases(phases);
+        ProjectHolder.set(project);
 
         // 2. Thông báo adapter về vị trí chèn
         phaseAdapter.notifyItemInserted(phases.size() - 1);
@@ -347,6 +416,7 @@ public class ProjectActivity extends AppCompatActivity implements
         List<Task> tasks = phases.get(pos).getTasks();
         String today = ParseDateUtil.formatDate(new Date());
         tasks.add(new Task("Task mới", "", "WORKING", today, new ArrayList<>(), new ArrayList<>()));
+        ProjectHolder.set(project);
     }
 
 
@@ -364,6 +434,7 @@ public class ProjectActivity extends AppCompatActivity implements
         Task t=info.getTask(); int orig=info.getOriginalPosition();
         if(src.remove(t)&& target==info.getPhase()&& idx>orig) idx--;
         idx=Math.max(0,Math.min(idx,dst.size())); dst.add(idx,t); phaseAdapter.notifyDataSetChanged();
+        ProjectHolder.set(project);
     }
 
     @Override

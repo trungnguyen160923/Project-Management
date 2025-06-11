@@ -20,7 +20,7 @@ public class Task implements Parcelable {
     private int assignedTo;
     private String status;
     private String priority;
-    private Date dueDate;
+    private Date dueDate;x
     private Boolean allowSelfAssign;
     private int orderIndex;
     private Date createAt;

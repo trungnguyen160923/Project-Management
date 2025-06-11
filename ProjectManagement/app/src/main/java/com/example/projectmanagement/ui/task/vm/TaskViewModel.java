@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
+import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.repository.TaskRepository;
 
@@ -24,17 +26,19 @@ public class TaskViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isFilesExpanded = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> isCommentsExpanded = new MutableLiveData<>(false);
     private final MutableLiveData<String> taskDescription = new MutableLiveData<>("");
+    private final MutableLiveData<List<Phase>> allProjectPhases = new MutableLiveData<>();
 
     public TaskViewModel() {
         taskRepository = TaskRepository.getInstance();
+        fetchPhases();
     }
 
     public void setTask(Task task) {
         this.task.setValue(task);
         if (task != null) {
             taskDescription.setValue(task.getTaskDescription());
-            loadComments();
-            loadFiles();
+        loadComments();
+        loadFiles();
         }
     }
 
@@ -55,6 +59,12 @@ public class TaskViewModel extends ViewModel {
             if (taskFiles != null) {
                 files.setValue(taskFiles);
             }
+        }
+    }
+
+    private void fetchPhases() {
+        if (ProjectHolder.get() != null && ProjectHolder.get().getPhases() != null) {
+            allProjectPhases.setValue(ProjectHolder.get().getPhases());
         }
     }
 
@@ -89,6 +99,10 @@ public class TaskViewModel extends ViewModel {
 
     public LiveData<String> getTaskDescription() {
         return taskDescription;
+    }
+
+    public LiveData<List<Phase>> getAllProjectPhases() {
+        return allProjectPhases;
     }
 
     // Update methods for LiveData
@@ -218,6 +232,17 @@ public class TaskViewModel extends ViewModel {
         Task currentTask = task.getValue();
         if (currentTask != null) {
             currentTask.setTaskDescription(description);
+            currentTask.setLastUpdate(new Date());
+            task.setValue(currentTask);
+            taskRepository.updateTask(currentTask);
+        }
+    }
+
+    public void updateTaskPhaseAndOrder(int newPhaseId, int newOrderIndex) {
+        Task currentTask = task.getValue();
+        if (currentTask != null) {
+            currentTask.setPhaseID(newPhaseId);
+            currentTask.setOrderIndex(newOrderIndex);
             currentTask.setLastUpdate(new Date());
             task.setValue(currentTask);
             taskRepository.updateTask(currentTask);
