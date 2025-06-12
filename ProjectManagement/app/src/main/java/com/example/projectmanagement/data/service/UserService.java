@@ -14,7 +14,7 @@ import org.json.JSONObject;
 import java.util.Map;
 
 public class UserService {
-    private static final String apiPrefix = "http://10.0.2.2:8080/api";
+    private static final String apiPrefix = "http://192.168.0.111:8080/api";
     private static final String TAG = "UserService";
 
     // Đăng nhập

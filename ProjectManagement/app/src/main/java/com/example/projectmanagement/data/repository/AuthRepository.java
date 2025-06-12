@@ -6,6 +6,7 @@ import android.util.Log;
 import com.android.volley.VolleyError;
 import com.example.projectmanagement.data.service.AuthService;
 import com.example.projectmanagement.data.model.User;
+import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.UserPreferences;
 
 import org.json.JSONObject;
@@ -98,14 +99,9 @@ public class AuthRepository {
             }
         }, error -> {
             String errorMessage = "Lỗi không xác định";
-            if (error.networkResponse != null && error.networkResponse.data != null) {
-                try {
-                    String errorBody = new String(error.networkResponse.data, "UTF-8");
-                    errorMessage = "Lỗi: " + errorBody;
-                } catch (Exception ignored) {}
-            } else if (error.getMessage() != null) {
-                errorMessage = error.getMessage();
-            }
+            try {
+              errorMessage = Helpers.parseError(error);
+            } catch (Exception e) {}
             callback.onError(errorMessage);
         });
     }

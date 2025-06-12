@@ -21,7 +21,9 @@ import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.ui.task.TaskActivity;
+import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.google.android.material.card.MaterialCardView;
 
@@ -30,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final String TAG="TaskAdapter";
 
     private static final int TYPE_TASK = 1;
     private static final int TYPE_PLACEHOLDER = 2;
@@ -39,6 +42,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private int placeholderPosition = -1;
     private int placeholderWidth  = ViewGroup.LayoutParams.MATCH_PARENT;
     private int placeholderHeight = ViewGroup.LayoutParams.WRAP_CONTENT;
+
+    private TaskService taskService;
 
     public TaskAdapter(List<Task> tasks, Phase parentPhase) {
         this.tasks = tasks != null ? tasks : new ArrayList<>();
@@ -175,8 +180,17 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             checkBoxTask.setChecked(done);
             updateCardStroke(this, done);
             checkBoxTask.setOnCheckedChangeListener((btn, isChecked) -> {
+                Log.d(TAG,"run this");
                 updateCardStroke(this, isChecked);
-                t.setStatus(isChecked ? "DONE" : "WORKING");
+                String status=isChecked?"DONE":"IN_PROGRESS";
+                taskService.markTaskAsComplette(itemView.getContext(),t.getTaskID(),status,res->{
+                },err->{
+                    String errorMessage = "Lỗi không xác định";
+                    try {
+                        errorMessage = Helpers.parseError(err);
+                    } catch (Exception e) {}
+                });
+                t.setStatus(isChecked ? "DONE" : "IN_PROGRESS");
             });
 
             // Click -> TaskActivity
@@ -246,7 +260,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void binDescription(TaskViewHolder h, Task t) {
-        if (t.getTaskDescription() != null && !t.getTaskDescription().isEmpty()) {
+        if (t.getTaskDescription() != null && !t.getTaskDescription().isEmpty() && !t.getTaskDescription().equals("null")) {
             h.tvTaskDes.setVisibility(View.VISIBLE);
             h.tvTaskDes.setText(t.getTaskDescription());
         } else {

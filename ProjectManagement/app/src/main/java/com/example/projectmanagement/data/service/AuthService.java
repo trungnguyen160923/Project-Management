@@ -9,6 +9,8 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.example.projectmanagement.api.ApiClient;
+import com.example.projectmanagement.utils.ApiConfig;
+import com.example.projectmanagement.utils.DevLogger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,14 +20,13 @@ import java.util.Map;
 
 public class AuthService {
     private static final String TAG = "AuthService";
-    private static final String API_PREFIX = "http://10.0.2.2:8080/api";
 
     // Đăng nhập thường
     public static void login(Context context, String email, String password,
                              Response.Listener<JSONObject> listener,
                              Response.ErrorListener errorListener) {
         try {
-            String url = API_PREFIX + "/auth/login";
+            String url = ApiConfig.BASE_URL + "/auth/login";
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("usernameOrEmail", email);
             jsonBody.put("password", password);
@@ -63,7 +64,7 @@ public class AuthService {
                               Response.Listener<JSONObject> listener,
                               Response.ErrorListener errorListener) {
         try {
-            String url = API_PREFIX + "/auth/signup";
+            String url = ApiConfig.BASE_URL + "/auth/signup";
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("username", username);
             jsonBody.put("email", email);
@@ -104,7 +105,7 @@ public class AuthService {
     public static void loginWithGoogle(Context context, String googleIdToken,
                                        Response.Listener<JSONObject> listener,
                                        Response.ErrorListener errorListener) {
-        String url = API_PREFIX + "/auth/google-login";
+        String url = ApiConfig.BASE_URL + "/auth/google-login";
 
         try {
             JSONObject body = new JSONObject();

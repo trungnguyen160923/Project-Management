@@ -67,6 +67,7 @@ public class ProjectRepository {
                 }
             },
             error -> {
+
                 Log.e(TAG, "Error loading projects", error);
                 messageLiveData.postValue("Error loading projects: " + error.getMessage());
             }

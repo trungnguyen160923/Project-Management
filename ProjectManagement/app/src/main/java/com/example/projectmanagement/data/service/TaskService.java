@@ -13,6 +13,7 @@ import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.utils.ApiConfig;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.utils.UserPreferences;
 
@@ -27,8 +28,8 @@ import java.util.TimeZone;
 
 public class TaskService {
     private static final String TAG = "TaskService";
-    private static final String BASE_URL = "http://10.0.2.2:8080";
-    private static final String TASKS_URL = BASE_URL + "/api/tasks";
+    private static final String BASE_URL = ApiConfig.BASE_URL;
+    private static final String TASKS_URL = BASE_URL + "/tasks";
 
     public static void createTask(Context context, Task task,
                                 Response.Listener<JSONObject> listener,
@@ -133,6 +134,34 @@ public class TaskService {
             }
         };
 
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void markTaskAsComplette(Context context, int taskId, String status,Response.Listener<JSONObject> listener,
+                                           Response.ErrorListener errorListener){
+        String url = TASKS_URL + "/"+taskId+"/mark-as-complete?status="+status;
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                null,
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }

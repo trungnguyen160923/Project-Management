@@ -100,19 +100,44 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
         }
 
         public void bind(User member, boolean isSelected) {
-            tvName.setText(member.getFullname());
+            // Kiểm tra và hiển thị tên
+            String fullName = member.getFullname();
+            if (fullName != null && !fullName.isEmpty()) {
+                tvName.setText(fullName);
+                tvName.setVisibility(View.VISIBLE);
+            } else {
+                tvName.setVisibility(View.GONE);
+            }
+
+            // Kiểm tra và hiển thị trạng thái chọn
             ivCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
-            
-            // Set color for check icon
             if (isSelected) {
                 ivCheck.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.colorAccent));
             }
             
-            // Set avatar or first letter of name
-            if (member.getAvatar() != null && !member.getAvatar().isEmpty()) {
-                ivAvatar.setImage(android.net.Uri.parse(member.getAvatar()));
+            // Kiểm tra và hiển thị avatar
+            String avatar = member.getAvatar();
+            if (avatar != null && !avatar.isEmpty()) {
+                try {
+                    ivAvatar.setImage(android.net.Uri.parse(avatar));
+                    ivAvatar.setVisibility(View.VISIBLE);
+                } catch (Exception e) {
+                    // Nếu không parse được URI, hiển thị chữ cái đầu của tên
+                    if (fullName != null && !fullName.isEmpty()) {
+                        ivAvatar.setName(fullName);
+                        ivAvatar.setVisibility(View.VISIBLE);
+                    } else {
+                        ivAvatar.setVisibility(View.GONE);
+                    }
+                }
             } else {
-                ivAvatar.setName(member.getFullname());
+                // Nếu không có avatar, hiển thị chữ cái đầu của tên
+                if (fullName != null && !fullName.isEmpty()) {
+                    ivAvatar.setName(fullName);
+                    ivAvatar.setVisibility(View.VISIBLE);
+                } else {
+                    ivAvatar.setVisibility(View.GONE);
+                }
             }
 
             itemView.setOnClickListener(v -> {
