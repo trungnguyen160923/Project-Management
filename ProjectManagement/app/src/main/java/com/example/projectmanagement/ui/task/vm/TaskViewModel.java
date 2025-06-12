@@ -323,4 +323,8 @@ public class TaskViewModel extends AndroidViewModel {
         super.onCleared();
         // Clean up any resources if needed
     }
+
+    public void updateTask(Task t) {
+        task.setValue(t);
+    }
 } 

@@ -9,12 +9,13 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.example.projectmanagement.api.ApiClient;
+import com.example.projectmanagement.utils.ApiConfig;
 import com.example.projectmanagement.utils.UserPreferences;
 import org.json.JSONObject;
 import java.util.Map;
 
 public class UserService {
-    private static final String apiPrefix = "http://192.168.0.111:8080/api";
+    private static final String BASE_URL = ApiConfig.BASE_URL;
     private static final String TAG = "UserService";
 
     // Đăng nhập
@@ -27,7 +28,7 @@ public class UserService {
             loginData.put("password", password);
 
             JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
-                    apiPrefix + "/auth/login", loginData, response -> {
+                    BASE_URL + "/auth/login", loginData, response -> {
                         try {
                             String status = response.optString("status", "error");
                             if ("success".equals(status)) {
@@ -92,7 +93,7 @@ public class UserService {
             registerData.put("fullname", fullname);
 
             JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
-                    apiPrefix + "/auth/register", registerData, response -> {
+                    BASE_URL + "/auth/register", registerData, response -> {
                         try {
                             String status = response.optString("status", "error");
                             if ("success".equals(status)) {
@@ -150,7 +151,7 @@ public class UserService {
                             Response.Listener<JSONObject> listener,
                             Response.ErrorListener errorListener) {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
-                apiPrefix + "/auth/logout", null, response -> {
+                BASE_URL + "/auth/logout", null, response -> {
                     // Xóa cookie và thông tin user
                     UserPreferences userPreferences = new UserPreferences(context);
                     userPreferences.clearJwtToken();
@@ -174,7 +175,7 @@ public class UserService {
                                     Response.Listener<JSONObject> listener,
                                     Response.ErrorListener errorListener) {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET,
-                apiPrefix + "/users/profile", null, listener, error -> {
+                BASE_URL + "/users/profile", null, listener, error -> {
                     if (error instanceof AuthFailureError) {
                         Log.e(TAG, "Authentication error: " + error.getMessage());
                         errorListener.onErrorResponse(new VolleyError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."));
@@ -196,7 +197,7 @@ public class UserService {
                                        Response.Listener<JSONObject> listener,
                                        Response.ErrorListener errorListener) {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT,
-                apiPrefix + "/users/profile", userData, listener, error -> {
+                BASE_URL + "/users/profile", userData, listener, error -> {
                     if (error instanceof AuthFailureError) {
                         Log.e(TAG, "Authentication error: " + error.getMessage());
                         errorListener.onErrorResponse(new VolleyError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."));

@@ -31,6 +31,15 @@
         android:fadeScrollbars="false"
         android:scrollbarStyle="outsideOverlay"/>
 
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="8dp"
+        android:visibility="gone"/>
+
     <!-- Complete Button -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_complete"

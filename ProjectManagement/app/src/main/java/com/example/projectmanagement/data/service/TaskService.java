@@ -169,7 +169,7 @@ public class TaskService {
     public static void getProjectMembers(Context context, int projectId,
                                          Response.Listener<JSONObject> listener,
                                          Response.ErrorListener errorListener) {
-        String url = BASE_URL + "/api/members/projects/" + projectId;
+        String url = BASE_URL + "/members/projects/" + projectId;
         Log.d(TAG, "Fetching project members from: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(
@@ -203,7 +203,7 @@ public class TaskService {
     public static void getUserInfo(Context context, int userId,
                                  Response.Listener<JSONObject> listener,
                                  Response.ErrorListener errorListener) {
-        String url = BASE_URL + "/api/users/" + userId;
+        String url = BASE_URL + "/users/" + userId;
         Log.d(TAG, "Fetching user info from: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(

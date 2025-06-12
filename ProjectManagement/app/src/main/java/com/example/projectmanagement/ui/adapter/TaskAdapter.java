@@ -12,6 +12,7 @@ import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -184,11 +185,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 updateCardStroke(this, isChecked);
                 String status=isChecked?"DONE":"IN_PROGRESS";
                 taskService.markTaskAsComplette(itemView.getContext(),t.getTaskID(),status,res->{
+
                 },err->{
                     String errorMessage = "Lỗi không xác định";
                     try {
                         errorMessage = Helpers.parseError(err);
                     } catch (Exception e) {}
+                    Toast.makeText(itemView.getContext(), errorMessage, Toast.LENGTH_SHORT).show();
                 });
                 t.setStatus(isChecked ? "DONE" : "IN_PROGRESS");
             });
