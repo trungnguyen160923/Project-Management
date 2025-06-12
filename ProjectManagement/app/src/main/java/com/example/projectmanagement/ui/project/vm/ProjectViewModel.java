@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
+import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.repository.ProjectRepository;
 import com.example.projectmanagement.data.repository.PhaseRepository;
@@ -33,8 +34,21 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void setProject(Project project) {
+        Log.d("ProjectViewModel", "Setting project: " + project.getProjectName() + 
+            ", phases: " + (project.getPhases() != null ? project.getPhases().size() : 0));
+        
+        // Set project first
         this.project.setValue(project);
-        // TODO: Load phases from API
+        
+        // Set phases immediately if project has them
+        if (project.getPhases() != null && !project.getPhases().isEmpty()) {
+            Log.d("ProjectViewModel", "Using existing phases from project: " + project.getPhases().size());
+            phases.setValue(project.getPhases());
+        } else {
+            // Load phases from API
+            Log.d("ProjectViewModel", "Loading phases from API for project: " + project.getProjectID());
+            loadProjectPhases(project.getProjectID());
+        }
     }
 
     public LiveData<Project> getProject() {
@@ -165,11 +179,71 @@ public class ProjectViewModel extends ViewModel {
     }
 
     private void loadProjectPhases(int projectId) {
+        Log.d("ProjectViewModel", "Loading phases for project: " + projectId);
         phaseRepository.getProjectPhases(projectId).observeForever(phasesList -> {
-            if (phasesList != null) {
+            if (phasesList != null && !phasesList.isEmpty()) {
+                Log.d("ProjectViewModel", "Loaded " + phasesList.size() + " phases from API");
                 this.phases.setValue(phasesList);
+                
+                // Update project with loaded phases
+                Project currentProject = project.getValue();
+                if (currentProject != null) {
+                    currentProject.setPhases(phasesList);
+                    project.setValue(currentProject);
+                }
+                
+                // Load tasks for each phase
+                for (Phase phase : phasesList) {
+                    loadPhaseTasks(phase.getPhaseID());
+                }
+            } else {
+                Log.e("ProjectViewModel", "No phases loaded from API");
+                message.setValue("No phases found");
             }
         });
+    }
+
+    private void loadPhaseTasks(int phaseId) {
+        Log.d("ProjectViewModel", "Loading tasks for phase: " + phaseId);
+        
+        // Get project from ProjectHolder
+        Project currentProject = ProjectHolder.get();
+        if (currentProject == null || currentProject.getPhases() == null) {
+            Log.e("ProjectViewModel", "Project or phases not found in ProjectHolder");
+            return;
+        }
+
+        // Find phase and its tasks
+        Phase targetPhase = null;
+        for (Phase phase : currentProject.getPhases()) {
+            if (phase.getPhaseID() == phaseId) {
+                targetPhase = phase;
+                break;
+            }
+        }
+
+        if (targetPhase == null) {
+            Log.e("ProjectViewModel", "Phase not found: " + phaseId);
+            return;
+        }
+
+        // Get tasks from phase
+        List<Task> tasks = targetPhase.getTasks();
+        Log.d("ProjectViewModel", "Found " + (tasks != null ? tasks.size() : 0) + " tasks for phase: " + phaseId);
+
+        // Update phase with tasks
+        List<Phase> currentPhases = phases.getValue();
+        if (currentPhases != null) {
+            for (Phase phase : currentPhases) {
+                if (phase.getPhaseID() == phaseId) {
+                    phase.setTasks(tasks);
+                    phases.setValue(currentPhases);
+                    Log.d("ProjectViewModel", "Updated phase " + phaseId + " with " + 
+                        (tasks != null ? tasks.size() : 0) + " tasks");
+                    break;
+                }
+            }
+        }
     }
 
     public void createPhase(Phase phase) {

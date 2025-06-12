@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,6 +59,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @SuppressLint("NotifyDataSetChanged")
     public void setTasks(List<Task> tasks) {
+        Log.d("TaskAdapter", "Setting tasks: " + (tasks != null ? tasks.size() : 0) + " tasks");
         this.tasks = tasks != null ? tasks : new ArrayList<>();
         clearPlaceholder();
         notifyDataSetChanged();

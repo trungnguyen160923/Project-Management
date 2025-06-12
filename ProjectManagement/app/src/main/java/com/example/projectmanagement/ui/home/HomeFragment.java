@@ -95,18 +95,83 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         // Get project details
         projectRepository.getProject(project.getProjectID()).observe(getViewLifecycleOwner(), projectDetail -> {
             if (projectDetail != null) {
-                Log.d(TAG, "Project details loaded: " + projectDetail);
-//                Log.d(TAG, "Phase: " + projectDetail.getPhases().size());
-                // Store project in ProjectHolder
-                ProjectHolder.set(projectDetail);
-                // Navigate to ProjectActivity
-                Intent intent = new Intent(getActivity(), ProjectActivity.class);
-                startActivity(intent);
+                Log.d(TAG, "Project details loaded: " + projectDetail.getProjectName());
+                
+                // Get project phases
+                ProjectService.getProjectPhases(requireContext(), 
+                    String.valueOf(projectDetail.getProjectID()),
+                    response -> {
+                        try {
+                            List<Phase> phases = ProjectService.parsePhasesList(response);
+                            projectDetail.setPhases(phases);
+                            Log.d(TAG, "Loaded " + phases.size() + " phases");
+
+                            // If no phases, just navigate to ProjectActivity
+                            if (phases == null || phases.isEmpty()) {
+                                Log.d(TAG, "No phases found, navigating to ProjectActivity");
+                                loadingDialog.dismiss();
+                                ProjectHolder.set(projectDetail);
+                                Intent intent = new Intent(getActivity(), ProjectActivity.class);
+                                startActivity(intent);
+                                return;
+                            }
+
+                            // Load tasks for each phase
+                            int[] loadedPhases = {0};
+                            for (Phase phase : phases) {
+                                ProjectService.getPhaseTasks(requireContext(),
+                                    String.valueOf(phase.getPhaseID()),
+                                    taskResponse -> {
+                                        try {
+                                            List<Task> tasks = ProjectService.parseTasksList(taskResponse);
+                                            phase.setTasks(tasks);
+                                            Log.d(TAG, "Loaded " + tasks.size() + 
+                                                " tasks for phase " + phase.getPhaseName());
+                                            
+                                            loadedPhases[0]++;
+                                            if (loadedPhases[0] == phases.size()) {
+                                                // All phases and tasks loaded
+                                                loadingDialog.dismiss();
+                                                
+                                                // Store project in ProjectHolder
+                                                ProjectHolder.set(projectDetail);
+                                                
+                                                // Navigate to ProjectActivity
+                                                Intent intent = new Intent(getActivity(), ProjectActivity.class);
+                                                startActivity(intent);
+                                            }
+                                        } catch (JSONException e) {
+                                            Log.e(TAG, "Error parsing tasks", e);
+                                            loadingDialog.dismiss();
+                                            Toast.makeText(requireContext(), 
+                                                "Error loading tasks", Toast.LENGTH_SHORT).show();
+                                        }
+                                    },
+                                    error -> {
+                                        Log.e(TAG, "Error loading tasks", error);
+                                        loadingDialog.dismiss();
+                                        Toast.makeText(requireContext(), 
+                                            "Error loading tasks", Toast.LENGTH_SHORT).show();
+                                    });
+                            }
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing phases", e);
+                            loadingDialog.dismiss();
+                            Toast.makeText(requireContext(), 
+                                "Error loading phases", Toast.LENGTH_SHORT).show();
+                        }
+                    },
+                    error -> {
+                        Log.e(TAG, "Error loading phases", error);
+                        loadingDialog.dismiss();
+                        Toast.makeText(requireContext(), 
+                            "Error loading phases", Toast.LENGTH_SHORT).show();
+                    });
             } else {
                 Log.e(TAG, "Failed to load project details");
                 Toast.makeText(getContext(), "Failed to load project details", Toast.LENGTH_SHORT).show();
+                loadingDialog.dismiss();
             }
-            loadingDialog.dismiss();
         });
     }
 

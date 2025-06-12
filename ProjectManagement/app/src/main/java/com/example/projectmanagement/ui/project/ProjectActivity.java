@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -79,6 +80,10 @@ public class ProjectActivity extends AppCompatActivity implements
 
     private ProjectViewModel viewModel;
 
+    private boolean isAddingPhase = false;
+    private long lastClickTime = 0;
+    private static final long CLICK_DELAY = 1000; // 1 second delay
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,7 +101,8 @@ public class ProjectActivity extends AppCompatActivity implements
         Log.d("ProjectActivity", "Project data: " + 
             "id=" + project.getProjectID() + 
             ", name=" + project.getProjectName() + 
-            ", description=" + project.getProjectDescription());
+            ", description=" + project.getProjectDescription() +
+            ", phases=" + (project.getPhases() != null ? project.getPhases().size() : 0));
 
         // Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
@@ -113,6 +119,7 @@ public class ProjectActivity extends AppCompatActivity implements
             if (updatedProject != null) {
                 project = updatedProject;
                 toolbar.setTitle(project.getProjectName());
+                Log.d("ProjectActivity", "Project updated: " + project.getProjectName());
             }
         });
 
@@ -120,7 +127,10 @@ public class ProjectActivity extends AppCompatActivity implements
         viewModel.getPhases().observe(this, updatedPhases -> {
             if (updatedPhases != null) {
                 phases = updatedPhases;
+                Log.d("ProjectActivity", "Phases updated: " + phases.size() + " phases");
                 phaseAdapter.updatePhases(phases);
+                // Force refresh UI
+                phaseAdapter.notifyDataSetChanged();
             }
         });
 
@@ -395,7 +405,18 @@ public class ProjectActivity extends AppCompatActivity implements
         toolbar.setTitle(project.getProjectName());
     }
 
-    @Override public void onAddPhase() {
+    @Override 
+    public void onAddPhase() {
+        // Prevent multiple clicks
+        long currentTime = System.currentTimeMillis();
+        if (isAddingPhase || (currentTime - lastClickTime) < CLICK_DELAY) {
+            Log.d("ProjectActivity", "Ignoring click - too soon or already adding phase");
+            return;
+        }
+
+        lastClickTime = currentTime;
+        isAddingPhase = true;
+
         // Debug log project data before creating phase
         Log.d("ProjectActivity", "Creating phase with project: " + 
             "id=" + project.getProjectID() + 
@@ -408,6 +429,8 @@ public class ProjectActivity extends AppCompatActivity implements
         viewModel.getMessage().observe(this, message -> {
             if (message != null) {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                // Reset flag after a short delay
+                new Handler().postDelayed(() -> isAddingPhase = false, 500);
             }
         });
     }

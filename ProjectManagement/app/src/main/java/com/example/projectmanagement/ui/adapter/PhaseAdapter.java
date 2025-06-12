@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -315,9 +316,20 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         notifyItemChanged(phasePosition);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updatePhases(List<Phase> newPhases) {
+        Log.d("PhaseAdapter", "Updating phases: " + (newPhases != null ? newPhases.size() : 0) + " phases");
         this.phases = newPhases;
         notifyDataSetChanged();
+        
+        // Force refresh all task adapters
+        if (newPhases != null) {
+            for (int i = 0; i < newPhases.size(); i++) {
+                Phase phase = newPhases.get(i);
+                Log.d("PhaseAdapter", "Phase " + i + ": " + phase.getPhaseName() + 
+                    " has " + (phase.getTasks() != null ? phase.getTasks().size() : 0) + " tasks");
+            }
+        }
     }
 
     class PhaseViewHolder extends RecyclerView.ViewHolder {
