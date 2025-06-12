@@ -3,10 +3,12 @@ package com.example.projectmanagement.data.repository;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.data.service.ProjectService;
 import com.example.projectmanagement.data.model.Project;
 
@@ -14,10 +16,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.example.projectmanagement.utils.Helpers;
+import com.example.projectmanagement.utils.ParseDateUtil;
+import com.example.projectmanagement.utils.UserPreferences;
 
 public class ProjectRepository {
     private static final String TAG = "ProjectRepository";
@@ -140,11 +146,133 @@ public class ProjectRepository {
         ProjectService.createProject(context, project, listener, errorListener);
     }
 
-    public void updateProject(String projectId, JSONObject projectData, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
-        ProjectService.updateProject(context, projectId, projectData, listener, errorListener);
+    public LiveData<Project> updateProject(Project project) {
+        Log.d(TAG, "updateProject() called with projectId=" + project.getProjectID());
+        try {
+            JSONObject body = new JSONObject();
+            body.put("projectName", project.getProjectName());
+            body.put("description", project.getProjectDescription());
+            body.put("status", project.getStatus());
+            
+            // Format dates in ISO 8601 format
+            String endDate = ParseDateUtil.formatDate(project.getDeadline());
+            String updatedAt = ParseDateUtil.formatDate(new Date());
+
+            // Convert to ISO format if needed
+            if (endDate.contains("/")) {
+                endDate = endDate.replace("/", "-");
+            }
+
+            body.put("endDate", endDate);
+            body.put("updatedAt", updatedAt);
+            
+            // Add owner information
+            if (project.getUser() != null) {
+                JSONObject owner = new JSONObject();
+                owner.put("id", project.getUser().getId());
+                owner.put("username", project.getUser().getUsername());
+                owner.put("email", project.getUser().getEmail());
+                owner.put("fullname", project.getUser().getFullname());
+                body.put("owner", owner);
+            }
+
+            Log.d(TAG, "updateProject: request body=" + body.toString());
+
+            ProjectService.updateProject(
+                    context,
+                    String.valueOf(project.getProjectID()),
+                    body,
+                    response -> {
+                        Log.d(TAG, "updateProject: server response=" + response.toString());
+                        String status = response.optString("status", "error");
+                        String msg    = response.optString("error", null);
+
+                        if ("success".equals(status)) {
+                            try {
+                                JSONObject dataObj = response.getJSONObject("data");
+                                Log.d(TAG,">>> dt obj : "+dataObj.toString());
+                                Project updated = ProjectService.parseProject(response);
+                                Log.d(TAG, "updateProject: parsed updated projectId=" + updated.getProjectID());
+                                projectLiveData.setValue(updated);
+
+                                // Cập nhật list nếu cần
+                                List<Project> list = projectsLiveData.getValue();
+                                if (list != null) {
+                                    for (int i = 0; i < list.size(); i++) {
+                                        if (list.get(i).getProjectID() == updated.getProjectID()) {
+                                            list.set(i, updated);
+                                            Log.d(TAG, "updateProject: updated project in list at index=" + i);
+                                            break;
+                                        }
+                                    }
+                                    projectsLiveData.setValue(list);
+                                }
+
+                                messageLiveData.setValue(
+                                        (msg != null && !msg.isEmpty() && !msg.equals("null")) ? msg : "Cập nhật project thành công"
+                                );
+                                Log.d(TAG, "updateProject: success message=" + messageLiveData.getValue());
+                            } catch (JSONException e) {
+                                Log.e(TAG, "updateProject: JSON parse error", e);
+                                projectLiveData.setValue(null);
+                                messageLiveData.setValue("Lỗi phân tích dữ liệu server");
+                            }
+                        } else {
+                            Log.w(TAG, "updateProject: status failure=" + status + ", msg=" + msg);
+                            projectLiveData.setValue(null);
+                            messageLiveData.setValue(
+                                    msg != null ? msg : "Không thể cập nhật project"
+                            );
+                        }
+                    },
+                    err->{
+                        String errorMessage = "Lỗi không xác định";
+                        try {
+                            errorMessage = Helpers.parseError(err);
+                        } catch (Exception e) {}
+                        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, errorMessage);
+                    });
+
+        } catch (JSONException e) {
+            Log.e(TAG, "updateProject: create JSON failed", e);
+            projectLiveData.setValue(null);
+            messageLiveData.setValue("Lỗi tạo JSON cho request");
+        }
+
+        return projectLiveData;
     }
+
+
+
+    private JSONObject projectToJson(Project project) throws JSONException {
+        JSONObject json = new JSONObject();
+        json.put("id",          project.getProjectID());
+        json.put("projectName", project.getProjectName());
+        json.put("description", project.getProjectDescription());
+        json.put("status",      project.getStatus());
+//        json.put("startDate",   project.getStartDate()); // ví dụ: "2025-06-12T18:16:42.541Z"
+        json.put("endDate",   ParseDateUtil.formatDate(project.getDeadline()));
+        json.put("updatedAt", ParseDateUtil.formatDate(new Date()));
+        // owner
+        UserPreferences prefs = new UserPreferences(context);
+        User user = prefs.getUser();
+        if (user != null) {
+            JSONObject owner = new JSONObject();
+            owner.put("id",          user.getId());
+            owner.put("username",    user.getUsername());
+            owner.put("email",       user.getEmail());
+            owner.put("fullname",    user.getFullname());
+            // … các trường còn lại nếu backend cần …
+            json.put("owner", owner);
+        }
+        return json;
+    }
+
 
     public void deleteProject(String projectId, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
         ProjectService.deleteProject(context, projectId, listener, errorListener);
     }
+
+
 }

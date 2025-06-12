@@ -47,6 +47,9 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
 
     implementation ("com.github.bumptech.glide:glide:4.15.1")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.activity:activity:1.10.1")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
 //    implementation("com.google.android.material:material:1.9.0")
 

@@ -162,6 +162,11 @@ public class MenuProjectActivity extends AppCompatActivity {
                     }
             );
         });
+
+        binding.btnUpdateProject.setOnClickListener(v -> {
+            Intent intent = new Intent(this, UpdateProjectActivity.class);
+            startActivity(intent);
+        });
     }
 
 

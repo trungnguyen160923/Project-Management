@@ -1,4 +1,4 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -16,14 +16,14 @@
 
         <!-- Sử dụng MaterialToolbar và set layout custom cho Toolbar -->
         <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/tb_createProject"
+            android:id="@+id/tb_updateProject"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/colorPrimary"
             android:layout_marginTop="5dp">
 
             <ImageButton
-                android:id="@+id/btn_close_create_Project"
+                android:id="@+id/btn_close_update_Project"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_alignParentStart="true"
@@ -36,10 +36,10 @@
                 android:id="@+id/toolbar_title_creProject"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_toEndOf="@id/btn_close_create_Project"
+                android:layout_toEndOf="@id/btn_close_update_Project"
                 android:layout_marginStart="50dp"
                 android:layout_centerVertical="true"
-                android:text="@string/create_project"
+                android:text="Cập nhật"
                 android:textStyle="bold"
                 android:textColor="@android:color/white"
                 android:textSize="20sp" />
@@ -163,14 +163,6 @@
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
-                <!-- Checkbox chia sẻ link -->
-<!--                <CheckBox-->
-<!--                    android:id="@+id/checkbox_share_link"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginTop="12dp"-->
-<!--                    android:text="Chia sẻ bằng link"/>-->
-
                 <!-- Nút chọn background (gradient/ảnh) -->
 <!--                <include-->
 <!--                    android:layout_width="match_parent"-->
@@ -181,7 +173,7 @@
 
                 <!-- Nút Tạo bảng -->
                 <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/create_project_btn"
+                    android:id="@+id/update_project_btn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="30dp"
@@ -190,7 +182,7 @@
                     android:gravity="center"
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
-                    android:text="@string/create_project"
+                    android:text="Cập nhật"
                     android:textColor="@color/white"
                     android:textSize="18sp"/>
 
