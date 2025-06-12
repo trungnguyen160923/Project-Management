@@ -31,6 +31,17 @@ public class TaskViewModel extends AndroidViewModel {
     private final MutableLiveData<List<Phase>> allProjectPhases = new MutableLiveData<>();
     private final MutableLiveData<String> message = new MutableLiveData<>();
     private final MutableLiveData<List<User>> projectMembers = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<String>> imageUrls = new MutableLiveData<>(new ArrayList<>());
+
+    public LiveData<List<String>> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void addImageUrl(String url) {
+        List<String> current = imageUrls.getValue();
+        current.add(url);
+        imageUrls.setValue(current);
+    }
 
     public TaskViewModel(Application application) {
         super(application);
@@ -171,7 +182,7 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     public void updateImageUris(List<Uri> newUris) {
-        imageUris.setValue(newUris);
+        imageUris.postValue(newUris);
     }
 
     // Toggle methods for sections

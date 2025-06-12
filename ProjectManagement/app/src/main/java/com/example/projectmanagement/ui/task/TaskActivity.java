@@ -43,8 +43,12 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,6 +56,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -66,23 +72,31 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.model.User;
+import com.example.projectmanagement.data.service.FileService;
 import com.example.projectmanagement.databinding.ActivityTaskBinding;
 import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
+import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.viewmodel.AvatarView;
 import com.example.projectmanagement.data.model.ProjectMemberHolder;
+
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 
+import org.json.JSONObject;
+
 public class TaskActivity extends AppCompatActivity {
+    private String TAG = "TaskActivity";
     private ActivityTaskBinding binding;
     private TaskViewModel viewModel;
     private InputMethodManager imm;
@@ -91,25 +105,28 @@ public class TaskActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> imagePickerLauncher;
     private ActivityResultLauncher<String[]> filePickerLauncher;
 
+    private Task savedTask;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityTaskBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        
+
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
-        
+
         // Get task from intent
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
+            savedTask = task;
             if (task != null) {
                 // Fetch task details from API
                 viewModel.fetchTaskDetail(task.getTaskID());
-                
+
                 // Fetch project members
                 viewModel.fetchProjectMembers();
-                
+
                 // Observe messages for feedback
                 viewModel.getMessage().observe(this, message -> {
                     if (message != null && !message.isEmpty()) {
@@ -134,7 +151,7 @@ public class TaskActivity extends AppCompatActivity {
         // Load comments from API
 //        viewModel.fetchComments();
 
-        imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(binding.etDescription, InputMethodManager.SHOW_IMPLICIT);
 
         // Set initial state of checkbox and card color based on task status
@@ -143,7 +160,7 @@ public class TaskActivity extends AppCompatActivity {
                 boolean isDone = "DONE".equalsIgnoreCase(task.getStatus());
                 binding.checkboxCompleted.setChecked(isDone);
                 updateCardStrokeColor(isDone);
-                
+
                 // Initialize member UI when task is loaded
                 initMemberUI();
             }
@@ -248,7 +265,7 @@ public class TaskActivity extends AppCompatActivity {
             if (focused instanceof EditText) {
                 Rect outRect = new Rect();
                 focused.getGlobalVisibleRect(outRect);
-                if (!outRect.contains((int)ev.getRawX(), (int)ev.getRawY())) {
+                if (!outRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
                     focused.clearFocus();
                     imm.hideSoftInputFromWindow(focused.getWindowToken(), 0);
                     binding.confirmBar.setVisibility(View.GONE);
@@ -262,7 +279,7 @@ public class TaskActivity extends AppCompatActivity {
     private void showAllComments() {
         List<Comment> commentList = viewModel.getComments().getValue();
         if (commentList == null || commentList.isEmpty()) return;
-        
+
         binding.commentContainer.setVisibility(View.VISIBLE);
         binding.commentContainer.removeAllViews();
 
@@ -278,19 +295,19 @@ public class TaskActivity extends AppCompatActivity {
             ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
 
             tvTime.setText(fmt.format(c.getCreateAt()));
-            
+
             // Get user info from project members
             List<User> members = viewModel.getProjectMembers().getValue();
             if (members != null) {
                 User commentUser = members.stream()
-                    .filter(m -> m.getId() == c.getUserID())
-                    .findFirst()
-                    .orElse(null);
-                
+                        .filter(m -> m.getId() == c.getUserID())
+                        .findFirst()
+                        .orElse(null);
+
                 if (commentUser != null) {
                     tvName.setText(commentUser.getFullname());
                     avatar.setName(commentUser.getFullname());
-                    
+
                     if (commentUser.getAvatar() != null && !commentUser.getAvatar().isEmpty()) {
                         // TODO: Load avatar using your image loading library
                         // Glide.with(avatar).load(commentUser.getAvatar()).into(avatar);
@@ -301,31 +318,31 @@ public class TaskActivity extends AppCompatActivity {
             // Handle file/image in comment
             String content = c.getContent();
             SpannableString spannableString = new SpannableString(content);
-            
+
             // Xử lý file
             if (content.contains("[File]")) {
                 int fileStart = content.indexOf("[File]");
                 int nameStart = fileStart + 6; // Sau "[File]"
                 int nameEnd = content.indexOf("[/File]", nameStart);
                 if (nameEnd == -1) nameEnd = content.length();
-                
+
                 // Lấy tên file gốc
                 String fileName = content.substring(nameStart, nameEnd);
-                
+
                 // Thu gọn tên file
                 String truncatedName = truncateFileName(fileName, 20);
-                
+
                 // Cập nhật nội dung với tên đã thu gọn
                 content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
                 spannableString = new SpannableString(content);
-                
+
                 // Thêm style cho tên file
                 spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
                 spannableString.setSpan(
-                    new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                    nameStart, nameStart + truncatedName.length(), 0
+                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
+                        nameStart, nameStart + truncatedName.length(), 0
                 );
-                
+
                 // Thêm click listener cho file
                 final String finalFileName = fileName;
                 ClickableSpan fileClickableSpan = new ClickableSpan() {
@@ -336,32 +353,32 @@ public class TaskActivity extends AppCompatActivity {
                 };
                 spannableString.setSpan(fileClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
             }
-            
+
             // Xử lý ảnh
             if (content.contains("[Image]")) {
                 int imageStart = content.indexOf("[Image]");
                 int nameStart = imageStart + 7; // Sau "[Image]"
                 int nameEnd = content.indexOf("[/Image]", nameStart);
                 if (nameEnd == -1) nameEnd = content.length();
-                
+
                 // Lấy thông tin ảnh (tên file và URI)
                 String imageInfo = content.substring(nameStart, nameEnd);
-                
+
                 // Thu gọn tên ảnh để hiển thị
                 String fileName = imageInfo.split("\\|")[0];
                 String truncatedName = truncateFileName(fileName, 20);
-                
+
                 // Cập nhật nội dung với tên đã thu gọn
                 content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
                 spannableString = new SpannableString(content);
-                
+
                 // Thêm style cho tên ảnh
                 spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
                 spannableString.setSpan(
-                    new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                    nameStart, nameStart + truncatedName.length(), 0
+                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
+                        nameStart, nameStart + truncatedName.length(), 0
                 );
-                
+
                 // Thêm click listener cho ảnh
                 final String finalImageInfo = imageInfo;
                 ClickableSpan imageClickableSpan = new ClickableSpan() {
@@ -372,7 +389,7 @@ public class TaskActivity extends AppCompatActivity {
                 };
                 spannableString.setSpan(imageClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
             }
-            
+
             tvText.setText(spannableString);
             tvText.setMovementMethod(LinkMovementMethod.getInstance());
             tvText.setHighlightColor(Color.TRANSPARENT); // Xóa highlight khi click
@@ -386,7 +403,7 @@ public class TaskActivity extends AppCompatActivity {
         if (fileName == null || fileName.isEmpty()) {
             return "";
         }
-        
+
         if (fileName.length() <= maxLength) {
             return fileName;
         }
@@ -402,10 +419,10 @@ public class TaskActivity extends AppCompatActivity {
         String extension = fileName.substring(lastDotIndex);
         // Lấy phần tên file (không có phần mở rộng)
         String nameWithoutExt = fileName.substring(0, lastDotIndex);
-        
+
         // Tính toán độ dài tối đa cho phần tên file
         int maxNameLength = maxLength - extension.length() - 3; // 3 là độ dài của "..."
-        
+
         if (nameWithoutExt.length() <= maxNameLength) {
             return fileName;
         }
@@ -473,7 +490,7 @@ public class TaskActivity extends AppCompatActivity {
         btnDelete.setOnClickListener(v -> {
             // Xóa file
             viewModel.deleteFile(targetFile);
-            
+
             // Cập nhật comment chứa file này
             List<Comment> comments = viewModel.getComments().getValue();
             if (comments != null) {
@@ -493,7 +510,7 @@ public class TaskActivity extends AppCompatActivity {
                     }
                 }
             }
-            
+
             dialog.dismiss();
         });
 
@@ -545,10 +562,10 @@ public class TaskActivity extends AppCompatActivity {
         PopupMenu popup = new PopupMenu(this, anchor);
         popup.getMenuInflater().inflate(R.menu.menu_comment_item, popup.getMenu());
         popup.setOnMenuItemClickListener(item -> {
-            if(item.getItemId() == R.id.action_edit_comment){
+            if (item.getItemId() == R.id.action_edit_comment) {
                 editComment(c);
                 return true;
-            }else if(item.getItemId() == R.id.action_delete_comment){
+            } else if (item.getItemId() == R.id.action_delete_comment) {
                 deleteComment(c);
                 return true;
             }
@@ -597,9 +614,10 @@ public class TaskActivity extends AppCompatActivity {
                 List<Uri> uris = viewModel.getImageUris().getValue();
                 if (uris != null && position < uris.size()) {
                     Uri uri = uris.get(position);
-                // TODO: xử lý tải xuống ảnh
+                    // TODO: xử lý tải xuống ảnh
                 }
             }
+
             @Override
             public void onDeleteClicked(int position) {
                 viewModel.removeImageUri(position);
@@ -616,9 +634,10 @@ public class TaskActivity extends AppCompatActivity {
             public void onDownloadClicked(int position) {
                 List<File> files = viewModel.getFiles().getValue();
                 if (files != null && position < files.size()) {
-                // TODO: download logic
+                    // TODO: download logic
                 }
             }
+
             @Override
             public void onDeleteClicked(int position) {
                 List<File> files = viewModel.getFiles().getValue();
@@ -650,12 +669,51 @@ public class TaskActivity extends AppCompatActivity {
                             String mimeType = getContentResolver().getType(uri);
                             if (mimeType != null && mimeType.startsWith("image/")) {
                                 // Add image to task
-                                viewModel.addImageUri(uri);
-                                
+                                try {
+                                    FileService.uploadFile(this, savedTask.getTaskID(), getContentResolver().openInputStream(uri), fileName, mimeType, res -> {
+                                        try {
+                                            String jsonString = new String(res.data, StandardCharsets.UTF_8);
+                                            JSONObject jsonObject = new JSONObject(jsonString);
+
+                                            String status = jsonObject.optString("status");
+                                            JSONObject data = jsonObject.optJSONObject("data"); // nếu là object
+                                            String error = jsonObject.optString("error");
+                                            String filepath = String.valueOf(data.optString("filePath"));
+                                            Log.d(TAG,">>> img url: "+Helpers.createImageUrlEndpoint(filepath));
+//                                            Uri imgUri = null;
+//                                            try {
+//                                                 imgUri = FileService.downloadImageToMediaStore(this, Helpers.createImageUrlEndpoint(filepath), fileName, mimeType);
+//                                            Log.d(TAG,">>> uri: "+imgUri);
+//                                            }catch (Exception e){
+//                                                Log.d(TAG,">>> "+ e.getMessage());
+//                                            }
+                                            Executor executor = Executors.newSingleThreadExecutor();
+                                            executor.execute(() -> {
+
+
+                                            Uri imgURI =  FileService.downloadImageAndGetUri(this,Helpers.createImageUrlEndpoint(filepath));
+
+                                            viewModel.addImageUri(imgURI);
+
+                                            Log.d(TAG, ">>> status: " + status);
+                                            Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
+                                            Log.d(TAG, ">>> error: " + error);
+                                            });
+                                        } catch (Exception e) {
+                                            Log.e(TAG, ">>> JSON parse error", e);
+                                        }
+                                        ;
+                                    }, err -> {
+                                        Log.d(TAG, ">>> err: " + err.toString());
+                                    });
+                                } catch (FileNotFoundException e) {
+                                    throw new RuntimeException(e);
+                                }
+
                                 // Add image reference to comment
                                 String imageComment = String.format("[Image] %s", fileName);
                                 appendToComment(imageComment, true);
-                                
+
                                 // Show image section
                                 viewModel.toggleImagesExpanded();
                             }
@@ -671,7 +729,7 @@ public class TaskActivity extends AppCompatActivity {
                         for (Uri uri : uris) {
                             String fileName = getFileName(uri);
                             String mimeType = getContentResolver().getType(uri);
-                            
+
                             if (mimeType != null && mimeType.startsWith("image/")) {
                                 showToast("File là ảnh, vui lòng chọn trong phần tải ảnh: " + fileName);
                                 continue;
@@ -681,22 +739,22 @@ public class TaskActivity extends AppCompatActivity {
                             String ext = getFileExtension(uri);
                             long size = getFileSize(uri);
                             File file = new File(
-                                viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1,
-                                fileName,
-                                uri.toString(),
-                                size,
-                                ext,
-                                1,
-                                1,
-                                new Date(),
-                                new Date()
+                                    viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1,
+                                    fileName,
+                                    uri.toString(),
+                                    size,
+                                    ext,
+                                    1,
+                                    1,
+                                    new Date(),
+                                    new Date()
                             );
                             viewModel.addFile(file);
-                            
+
                             // Add file reference to comment
                             String fileComment = String.format("[File] %s", fileName);
                             appendToComment(fileComment, true);
-                            
+
                             // Show file section
                             viewModel.toggleFilesExpanded();
                         }
@@ -762,17 +820,17 @@ public class TaskActivity extends AppCompatActivity {
 
     private String formatFileSize(long size) {
         if (size <= 0) return "0 B";
-        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-        return String.format(Locale.getDefault(), "%.1f %s", 
-            size / Math.pow(1024, digitGroups), 
-            units[digitGroups]);
+        return String.format(Locale.getDefault(), "%.1f %s",
+                size / Math.pow(1024, digitGroups),
+                units[digitGroups]);
     }
 
     private void setupListeners() {
         binding.rowMember.setOnClickListener(v -> showMemberSelectionDialog());
         binding.rowDueDate.setOnClickListener(v -> showDateTimePicker());
-        binding.llMainFiles.setOnClickListener(v->uploadFileFromDevice());
+        binding.llMainFiles.setOnClickListener(v -> uploadFileFromDevice());
 
         binding.rowImageAttachments.setOnClickListener(v -> viewModel.toggleImagesExpanded());
         binding.rowFileAttachments.setOnClickListener(v -> viewModel.toggleFilesExpanded());
@@ -800,7 +858,8 @@ public class TaskActivity extends AppCompatActivity {
                         .getDeclaredMethod("setOptionalIconsVisible", boolean.class);
                 m.setAccessible(true);
                 m.invoke(menu, true);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return super.onMenuOpened(featureId, menu);
     }
@@ -839,7 +898,9 @@ public class TaskActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Upload image")
                 .setItems(new String[]{getString(R.string.upload), getString(R.string.cancel)},
-                        (dlg, w) -> { if (w == 0) imagePickerLauncher.launch(new String[]{"image/*"}); }
+                        (dlg, w) -> {
+                            if (w == 0) imagePickerLauncher.launch(new String[]{"image/*"});
+                        }
                 ).show();
     }
 
@@ -847,7 +908,9 @@ public class TaskActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Upload file")
                 .setItems(new String[]{getString(R.string.upload), getString(R.string.cancel)},
-                        (dlg, w) -> { if (w == 0) filePickerLauncher.launch(new String[]{"*/*"}); }
+                        (dlg, w) -> {
+                            if (w == 0) filePickerLauncher.launch(new String[]{"*/*"});
+                        }
                 ).show();
     }
 
@@ -873,7 +936,7 @@ public class TaskActivity extends AppCompatActivity {
 
     private void loadSampleData() {
         binding.imgAvatar.setName("Nguyễn Thành Trung");
-        
+
         // Sample image URIs
         List<Uri> sampleUris = new ArrayList<>();
         sampleUris.add(Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.calendar));
@@ -886,12 +949,12 @@ public class TaskActivity extends AppCompatActivity {
 
         // Sample files
         List<File> sampleFiles = new ArrayList<>();
-        sampleFiles.add(new File(1,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300L,"pdf",1,1, new Date(), new Date()));
-        sampleFiles.add(new File(2,"Note.txt","content://com.example.yourapp/files/Note.txt", 121L,"txt",1,1, new Date(), new Date()));
-        sampleFiles.add(new File(3,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300L,"pdf",1,1, new Date(), new Date()));
-        sampleFiles.add(new File(4,"Note.txt","content://com.example.yourapp/files/Note.txt",121L,"txt",1,1, new Date(), new Date()));
-        sampleFiles.add(new File(5,"Report.pdf","content://com.example.yourapp/files/Report.pdf",2300L,"pdf",1,1, new Date(), new Date()));
-        sampleFiles.add(new File(6,"Note.txt","content://com.example.yourapp/files/Note.txt",121L,"txt",1,1, new Date(), new Date()));
+        sampleFiles.add(new File(1, "Report.pdf", "content://com.example.yourapp/files/Report.pdf", 2300L, "pdf", 1, 1, new Date(), new Date()));
+        sampleFiles.add(new File(2, "Note.txt", "content://com.example.yourapp/files/Note.txt", 121L, "txt", 1, 1, new Date(), new Date()));
+        sampleFiles.add(new File(3, "Report.pdf", "content://com.example.yourapp/files/Report.pdf", 2300L, "pdf", 1, 1, new Date(), new Date()));
+        sampleFiles.add(new File(4, "Note.txt", "content://com.example.yourapp/files/Note.txt", 121L, "txt", 1, 1, new Date(), new Date()));
+        sampleFiles.add(new File(5, "Report.pdf", "content://com.example.yourapp/files/Report.pdf", 2300L, "pdf", 1, 1, new Date(), new Date()));
+        sampleFiles.add(new File(6, "Note.txt", "content://com.example.yourapp/files/Note.txt", 121L, "txt", 1, 1, new Date(), new Date()));
         viewModel.updateFiles(sampleFiles);
 
         // Show sections
@@ -972,11 +1035,11 @@ public class TaskActivity extends AppCompatActivity {
         for (int i = 0; i < allPhases.size(); i++) {
             Phase phase = allPhases.get(i);
             String phaseName = phase.getPhaseName();
-            Log.d("Check ..........>>>>>>", "vi tri "+ i);
+            Log.d("Check ..........>>>>>>", "vi tri " + i);
             if (currentTask.getPhaseID() == phase.getPhaseID()) {
                 phaseName += " (hiện tại)";
                 currentPhaseIndex = i;
-                Log.d("Check ..........>>>>>>", "Hien tai "+ currentPhaseIndex);
+                Log.d("Check ..........>>>>>>", "Hien tai " + currentPhaseIndex);
             }
             phaseNames.add(phaseName);
         }
@@ -1015,7 +1078,7 @@ public class TaskActivity extends AppCompatActivity {
                         spinnerPosition.setSelection(currentTaskOrderIndex - 1);
                     }
                 } else {
-                    spinnerPosition.setSelection(maxPosition -1);
+                    spinnerPosition.setSelection(maxPosition - 1);
                 }
             }
 
@@ -1097,7 +1160,7 @@ public class TaskActivity extends AppCompatActivity {
         if (member != null) {
             binding.tvThanhvien.setVisibility(View.GONE);
             binding.avThanhvien.setVisibility(View.VISIBLE);
-            
+
             if (member.getAvatar() != null && !member.getAvatar().isEmpty()) {
                 // TODO: Load avatar using your image loading library
                 // Glide.with(binding.avThanhVien).load(member.getAvatar()).into(binding.avThanhVien);
@@ -1119,10 +1182,10 @@ public class TaskActivity extends AppCompatActivity {
             List<User> members = viewModel.getProjectMembers().getValue();
             if (members != null) {
                 User assignedMember = members.stream()
-                    .filter(m -> m.getId() == currentTask.getAssignedTo())
-                    .findFirst()
-                    .orElse(null);
-                
+                        .filter(m -> m.getId() == currentTask.getAssignedTo())
+                        .findFirst()
+                        .orElse(null);
+
                 if (assignedMember != null) {
                     updateMemberUI(assignedMember);
                 }
@@ -1136,51 +1199,51 @@ public class TaskActivity extends AppCompatActivity {
     private void showDateTimePicker() {
         // Show date picker first
         DatePickerDialog datePickerDialog = new DatePickerDialog(
-            this,
-            (view, year, month, dayOfMonth) -> {
-                Calendar calendar = Calendar.getInstance();
-                calendar.set(year, month, dayOfMonth);
-                
-                // Check if selected date is in the past
-                Calendar now = Calendar.getInstance();
-                if (calendar.before(now)) {
-                    showToast("Ngày hết hạn phải lớn hơn thời gian hiện tại");
-                    return;
-                }
-                
-                // After selecting date, show time picker
-                TimePickerDialog timePickerDialog = new TimePickerDialog(
-                    this,
-                    (view1, hourOfDay, minute) -> {
-                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                        calendar.set(Calendar.MINUTE, minute);
-                        
-                        // Check if selected date and time is in the past
-                        if (calendar.before(now)) {
-                            showToast("Thời gian hết hạn phải lớn hơn thời gian hiện tại");
-                            return;
-                        }
-                        
-                        // Format date and time
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-                        
-                        String dateStr = dateFormat.format(calendar.getTime());
-                        String timeStr = timeFormat.format(calendar.getTime());
-                        
-                        // Update UI and ViewModel
-                        binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
-                        viewModel.updateTaskDueDate(calendar.getTime());
-                    },
-                    calendar.get(Calendar.HOUR_OF_DAY),
-                    calendar.get(Calendar.MINUTE),
-                    true
-                );
-                timePickerDialog.show();
-            },
-            Calendar.getInstance().get(Calendar.YEAR),
-            Calendar.getInstance().get(Calendar.MONTH),
-            Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.set(year, month, dayOfMonth);
+
+                    // Check if selected date is in the past
+                    Calendar now = Calendar.getInstance();
+                    if (calendar.before(now)) {
+                        showToast("Ngày hết hạn phải lớn hơn thời gian hiện tại");
+                        return;
+                    }
+
+                    // After selecting date, show time picker
+                    TimePickerDialog timePickerDialog = new TimePickerDialog(
+                            this,
+                            (view1, hourOfDay, minute) -> {
+                                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                                calendar.set(Calendar.MINUTE, minute);
+
+                                // Check if selected date and time is in the past
+                                if (calendar.before(now)) {
+                                    showToast("Thời gian hết hạn phải lớn hơn thời gian hiện tại");
+                                    return;
+                                }
+
+                                // Format date and time
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+
+                                String dateStr = dateFormat.format(calendar.getTime());
+                                String timeStr = timeFormat.format(calendar.getTime());
+
+                                // Update UI and ViewModel
+                                binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
+                                viewModel.updateTaskDueDate(calendar.getTime());
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                    );
+                    timePickerDialog.show();
+                },
+                Calendar.getInstance().get(Calendar.YEAR),
+                Calendar.getInstance().get(Calendar.MONTH),
+                Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
         );
 
         // Set minimum date to today
@@ -1225,24 +1288,24 @@ public class TaskActivity extends AppCompatActivity {
         // Handle attach button
         binding.btnAttach.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
-                .setTitle("Tải file lên")
-                .setItems(new String[]{"Chọn ảnh", "Chọn file", "Hủy"}, (dialog, which) -> {
-                    switch (which) {
-                        case 0: // Chọn ảnh
-                            imagePickerLauncher.launch(new String[]{"image/*"});
-                            break;
-                        case 1: // Chọn file
-                            filePickerLauncher.launch(new String[]{"*/*"});
-                            break;
-                    }
-                })
-                .show();
+                    .setTitle("Tải file lên")
+                    .setItems(new String[]{"Chọn ảnh", "Chọn file", "Hủy"}, (dialog, which) -> {
+                        switch (which) {
+                            case 0: // Chọn ảnh
+                                imagePickerLauncher.launch(new String[]{"image/*"});
+                                break;
+                            case 1: // Chọn file
+                                filePickerLauncher.launch(new String[]{"*/*"});
+                                break;
+                        }
+                    })
+                    .show();
         });
     }
 
     private void appendToComment(String text, boolean isFile) {
         String currentText = binding.etComment.getText().toString();
-        
+
         if (isFile) {
             // Nếu là file, kiểm tra xem đã có file trong comment chưa
             if (currentText.contains("[File]")) {
@@ -1250,12 +1313,12 @@ public class TaskActivity extends AppCompatActivity {
                 int fileStart = currentText.indexOf("[File]");
                 int fileEnd = currentText.indexOf("[/File]", fileStart);
                 if (fileEnd == -1) fileEnd = currentText.length();
-                
+
                 // Thu gọn tên file mới
                 String fileName = text.substring(text.indexOf("]") + 2);
                 String truncatedName = truncateFileName(fileName, 20);
                 String newFileText = "[File]" + truncatedName + "[/File]";
-                
+
                 // Thay thế file cũ bằng file mới
                 currentText = currentText.substring(0, fileStart) + newFileText + currentText.substring(fileEnd + 7);
             } else {
@@ -1265,21 +1328,21 @@ public class TaskActivity extends AppCompatActivity {
                 text = "[File]" + truncatedName + "[/File]";
                 currentText = currentText.isEmpty() ? text : currentText + text;
             }
-            
+
             // Tạo SpannableString với style cho tên file
             SpannableString spannableString = new SpannableString(currentText);
             int fileStart = currentText.indexOf("[File]");
             int nameStart = fileStart + 6; // Sau "[File]"
             int nameEnd = currentText.indexOf("[/File]", nameStart);
             if (nameEnd == -1) nameEnd = currentText.length();
-            
+
             // Thêm style cho tên file
             spannableString.setSpan(new UnderlineSpan(), nameStart, nameEnd, 0);
             spannableString.setSpan(
-                new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                nameStart, nameEnd, 0
+                    new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
+                    nameStart, nameEnd, 0
             );
-            
+
             binding.etComment.setText(spannableString);
         } else {
             // Nếu là text thông thường
@@ -1287,7 +1350,7 @@ public class TaskActivity extends AppCompatActivity {
                 // Nếu đã có file, thêm text vào sau file
                 int fileEnd = currentText.indexOf("[/File]", currentText.indexOf("[File]")) + 7;
                 if (fileEnd == -1) fileEnd = currentText.length();
-                
+
                 // Thêm text vào sau file
                 currentText = currentText.substring(0, fileEnd) + text;
             } else {
@@ -1296,7 +1359,7 @@ public class TaskActivity extends AppCompatActivity {
             }
             binding.etComment.setText(currentText);
         }
-        
+
         // Move cursor to end
         binding.etComment.setSelection(binding.etComment.getText().length());
     }
@@ -1367,7 +1430,7 @@ public class TaskActivity extends AppCompatActivity {
             if (index != -1) {
                 viewModel.removeImageUri(index);
             }
-            
+
             // Cập nhật comment chứa ảnh này
             List<Comment> comments = viewModel.getComments().getValue();
             if (comments != null) {
@@ -1387,7 +1450,7 @@ public class TaskActivity extends AppCompatActivity {
                     }
                 }
             }
-            
+
             dialog.dismiss();
         });
 
