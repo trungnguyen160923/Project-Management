@@ -274,5 +274,51 @@ public class ProjectRepository {
         ProjectService.deleteProject(context, projectId, listener, errorListener);
     }
 
+    public LiveData<Boolean> deleteProject(int projectId) {
+        MutableLiveData<Boolean> result = new MutableLiveData<>();
+        
+        ProjectService.deleteProject(
+                context,
+                String.valueOf(projectId),
+                response -> {
+                    Log.d(TAG, "deleteProject: server response=" + response.toString());
+                    String status = response.optString("status", "error");
+                    String msg = response.optString("error", null);
+
+                    if ("success".equals(status)) {
+                        // Xóa project khỏi danh sách
+                        List<Project> list = projectsLiveData.getValue();
+                        if (list != null) {
+                            list.removeIf(p -> p.getProjectID() == projectId);
+                            projectsLiveData.setValue(list);
+                        }
+                        
+                        messageLiveData.setValue(
+                                !msg.isEmpty() && !msg.equals("null") ? msg : "Xóa project thành công"
+                        );
+                        result.setValue(true);
+                    } else {
+                        Log.w(TAG, "deleteProject: status failure=" + status + ", msg=" + msg);
+                        messageLiveData.setValue(
+                                msg
+                        );
+
+                        result.setValue(false);
+                    }
+                },
+                error -> {
+                    String errorMessage = "Lỗi không xác định";
+                    try {
+                        errorMessage = Helpers.parseError(error);
+                    } catch (Exception e) {}
+                    messageLiveData.setValue(errorMessage);
+                    Log.e(TAG, "deleteProject error", error);
+                    result.setValue(false);
+                }
+        );
+
+        return result;
+    }
+
 
 }

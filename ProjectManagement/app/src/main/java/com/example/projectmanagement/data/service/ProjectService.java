@@ -57,6 +57,7 @@ public class ProjectService {
         JsonObjectRequest request = new JsonObjectRequest(method, url, body,
                 listener, error -> {
                 Log.d(TAG,">>> er"+error.toString());
+            errorListener.onErrorResponse(error);
         }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
@@ -242,13 +243,17 @@ public class ProjectService {
                                      String projectId,
                                      Response.Listener<JSONObject> listener,
                                      Response.ErrorListener errorListener) {
+        String url = "/projects/" + projectId;
         JsonObjectRequest req = makeRequest(
                 Request.Method.DELETE,
-                "/projects/" + projectId,
+                url,
                 null,
                 context,
                 listener,
-                errorListener
+                error -> {
+                    Log.d(TAG, ">>> delete error: " + error.toString());
+                    errorListener.onErrorResponse(error);
+                }
         );
         ApiConfig.getInstance(context).addToRequestQueue(req);
     }
