@@ -44,6 +44,7 @@ import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.ui.adapter.PhaseAdapter;
 import com.example.projectmanagement.ui.helper.PhaseOrderTouchCallback;
 import com.example.projectmanagement.ui.notification.NotificationActivity;
@@ -270,7 +271,13 @@ public class ProjectActivity extends AppCompatActivity implements
         rvBoard.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
         // Debug log
-        android.util.Log.d("ProjectActivity", "setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
+        Log.d("ProjectActivity", "setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
+
+        // Ensure phases are loaded from project
+        if (project != null && project.getPhases() != null) {
+            phases = new ArrayList<>(project.getPhases());
+            Log.d("ProjectActivity", "Loaded " + phases.size() + " phases from project");
+        }
 
         phaseAdapter = new PhaseAdapter(phases, this, this, this, this, rvBoard);
         rvBoard.setAdapter(phaseAdapter);
@@ -279,18 +286,12 @@ public class ProjectActivity extends AppCompatActivity implements
         phaseAdapter.notifyDataSetChanged();
 
         // Debug log
-        android.util.Log.d("ProjectActivity", "setupBoard: Adapter created and set");
+        Log.d("ProjectActivity", "setupBoard: Adapter created and set with " + phases.size() + " phases");
 
-        @SuppressLint("NotifyDataSetChanged") PhaseDragListener.OnCardDropListener dropListener = (target, dropIndex, info) -> {
-            List<Task> src = info.getPhase().getTasks();
-            List<Task> dst = target.getTasks();
-            Task task = info.getTask();
-            int orig = info.getOriginalPosition();
-
-            if (src.remove(task) && target == info.getPhase() && dropIndex > orig) dropIndex--;
-            dropIndex = Math.max(0, Math.min(dropIndex, dst.size()));
-            dst.add(dropIndex, task);
-            phaseAdapter.notifyDataSetChanged();
+        // Create an adapter to convert between the two OnCardDropListener interfaces
+        PhaseDragListener.OnCardDropListener dropListener = (target, dropIndex, info) -> {
+            // Call the activity's onCardDropped method
+            onCardDropped(target, dropIndex, info);
         };
 
         PhaseDragListener dragListener = new PhaseDragListener(rvBoard, phases, dropListener, 100, 100);
@@ -489,12 +490,52 @@ public class ProjectActivity extends AppCompatActivity implements
             item.setEnabled(!name.trim().isEmpty());
         }
     }
-    @Override public void onCardDropped(Phase target,int idx,DraggedTaskInfo info) {
-        List<Task> src=info.getPhase().getTasks(), dst=target.getTasks();
-        Task t=info.getTask(); int orig=info.getOriginalPosition();
-        if(src.remove(t)&& target==info.getPhase()&& idx>orig) idx--;
-        idx=Math.max(0,Math.min(idx,dst.size())); dst.add(idx,t); phaseAdapter.notifyDataSetChanged();
-        ProjectHolder.set(project);
+    @Override public void onCardDropped(Phase target, int idx, DraggedTaskInfo info) {
+        Log.d("ProjectActivity", "onCardDropped called - Task: " + info.getTask().getTaskName() + 
+            ", From Phase: " + info.getPhase().getPhaseName() + 
+            ", To Phase: " + target.getPhaseName() + 
+            ", Position: " + idx);
+
+        List<Task> src = info.getPhase().getTasks();
+        List<Task> dst = target.getTasks();
+        Task task = info.getTask();
+        int orig = info.getOriginalPosition();
+
+        // Update UI first
+        if (src.remove(task) && target == info.getPhase() && idx > orig) idx--;
+        idx = Math.max(0, Math.min(idx, dst.size()));
+        dst.add(idx, task);
+        phaseAdapter.notifyDataSetChanged();
+
+        // Make index final for lambda
+        final int finalIdx = idx;
+
+        Log.d("ProjectActivity", "Calling moveTask API - TaskId: " + task.getTaskID() + 
+            ", PhaseId: " + target.getPhaseID() + 
+            ", Position: " + finalIdx + 
+            ", ProjectId: " + project.getProjectID());
+
+        // Call API to update task position
+        TaskService.moveTask(
+            this,
+            task.getTaskID(),
+            target.getPhaseID(),
+            finalIdx,
+            project.getProjectID(),
+            response -> {
+                Log.d("ProjectActivity", "Task moved successfully - Response: " + response.toString());
+                // Update project in holder
+                ProjectHolder.set(project);
+            },
+            error -> {
+                Log.e("ProjectActivity", "Error moving task: " + error.getMessage());
+                // Revert changes if API call fails
+                dst.remove(finalIdx);
+                src.add(orig, task);
+                phaseAdapter.notifyDataSetChanged();
+                Toast.makeText(this, "Failed to move task. Please try again.", Toast.LENGTH_SHORT).show();
+            }
+        );
     }
 
     @Override

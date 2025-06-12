@@ -2,6 +2,7 @@ package com.example.projectmanagement.ui.helper;
 
 import android.annotation.SuppressLint;
 import android.util.Log;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,6 +19,7 @@ public class PhaseOrderTouchCallback extends ItemTouchHelper.Callback {
     private static final int SCROLL_SPEED = 20; // pixels per scroll
     private boolean isScrolling = false;
     private RecyclerView recyclerView;
+    private static final String TAG = "PhaseOrderTouchCallback";
 
     public PhaseOrderTouchCallback(List<Phase> phases, PhaseAdapter adapter) {
         this.phases = phases;
@@ -35,60 +37,47 @@ public class PhaseOrderTouchCallback extends ItemTouchHelper.Callback {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    @Override public boolean onMove(@NonNull RecyclerView rv,
-                                    @NonNull RecyclerView.ViewHolder src,
-                                    @NonNull RecyclerView.ViewHolder target) {
-        int oldIndex = src.getAdapterPosition();
-        int newIndex = target.getAdapterPosition();
+    @Override public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+        int fromPosition = viewHolder.getAdapterPosition();
+        int toPosition = target.getAdapterPosition();
 
-        // Check if list is empty or indices are invalid
-        if (phases == null || phases.isEmpty() || oldIndex < 0 || newIndex < 0 || 
-            oldIndex >= phases.size() || newIndex >= phases.size()) {
-            Log.e("PhaseOrderTouchCallback", "Invalid move operation: oldIndex=" + oldIndex + 
-                ", newIndex=" + newIndex + ", listSize=" + (phases != null ? phases.size() : 0));
+        // Validate indices
+        if (fromPosition < 0 || toPosition < 0 || fromPosition >= phases.size() || toPosition >= phases.size()) {
+            Log.e(TAG, "Invalid move operation: fromPosition=" + fromPosition + 
+                ", toPosition=" + toPosition + ", listSize=" + phases.size());
             return false;
         }
 
-        // Notify adapter about the move first to trigger animation
-        adapter.notifyItemMoved(oldIndex, newIndex);
+        // Notify adapter first
+        adapter.notifyItemMoved(fromPosition, toPosition);
 
-        // Swap phases in the list
-        Collections.swap(phases, oldIndex, newIndex);
+        // Update local list
+        Phase movedPhase = phases.remove(fromPosition);
+        phases.add(toPosition, movedPhase);
 
         // Update order index for all phases
         for (int i = 0; i < phases.size(); i++) {
             phases.get(i).setOrderIndex(i);
         }
 
-        // Call API to update order on server
-        if (oldIndex != newIndex) {
-            // Create final variables for lambda
-            final int fromIndex = oldIndex;
-            final int toIndex = newIndex;
-            final Phase phase = phases.get(toIndex);
-
-            PhaseService.movePhase(
-                    rv.getContext(),
-                    phase.getPhaseID(),
-                    toIndex,
-                    response -> {
-                        Log.d("PhaseOrderTouchCallback",
-                                "Phase " + phase.getPhaseID() + " moved to position " + toIndex);
-                    },
-                    error -> {
-                        Log.e("PhaseOrderTouchCallback", "Error moving phase: " + error.getMessage());
-                        // Revert the change if API call fails
-                        if (phases != null && !phases.isEmpty() && 
-                            fromIndex < phases.size() && toIndex < phases.size()) {
-                            Collections.swap(phases, toIndex, fromIndex);
-                            for (int j = 0; j < phases.size(); j++) {
-                                phases.get(j).setOrderIndex(j);
-                            }
-                            // Notify adapter about the revert with animation
-                            adapter.notifyItemMoved(toIndex, fromIndex);
-                        }
-                    });
-        }
+        // Call API to update phase order
+        PhaseService.movePhase(
+            recyclerView.getContext(),
+            movedPhase.getPhaseID(),
+            toPosition,
+            response -> {
+                Log.d(TAG, "Phase order updated successfully");
+            },
+            error -> {
+                Log.e(TAG, "Error updating phase order: " + error.getMessage());
+                // Revert changes
+                phases.remove(toPosition);
+                phases.add(fromPosition, movedPhase);
+                adapter.notifyItemMoved(toPosition, fromPosition);
+                Toast.makeText(recyclerView.getContext(), 
+                    "Failed to update phase order", Toast.LENGTH_SHORT).show();
+            }
+        );
 
         return true;
     }
@@ -214,9 +203,6 @@ public class PhaseOrderTouchCallback extends ItemTouchHelper.Callback {
         super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
         
         if (isCurrentlyActive) {
-            isScrolling = true;
-            startAutoScroll();
-            
             // Get the dragged item's position
             int draggedPosition = viewHolder.getAdapterPosition();
             if (draggedPosition == RecyclerView.NO_POSITION) return;
@@ -232,28 +218,28 @@ public class PhaseOrderTouchCallback extends ItemTouchHelper.Callback {
                 float childCenterX = child.itemView.getLeft() + child.itemView.getWidth() / 2f;
                 float distance = Math.abs(draggedItemCenterX - childCenterX);
                 
-                // If items are close enough, animate the displacement
-                if (distance < viewHolder.itemView.getWidth() * 1.5f) {
+                // Only displace items that are very close to the dragged item
+                if (distance < viewHolder.itemView.getWidth() * 0.5f) {
                     float displacement;
                     if (draggedItemCenterX > childCenterX) {
-                        // Push left
-                        displacement = -viewHolder.itemView.getWidth();
+                        // Push left with smaller displacement
+                        displacement = -viewHolder.itemView.getWidth() * 0.3f;
                     } else {
-                        // Push right
-                        displacement = viewHolder.itemView.getWidth();
+                        // Push right with smaller displacement
+                        displacement = viewHolder.itemView.getWidth() * 0.3f;
                     }
                     
-                    // Animate the displacement
+                    // Animate the displacement with shorter duration
                     child.itemView.animate()
                         .translationX(displacement)
-                        .setDuration(150)
+                        .setDuration(100)
                         .setInterpolator(new android.view.animation.DecelerateInterpolator())
                         .start();
                 } else {
                     // Reset position if items are far apart
                     child.itemView.animate()
                         .translationX(0)
-                        .setDuration(150)
+                        .setDuration(100)
                         .setInterpolator(new android.view.animation.DecelerateInterpolator())
                         .start();
                 }
