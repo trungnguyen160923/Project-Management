@@ -64,25 +64,35 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void addPhase(int phaseId) {
-        // Create new phase
+        // Get current phases list
+        List<Phase> currentPhases = phases.getValue();
+        if (currentPhases == null) {
+            currentPhases = new ArrayList<>();
+        }
+
+        // Create new phase with next order index
         Phase newPhase = new Phase();
-        newPhase.setPhaseName("Phase " + (phases.getValue() != null ? phases.getValue().size() + 1 : 1));
+        newPhase.setPhaseName("Phase " + (currentPhases.size() + 1));
         newPhase.setDescription("Description for " + newPhase.getPhaseName());
         newPhase.setStatus("ACTIVE");
         newPhase.setProjectID(project.getValue().getProjectID());
-        newPhase.setOrderIndex(phases.getValue() != null ? phases.getValue().size() : 0);
+        newPhase.setOrderIndex(currentPhases.size()); // Set order index to last position
 
         // Call repository to create phase
-        phaseRepository.createPhase(newPhase).observeForever(createdPhase -> {
-            if (createdPhase != null) {
-                List<Phase> currentPhases = phases.getValue();
-                if (currentPhases != null) {
-                    currentPhases.add(createdPhase);
-                    phases.setValue(currentPhases);
-                    Log.d("ProjectViewModel", "Phase added successfully: " + createdPhase.getPhaseName());
-                }
-            }
-        });
+        phaseRepository.createPhase(newPhase)
+                .observeForever(createdPhase -> {
+                    if (createdPhase != null) {
+                        List<Phase> tmpCurrentPhases = phases.getValue() != null
+                                ? new ArrayList<>(phases.getValue())
+                                : new ArrayList<>();
+                        tmpCurrentPhases.add(createdPhase);
+                        phases.setValue(tmpCurrentPhases);
+                        Log.d("ProjectViewModel",
+                                "Phase added successfully: " + createdPhase.getPhaseName() +
+                                        " with order index: " + createdPhase.getOrderIndex());
+                    }
+                });
+
 
         // Observe messages
         phaseRepository.getMessageLiveData().observeForever(msg -> {

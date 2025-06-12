@@ -4,9 +4,11 @@ import android.content.Context;
 import android.util.Log;
 
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.User;
@@ -167,6 +169,34 @@ public class PhaseService {
 //        }
 
         return phase;
+    }
+
+    public static void movePhase(Context context, int phaseId, int newPosition, 
+            Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        String url = BASE_URL + "/phases/" + phaseId + "/move";
+        
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("position", newPosition);
+            
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestBody,
+                    listener, errorListener) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    UserPreferences prefs = new UserPreferences(context);
+                    headers.put("Cookie", "user_auth_token="  + prefs.getJwtToken());
+                    return headers;
+                }
+            };
+            
+            RequestQueue queue = Volley.newRequestQueue(context);
+            queue.add(request);
+            
+        } catch (JSONException e) {
+            errorListener.onErrorResponse(new VolleyError("Error creating request body"));
+        }
     }
 
 }
