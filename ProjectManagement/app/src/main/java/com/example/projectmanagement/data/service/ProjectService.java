@@ -47,12 +47,12 @@ public class ProjectService {
     /**
      * Tạo request chung với JsonObjectRequest, đính kèm headers và retry policy
      */
-    private static JsonObjectRequest makeRequest(int method,
-                                                 String endpoint,
-                                                 final JSONObject body,
-                                                 final Context context,
-                                                 Response.Listener<JSONObject> listener,
-                                                 Response.ErrorListener errorListener) {
+    static JsonObjectRequest makeRequest(int method,
+                                         String endpoint,
+                                         final JSONObject body,
+                                         final Context context,
+                                         Response.Listener<JSONObject> listener,
+                                         Response.ErrorListener errorListener) {
         String url = BASE_URL + endpoint;
         JsonObjectRequest request = new JsonObjectRequest(method, url, body,
                 listener, error -> {
