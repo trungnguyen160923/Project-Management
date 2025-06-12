@@ -195,8 +195,45 @@ public class DetailPhaseDialogUtil {
                 .setTitle("Xác nhận xoá")
                 .setMessage("Bạn có chắc muốn xoá giai đoạn này?")
                 .setPositiveButton("Xoá", (d, w) -> {
-                    listener.onPhaseDeleted(phase);
-                    dialog.dismiss();
+                    // Hiển thị loading
+                    LoadingDialog loadingDialog = new LoadingDialog((Activity) ctx);
+                    loadingDialog.show();
+
+                    // Gọi API xóa phase
+                    PhaseService.deletePhase(
+                            ctx,
+                            phase.getPhaseID(),
+                            response -> {
+                                loadingDialog.dismiss();
+                                try {
+                                    String status = response.optString("status", "error");
+                                    String msg = response.optString("error", null);
+
+                                    if ("success".equals(status)) {
+                                        // Xóa thành công
+                                        listener.onPhaseDeleted(phase);
+                                        Toast.makeText(ctx, "Xóa giai đoạn thành công!", Toast.LENGTH_SHORT).show();
+                                        dialog.dismiss();
+                                    } else {
+                                        // Xóa thất bại
+                                        String errorMsg = !msg.isEmpty() && !msg.equals("null") ? msg : "Không thể xóa giai đoạn";
+                                        Toast.makeText(ctx, errorMsg, Toast.LENGTH_SHORT).show();
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error parsing response", e);
+                                    Toast.makeText(ctx, "Lỗi xử lý dữ liệu", Toast.LENGTH_SHORT).show();
+                                }
+                            },
+                            error -> {
+                                loadingDialog.dismiss();
+                                String errorMessage = "Lỗi không xác định";
+                                try {
+                                    errorMessage = Helpers.parseError(error);
+                                } catch (Exception e) {}
+                                Toast.makeText(ctx, errorMessage, Toast.LENGTH_SHORT).show();
+                                Log.e(TAG, "Delete phase error", error);
+                            }
+                    );
                 })
                 .setNegativeButton("Huỷ", null)
                 .show();

@@ -234,4 +234,22 @@ public class PhaseService {
             errorListener.onErrorResponse(new VolleyError("Error creating request body"));
         }
     }
+
+    public static void deletePhase(
+            Context context,
+            int phaseId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = String.format("/phases/%d", phaseId);
+        JsonObjectRequest request = makeRequest(
+                Request.Method.DELETE,
+                url,
+                null,
+                context,
+                listener,
+                errorListener
+        );
+        ApiConfig.getInstance(context).addToRequestQueue(request);
+    }
 }
