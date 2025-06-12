@@ -444,10 +444,20 @@ public class ProjectActivity extends AppCompatActivity implements
             }
         });
     }
-    @Override public void onAddTask(int pos) { onAddTaskGeneric(pos); phaseAdapter.notifyItemChanged(pos);}
+    @Override public void onAddTask(int pos) { 
+        onAddTaskGeneric(pos); 
+        phaseAdapter.notifyItemChanged(pos);
+    }
     private void onAddTaskGeneric(int pos) {
-        // Call ViewModel to add task
-        viewModel.addTask(pos, "Task mới");
+        // Lấy tên task từ adapter
+        String taskName = phaseAdapter.getNewTaskName();
+        if (taskName == null || taskName.trim().isEmpty()) {
+            Toast.makeText(this, "Tên task không được để trống", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Call ViewModel to add task với tên đã nhập
+        viewModel.addTask(pos, taskName);
         
         // Observe message for feedback
         viewModel.getMessage().observe(this, message -> {
@@ -455,8 +465,20 @@ public class ProjectActivity extends AppCompatActivity implements
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             }
         });
-    }
 
+        // Cập nhật ProjectHolder và UI
+        Project currentProject = ProjectHolder.get();
+        if (currentProject != null) {
+            // Cập nhật ProjectHolder
+            ProjectHolder.set(currentProject);
+            
+            // Cập nhật UI thông qua ViewModel
+            viewModel.setProject(currentProject);
+            
+            // Force refresh adapter
+            phaseAdapter.notifyDataSetChanged();
+        }
+    }
 
     @Override public void onTaskAddRequested(int pos) { pendingPhase=pos; phaseAdapter.startEditing(pos); enterInputMode(); }
     @Override public void onTaskAddConfirmed(int pos,String name) { onAddTaskGeneric(pos); exitInputMode(); }

@@ -61,8 +61,8 @@ public class Phase implements Parcelable {
         project = in.readParcelable(Project.class.getClassLoader());
         long createTs = in.readLong();
         createAt     = createTs == -1 ? null : new Date(createTs);
-        // Read tasks list (Task must implement Parcelable)
-        tasks        = in.createTypedArrayList(Task.CREATOR);
+        // Không đọc tasks list để tránh vòng lặp
+        tasks = new ArrayList<>();
     }
 
     @Override
@@ -75,8 +75,7 @@ public class Phase implements Parcelable {
         dest.writeInt(orderIndex);
         dest.writeParcelable(project, flags);
         dest.writeLong(createAt != null ? createAt.getTime() : -1);
-        // Write tasks list
-        dest.writeTypedList(tasks);
+        // Không write tasks list để tránh vòng lặp
     }
 
     @Override

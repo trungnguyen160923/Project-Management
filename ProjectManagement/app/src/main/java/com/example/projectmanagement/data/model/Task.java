@@ -105,7 +105,7 @@ public class Task implements Parcelable {
         lastUpdate      = lu == -1 ? null : new Date(lu);
         comments        = in.createTypedArrayList(Comment.CREATOR);
         files           = in.createTypedArrayList(File.CREATOR);
-        phase           = in.readParcelable(Phase.class.getClassLoader());
+        phase           = null;
         user            = in.readParcelable(User.class.getClassLoader());
     }
 
@@ -125,7 +125,6 @@ public class Task implements Parcelable {
         dest.writeLong(lastUpdate != null ? lastUpdate.getTime() : -1);
         dest.writeTypedList(comments);
         dest.writeTypedList(files);
-        dest.writeParcelable(phase, flags);
         dest.writeParcelable(user, flags);
     }
 

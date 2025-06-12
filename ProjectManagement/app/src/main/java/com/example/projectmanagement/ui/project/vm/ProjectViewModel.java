@@ -21,22 +21,29 @@ import java.util.Date;
 import java.util.List;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 public class ProjectViewModel extends ViewModel {
+    private static final String TAG = "ProjectViewModel";
     private ProjectRepository projectRepository;
     private PhaseRepository phaseRepository;
+    private Context context;
     private final MutableLiveData<Project> project = new MutableLiveData<>();
     private final MutableLiveData<List<Phase>> phases = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isInputMode = new MutableLiveData<>(false);
     private int pendingPhase = -1;
     private final MutableLiveData<String> message = new MutableLiveData<>();
-    private Context context;
+    private boolean isCreatingPhase = false; // Flag to control phase creation
+
+    public ProjectViewModel() {
+        // Default constructor for ViewModelProvider
+    }
 
     public void init(Context context) {
-        projectRepository = ProjectRepository.getInstance(context);
-        phaseRepository = PhaseRepository.getInstance(context);
+        this.context = context.getApplicationContext();
+        this.projectRepository = ProjectRepository.getInstance(context);
+        this.phaseRepository = PhaseRepository.getInstance(context);
         phases.setValue(new ArrayList<>());
-        this.context = context;
     }
 
     public void setProject(Project project) {
@@ -70,6 +77,12 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void addPhase(int phaseId) {
+        // Check if already creating a phase
+        if (isCreatingPhase) {
+            Log.d(TAG, "Already creating a phase, ignoring request");
+            return;
+        }
+
         // Get current phases list
         List<Phase> currentPhases = phases.getValue();
         if (currentPhases == null) {
@@ -84,27 +97,26 @@ public class ProjectViewModel extends ViewModel {
         newPhase.setProjectID(project.getValue().getProjectID());
         newPhase.setOrderIndex(currentPhases.size()); // Set order index to last position
 
+        // Set flag to prevent multiple creations
+        isCreatingPhase = true;
+
         // Call repository to create phase
         phaseRepository.createPhase(newPhase)
                 .observeForever(createdPhase -> {
                     if (createdPhase != null) {
-                        List<Phase> tmpCurrentPhases = phases.getValue() != null
-                                ? new ArrayList<>(phases.getValue())
-                                : new ArrayList<>();
-                        tmpCurrentPhases.add(createdPhase);
-                        phases.setValue(tmpCurrentPhases);
-                        Log.d("ProjectViewModel",
-                                "Phase added successfully: " + createdPhase.getPhaseName() +
-                                        " with order index: " + createdPhase.getOrderIndex());
+                        // Load lại toàn bộ danh sách phase từ server
+                        loadProjectPhases(project.getValue().getProjectID());
+                        Log.d(TAG, "Phase added successfully: " + createdPhase.getPhaseName());
                     }
+                    // Reset flag after phase creation completes (success or failure)
+                    isCreatingPhase = false;
                 });
-
 
         // Observe messages
         phaseRepository.getMessageLiveData().observeForever(msg -> {
             if (msg != null) {
                 message.setValue(msg);
-                Log.d("ProjectViewModel", "Phase creation message: " + msg);
+                Log.d(TAG, "Phase creation message: " + msg);
             }
         });
     }
@@ -167,16 +179,33 @@ public class ProjectViewModel extends ViewModel {
                 context,
                 newTask,
                 response -> {
-                    if ("success".equals(response.optString("status"))) {
-                        // Add task to phase
-                        phase.getTasks().add(newTask);
-                        phases.setValue(currentPhases);
-                        message.setValue("Task created successfully");
-                        Log.d("ProjectViewModel", "Task created successfully: " + taskName);
-                    } else {
-                        String errorMsg = response.optString("message", "Unknown error occurred");
-                        message.setValue(errorMsg);
-                        Log.e("ProjectViewModel", "Error creating task: " + errorMsg);
+                    try {
+                        if ("success".equals(response.optString("status"))) {
+                            // Parse task data from response
+                            JSONObject data = response.getJSONObject("data");
+                            Task createdTask = new Task();
+                            createdTask.setTaskID(data.optInt("id"));
+                            createdTask.setTaskName(data.optString("taskName"));
+                            createdTask.setTaskDescription(data.optString("description"));
+                            createdTask.setStatus(data.optString("status"));
+                            createdTask.setPriority(data.optString("priority"));
+                            createdTask.setDueDate(ParseDateUtil.parseDate(data.optString("dueDate")));
+                            createdTask.setOrderIndex(data.optInt("orderIndex"));
+                            createdTask.setPhase(phase);
+
+                            // Add task to phase
+                            phase.getTasks().add(createdTask);
+                            phases.setValue(currentPhases);
+                            message.setValue("Task created successfully");
+                            Log.d("ProjectViewModel", "Task created successfully: " + taskName);
+                        } else {
+                            String errorMsg = response.optString("message", "Unknown error occurred");
+                            message.setValue(errorMsg);
+                            Log.e("ProjectViewModel", "Error creating task: " + errorMsg);
+                        }
+                    } catch (JSONException e) {
+                        message.setValue("Error parsing response: " + e.getMessage());
+                        Log.e("ProjectViewModel", "Error parsing response", e);
                     }
                 },
                 error -> {
@@ -301,19 +330,29 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void createPhase(Phase phase) {
+        // Check if already creating a phase
+        if (isCreatingPhase) {
+            Log.d(TAG, "Already creating a phase, ignoring request");
+            return;
+        }
+
+        // Set flag to prevent multiple creations
+        isCreatingPhase = true;
+
         phaseRepository.createPhase(phase).observeForever(createdPhase -> {
             if (createdPhase != null) {
-                List<Phase> currentPhases = phases.getValue();
-                if (currentPhases != null) {
-                    currentPhases.add(createdPhase);
-                    phases.setValue(currentPhases);
-                }
+                // Load lại toàn bộ danh sách phase từ server
+                loadProjectPhases(project.getValue().getProjectID());
+                Log.d(TAG, "Phase created successfully: " + createdPhase.getPhaseName());
             }
+            // Reset flag after phase creation completes (success or failure)
+            isCreatingPhase = false;
         });
 
         phaseRepository.getMessageLiveData().observeForever(msg -> {
             if (msg != null) {
                 message.setValue(msg);
+                Log.d(TAG, "Phase creation message: " + msg);
             }
         });
     }

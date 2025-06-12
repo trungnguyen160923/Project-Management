@@ -86,7 +86,16 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
 
     @Override
     public void onItemClick(Project project) {
+        // Check if already navigating
+        if (isNavigating) {
+            Log.d(TAG, "Already navigating, ignoring click");
+            return;
+        }
+
         Log.d(TAG, "Project clicked: " + project.getProjectName() + " (ID: " + project.getProjectID() + ")");
+        
+        // Set navigating flag
+        isNavigating = true;
         
         // Show loading dialog
         LoadingDialog loadingDialog = new LoadingDialog((Activity) requireContext());
@@ -111,8 +120,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
                                 Log.d(TAG, "No phases found, navigating to ProjectActivity");
                                 loadingDialog.dismiss();
                                 ProjectHolder.set(projectDetail);
-                                Intent intent = new Intent(getActivity(), ProjectActivity.class);
-                                startActivity(intent);
+                                navigateToProjectActivity();
                                 return;
                             }
 
@@ -137,42 +145,45 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
                                                 ProjectHolder.set(projectDetail);
                                                 
                                                 // Navigate to ProjectActivity
-                                                Intent intent = new Intent(getActivity(), ProjectActivity.class);
-                                                startActivity(intent);
+                                                navigateToProjectActivity();
                                             }
                                         } catch (JSONException e) {
                                             Log.e(TAG, "Error parsing tasks", e);
-                                            loadingDialog.dismiss();
-                                            Toast.makeText(requireContext(), 
-                                                "Error loading tasks", Toast.LENGTH_SHORT).show();
+                                            handleError(loadingDialog, "Error loading tasks");
                                         }
                                     },
                                     error -> {
                                         Log.e(TAG, "Error loading tasks", error);
-                                        loadingDialog.dismiss();
-                                        Toast.makeText(requireContext(), 
-                                            "Error loading tasks", Toast.LENGTH_SHORT).show();
+                                        handleError(loadingDialog, "Error loading tasks");
                                     });
                             }
                         } catch (JSONException e) {
                             Log.e(TAG, "Error parsing phases", e);
-                            loadingDialog.dismiss();
-                            Toast.makeText(requireContext(), 
-                                "Error loading phases", Toast.LENGTH_SHORT).show();
+                            handleError(loadingDialog, "Error loading phases");
                         }
                     },
                     error -> {
                         Log.e(TAG, "Error loading phases", error);
-                        loadingDialog.dismiss();
-                        Toast.makeText(requireContext(), 
-                            "Error loading phases", Toast.LENGTH_SHORT).show();
+                        handleError(loadingDialog, "Error loading phases");
                     });
             } else {
                 Log.e(TAG, "Failed to load project details");
-                Toast.makeText(getContext(), "Failed to load project details", Toast.LENGTH_SHORT).show();
-                loadingDialog.dismiss();
+                handleError(loadingDialog, "Failed to load project details");
             }
         });
+    }
+
+    private void navigateToProjectActivity() {
+        if (!isNavigating) return; // Double check
+        Intent intent = new Intent(getActivity(), ProjectActivity.class);
+        startActivity(intent);
+        isNavigating = false; // Reset flag after navigation
+    }
+
+    private void handleError(LoadingDialog loadingDialog, String message) {
+        loadingDialog.dismiss();
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+        isNavigating = false; // Reset flag on error
     }
 
     @Override
@@ -180,5 +191,6 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         super.onDestroyView();
         Log.d(TAG, "Destroying view");
         binding = null;
+        isNavigating = false; // Reset flag when view is destroyed
     }
 }

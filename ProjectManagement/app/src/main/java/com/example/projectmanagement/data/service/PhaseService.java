@@ -118,7 +118,16 @@ public class PhaseService {
 
     public static List<Phase> parsePhasesList(JSONObject response) throws JSONException {
         List<Phase> phases = new ArrayList<>();
-        JSONArray data = response.getJSONArray("data");
+        
+        // Kiểm tra xem response có chứa key "data" không
+        JSONArray data;
+        if (response.has("data")) {
+            data = response.getJSONArray("data");
+        } else {
+            // Nếu không có key "data", sử dụng response trực tiếp
+            data = new JSONArray();
+            data.put(response);
+        }
         
         for (int i = 0; i < data.length(); i++) {
             JSONObject phaseObj = data.getJSONObject(i);
@@ -130,25 +139,21 @@ public class PhaseService {
     }
 
     public static Phase parsePhase(JSONObject response) throws JSONException {
-        // Lấy đối tượng data từ root
-        JSONObject phaseObj = response.getJSONObject("data");
-
         Phase phase = new Phase();
+        
+        // Kiểm tra xem response có chứa key "data" không
+        JSONObject phaseObj;
+        if (response.has("data")) {
+            phaseObj = response.getJSONObject("data");
+        } else {
+            // Nếu không có key "data", sử dụng response trực tiếp
+            phaseObj = response;
+        }
+
         phase.setPhaseID(phaseObj.getInt("id"));
         phase.setPhaseName(phaseObj.getString("phaseName"));
         phase.setDescription(phaseObj.getString("description"));
         phase.setStatus(phaseObj.getString("status"));
-
-        // Nếu bạn muốn parse startDate/endDate (nếu không NULL)
-//        if (!phaseObj.isNull("startDate")) {
-//            String sd = phaseObj.getString("startDate");
-//            // dùng ParseDateUtil hoặc cách nào của bạn để parse ISO-datetime
-//            phase.setStartDate(ParseDateUtil.parseDateTime(sd));
-//        }
-//        if (!phaseObj.isNull("endDate")) {
-//            String ed = phaseObj.getString("endDate");
-//            phase.setEndDate(ParseDateUtil.parseDateTime(ed));
-//        }
 
         // Lấy projectId trực tiếp
         if (phaseObj.has("projectId")) {
@@ -164,9 +169,6 @@ public class PhaseService {
         if (!phaseObj.isNull("createdAt")) {
             phase.setCreateAt(ParseDateUtil.parseDate(phaseObj.getString("createdAt")));
         }
-//        if (!phaseObj.isNull("updatedAt")) {
-//            phase.set(ParseDateUtil.parseDate(phaseObj.getString("updatedAt")));
-//        }
 
         return phase;
     }

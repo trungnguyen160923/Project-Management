@@ -81,7 +81,7 @@ public class Project implements Parcelable {
         long ua           = in.readLong();
         updateAt          = ua == -1 ? null : new Date(ua);
         user              = in.readParcelable(User.class.getClassLoader());
-        phases            = in.createTypedArrayList(Phase.CREATOR);
+        phases = new ArrayList<>();
     }
 
     @Override
@@ -98,7 +98,6 @@ public class Project implements Parcelable {
         dest.writeString(backgroundImg);
         dest.writeLong(updateAt != null ? updateAt.getTime() : -1);
         dest.writeParcelable(user, flags);
-        dest.writeTypedList(phases);
     }
 
     @Override
