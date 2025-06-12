@@ -11,7 +11,6 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
-import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.viewmodel.AvatarView;
 
@@ -19,16 +18,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.MemberViewHolder> {
-    private List<ProjectMember> members;
-    private List<ProjectMember> originalMembers;
+    private List<User> members;
+    private List<User> originalMembers;
     private int selectedPosition = -1;
     private OnMemberSelectedListener listener;
 
     public interface OnMemberSelectedListener {
-        void onMemberSelected(ProjectMember member);
+        void onMemberSelected(User member);
     }
 
-    public TaskMemberAdapter(List<ProjectMember> members, OnMemberSelectedListener listener) {
+    public TaskMemberAdapter(List<User> members, OnMemberSelectedListener listener) {
         this.originalMembers = new ArrayList<>(members);
         this.members = new ArrayList<>(members);
         this.listener = listener;
@@ -44,7 +43,7 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
 
     @Override
     public void onBindViewHolder(@NonNull MemberViewHolder holder, int position) {
-        ProjectMember member = members.get(position);
+        User member = members.get(position);
         holder.bind(member, position == selectedPosition);
     }
 
@@ -68,20 +67,20 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
         
         // Move selected member to top
         if (position > 0) {
-            ProjectMember selectedMember = members.remove(position);
+            User selectedMember = members.remove(position);
             members.add(0, selectedMember);
             selectedPosition = 0;
             notifyDataSetChanged();
         }
     }
 
-    public ProjectMember getSelectedMember() {
+    public User getSelectedMember() {
         return selectedPosition != -1 ? members.get(selectedPosition) : null;
     }
 
     public int getPositionById(int userId) {
         for (int i = 0; i < members.size(); i++) {
-            if (members.get(i).getUser().getId() == userId) {
+            if (members.get(i).getId() == userId) {
                 return i;
             }
         }
@@ -100,9 +99,8 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
             ivAvatar = itemView.findViewById(R.id.avatar_member_task);
         }
 
-        public void bind(ProjectMember member, boolean isSelected) {
-            User user = member.getUser();
-            tvName.setText(user.getFullname());
+        public void bind(User member, boolean isSelected) {
+            tvName.setText(member.getFullname());
             ivCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
             
             // Set color for check icon
@@ -111,10 +109,10 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
             }
             
             // Set avatar or first letter of name
-            if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-                ivAvatar.setImage(android.net.Uri.parse(user.getAvatar()));
+            if (member.getAvatar() != null && !member.getAvatar().isEmpty()) {
+                ivAvatar.setImage(android.net.Uri.parse(member.getAvatar()));
             } else {
-                ivAvatar.setName(user.getFullname());
+                ivAvatar.setName(member.getFullname());
             }
 
             itemView.setOnClickListener(v -> {

@@ -14,6 +14,10 @@ import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.utils.ParseDateUtil;
+import com.example.projectmanagement.data.model.ProjectMember;
+import com.example.projectmanagement.data.model.ProjectMemberHolder;
+import com.example.projectmanagement.data.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,12 +32,15 @@ public class TaskRepository {
     private final RequestQueue requestQueue;
     private final MutableLiveData<List<Task>> tasksLiveData;
     private final MutableLiveData<String> messageLiveData;
+    private final MutableLiveData<Task> currentTaskLiveData;
+    private final MutableLiveData<List<User>> projectMembersLiveData = new MutableLiveData<>(new ArrayList<>());
 
     private TaskRepository(Context ctx) {
         this.context = ctx.getApplicationContext();
         this.requestQueue = Volley.newRequestQueue(context);
         this.tasksLiveData = new MutableLiveData<>(new ArrayList<>());
         this.messageLiveData = new MutableLiveData<>();
+        this.currentTaskLiveData = new MutableLiveData<>();
     }
 
     public static TaskRepository getInstance(Context ctx) {
@@ -163,5 +170,134 @@ public class TaskRepository {
             }
             ProjectHolder.set(currentProject); // Cập nhật ProjectHolder sau khi di chuyển
         }
+    }
+
+    public LiveData<Task> fetchTaskDetail(int taskId) {
+        TaskService.getTaskDetail(context, taskId,
+            response -> {
+                try {
+                    if ("success".equals(response.optString("status"))) {
+                        JSONObject data = response.getJSONObject("data");
+                        Task task = new Task();
+                        task.setTaskID(data.optInt("id"));
+                        task.setTaskName(data.optString("taskName"));
+                        task.setTaskDescription(data.optString("description"));
+                        task.setPhaseID(data.optInt("phaseId"));
+                        task.setAssignedTo(data.optInt("assignedToId"));
+                        task.setStatus(data.optString("status"));
+                        task.setPriority(data.optString("priority"));
+                        
+                        // Parse dates
+                        String dueDateStr = data.optString("dueDate");
+                        if (dueDateStr != null && !dueDateStr.isEmpty()) {
+                            task.setDueDate(ParseDateUtil.parseDate(dueDateStr));
+                        }
+                        
+                        task.setOrderIndex(data.optInt("orderIndex"));
+                        currentTaskLiveData.setValue(task);
+                        messageLiveData.setValue("Lấy thông tin task thành công");
+                    } else {
+                        String error = response.optString("error");
+                        messageLiveData.setValue("Lỗi: " + error);
+                        Log.e(TAG, "Error fetching task: " + error);
+                    }
+                } catch (JSONException e) {
+                    messageLiveData.setValue("Lỗi xử lý dữ liệu");
+                    Log.e(TAG, "Error parsing task data", e);
+                }
+            },
+            error -> {
+                messageLiveData.setValue("Lỗi kết nối");
+                Log.e(TAG, "Error fetching task", error);
+            }
+        );
+        return currentTaskLiveData;
+    }
+
+    public LiveData<Task> getCurrentTask() {
+        return currentTaskLiveData;
+    }
+
+    public LiveData<List<User>> fetchProjectMembers() {
+        int projectId = ProjectHolder.get() != null ? ProjectHolder.get().getProjectID() : -1;
+        if (projectId == -1) {
+            messageLiveData.setValue("Không tìm thấy projectId");
+            return projectMembersLiveData;
+        }
+
+        TaskService.getProjectMembers(context, projectId,
+            response -> {
+                try {
+                    if ("success".equals(response.optString("status"))) {
+                        List<User> users = new ArrayList<>();
+                        int totalMembers = response.getJSONArray("data").length();
+                        final int[] processedMembers = {0};
+
+                        for (int i = 0; i < totalMembers; i++) {
+                            org.json.JSONObject obj = response.getJSONArray("data").getJSONObject(i);
+                            int userId = obj.optInt("userId");
+
+                            // Lấy thông tin chi tiết của user
+                            TaskService.getUserInfo(context, userId,
+                                userResponse -> {
+                                    try {
+                                        if ("success".equals(userResponse.optString("status"))) {
+                                            JSONObject userData = userResponse.getJSONObject("data");
+                                            User user = new User();
+                                            user.setId(userData.optInt("id"));
+                                            user.setUsername(userData.optString("username"));
+                                            user.setEmail(userData.optString("email"));
+                                            user.setFullname(userData.optString("fullname"));
+                                            user.setAvatar(userData.optString("avatar"));
+                                            user.setGender(userData.optString("gender"));
+                                            user.setBio(userData.optString("bio"));
+                                            
+                                            // Parse dates
+                                            String birthdayStr = userData.optString("birthday");
+                                            if (birthdayStr != null && !birthdayStr.isEmpty()) {
+                                                user.setBirthday(ParseDateUtil.parseDate(birthdayStr));
+                                            }
+                                            
+                                            String createdAtStr = userData.optString("created_at");
+                                            if (createdAtStr != null && !createdAtStr.isEmpty()) {
+                                                user.setCreated_at(ParseDateUtil.parseDate(createdAtStr));
+                                            }
+                                            
+                                            user.setEmail_verified(userData.optBoolean("email_verified", false));
+                                            
+                                            users.add(user);
+                                        }
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "Error parsing user data", e);
+                                    }
+
+                                    // Kiểm tra nếu đã xử lý xong tất cả members
+                                    processedMembers[0]++;
+                                    if (processedMembers[0] == totalMembers) {
+                                        projectMembersLiveData.setValue(users);
+                                        messageLiveData.setValue("Lấy danh sách thành viên thành công");
+                                    }
+                                },
+                                error -> {
+                                    Log.e(TAG, "Error fetching user info", error);
+                                    processedMembers[0]++;
+                                    if (processedMembers[0] == totalMembers) {
+                                        projectMembersLiveData.setValue(users);
+                                        messageLiveData.setValue("Lấy danh sách thành viên thành công");
+                                    }
+                                }
+                            );
+                        }
+                    } else {
+                        String error = response.optString("error");
+                        messageLiveData.setValue("Lỗi: " + error);
+                    }
+                } catch (Exception e) {
+                    messageLiveData.setValue("Lỗi khi phân tích dữ liệu thành viên: " + e.getMessage());
+                }
+            },
+            error -> messageLiveData.setValue("Lỗi kết nối khi lấy thành viên dự án")
+        );
+        return projectMembersLiveData;
     }
 } 

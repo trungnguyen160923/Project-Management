@@ -29,38 +29,35 @@ public class TaskViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> isCommentsExpanded = new MutableLiveData<>(false);
     private final MutableLiveData<String> taskDescription = new MutableLiveData<>("");
     private final MutableLiveData<List<Phase>> allProjectPhases = new MutableLiveData<>();
-    private List<User> projectMembers;
+    private final MutableLiveData<String> message = new MutableLiveData<>();
+    private final MutableLiveData<List<User>> projectMembers = new MutableLiveData<>(new ArrayList<>());
 
     public TaskViewModel(Application application) {
         super(application);
         taskRepository = TaskRepository.getInstance(application);
         fetchPhases();
-        loadProjectMembers();
+        fetchProjectMembers();
     }
 
-    private void loadProjectMembers() {
-        // TODO: Load project members from your data source
-        // This is a sample implementation
-        projectMembers = new ArrayList<>();
-        projectMembers.add(new User(1, "Nguyễn Thành Trung", "trung@example.com", null));
-        projectMembers.add(new User(2, "Lê Văn A", "a@example.com",null));
-        projectMembers.add(new User(3, "Trần Thị B", "b@example.com", null));
+    public void fetchProjectMembers() {
+        taskRepository.fetchProjectMembers().observeForever(members -> {
+            if (members != null) {
+                projectMembers.setValue(members);
+            }
+        });
     }
 
-    public List<User> getProjectMembers() {
-        if (projectMembers == null) {
-            loadProjectMembers();
-        }
+    public LiveData<List<User>> getProjectMembers() {
         return projectMembers;
     }
 
     public User getMemberById(int userId) {
-        if (projectMembers == null) {
-            loadProjectMembers();
-        }
-        for (User member : projectMembers) {
-            if (member.getId() == userId) {
-                return member;
+        List<User> members = projectMembers.getValue();
+        if (members != null) {
+            for (User member : members) {
+                if (member.getId() == userId) {
+                    return member;
+                }
             }
         }
         return null;
@@ -80,8 +77,8 @@ public class TaskViewModel extends AndroidViewModel {
         this.task.setValue(task);
         if (task != null) {
             taskDescription.setValue(task.getTaskDescription());
-        loadComments();
-        loadFiles();
+            loadComments();
+            loadFiles();
         }
     }
 
@@ -146,6 +143,10 @@ public class TaskViewModel extends AndroidViewModel {
 
     public LiveData<List<Phase>> getAllProjectPhases() {
         return allProjectPhases;
+    }
+
+    public LiveData<String> getMessage() {
+        return message;
     }
 
     // Update methods for LiveData
@@ -292,7 +293,6 @@ public class TaskViewModel extends AndroidViewModel {
         }
     }
 
-
     public void updateTaskDueDate(Date dueDate) {
         Task currentTask = task.getValue();
         if (currentTask != null) {
@@ -301,6 +301,21 @@ public class TaskViewModel extends AndroidViewModel {
             task.setValue(currentTask);
             taskRepository.updateTask(currentTask);
         }
+    }
+
+    public void fetchTaskDetail(int taskId) {
+        taskRepository.fetchTaskDetail(taskId).observeForever(task -> {
+            if (task != null) {
+                setTask(task);
+                // Load additional data
+                loadComments();
+                loadFiles();
+                // Update UI state
+                isImagesExpanded.setValue(false);
+                isFilesExpanded.setValue(false);
+                isCommentsExpanded.setValue(false);
+            }
+        });
     }
 
     @Override

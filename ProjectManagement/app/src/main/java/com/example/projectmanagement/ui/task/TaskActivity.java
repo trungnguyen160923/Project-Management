@@ -70,8 +70,6 @@ import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
-import com.example.projectmanagement.data.model.ProjectHolder;
-import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.databinding.ActivityTaskBinding;
@@ -106,7 +104,18 @@ public class TaskActivity extends AppCompatActivity {
         if (extras != null) {
             Task task = extras.getParcelable("task");
             if (task != null) {
-                viewModel.setTask(task);
+                // Fetch task details from API
+                viewModel.fetchTaskDetail(task.getTaskID());
+                
+                // Fetch project members
+                viewModel.fetchProjectMembers();
+                
+                // Observe messages for feedback
+                viewModel.getMessage().observe(this, message -> {
+                    if (message != null && !message.isEmpty()) {
+                        showToast(message);
+                    }
+                });
             }
         }
 
@@ -122,9 +131,8 @@ public class TaskActivity extends AppCompatActivity {
         hideFileSection();
         hideCmtSection();
 
-        loadSampleData();
-        loadComments();
-        toggleCmtSection();
+        // Load comments from API
+//        viewModel.fetchComments();
 
         imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(binding.etDescription, InputMethodManager.SHOW_IMPLICIT);
@@ -135,6 +143,9 @@ public class TaskActivity extends AppCompatActivity {
                 boolean isDone = "DONE".equalsIgnoreCase(task.getStatus());
                 binding.checkboxCompleted.setChecked(isDone);
                 updateCardStrokeColor(isDone);
+                
+                // Initialize member UI when task is loaded
+                initMemberUI();
             }
         });
 
@@ -220,15 +231,13 @@ public class TaskActivity extends AppCompatActivity {
 
         viewModel.getTask().observe(this, task -> {
             if (task != null) {
-                // Cập nhật giao diện khi task thay đổi (ví dụ sau khi di chuyển)
-                // Có thể cần cập nhật lại thông tin hiển thị nếu taskID hoặc orderIndex thay đổi
-                // Ví dụ: cập nhật tiêu đề task nếu nó thay đổi (tùy thuộc vào thiết kế của bạn)
+                // Update UI when task changes
+                initMemberUI();
             }
         });
 
         viewModel.getAllProjectPhases().observe(this, phases -> {
-            // Cập nhật danh sách phase trong dialog di chuyển task nếu nó đang mở
-            // Hoặc đơn giản là đảm bảo dữ liệu luôn sẵn sàng khi dialog được mở
+            // Update phase list in move task dialog if it's open
         });
     }
 
@@ -250,14 +259,6 @@ public class TaskActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(ev);
     }
 
-    private void loadComments() {
-        List<Comment> commentList = new ArrayList<>();
-        commentList.add(new Comment(1, "Hello mọi người!", 123, 10, new Date()));
-        commentList.add(new Comment(2, "Đã xong bước này.", 123, 11, new Date()));
-        commentList.add(new Comment(3, "Cần bổ sung thêm phần X.", 123, 12, new Date()));
-        viewModel.updateComments(commentList);
-    }
-
     private void showAllComments() {
         List<Comment> commentList = viewModel.getComments().getValue();
         if (commentList == null || commentList.isEmpty()) return;
@@ -277,8 +278,25 @@ public class TaskActivity extends AppCompatActivity {
             ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
 
             tvTime.setText(fmt.format(c.getCreateAt()));
-            tvName.setText("Nguyễn Thành Trung");
-            avatar.setName("Nguyễn Thành Trung");
+            
+            // Get user info from project members
+            List<User> members = viewModel.getProjectMembers().getValue();
+            if (members != null) {
+                User commentUser = members.stream()
+                    .filter(m -> m.getId() == c.getUserID())
+                    .findFirst()
+                    .orElse(null);
+                
+                if (commentUser != null) {
+                    tvName.setText(commentUser.getFullname());
+                    avatar.setName(commentUser.getFullname());
+                    
+                    if (commentUser.getAvatar() != null && !commentUser.getAvatar().isEmpty()) {
+                        // TODO: Load avatar using your image loading library
+                        // Glide.with(avatar).load(commentUser.getAvatar()).into(avatar);
+                    }
+                }
+            }
 
             // Handle file/image in comment
             String content = c.getContent();
@@ -1039,30 +1057,33 @@ public class TaskActivity extends AppCompatActivity {
         RecyclerView rvMembers = dialog.findViewById(R.id.rv_members);
         Button btnComplete = dialog.findViewById(R.id.btn_complete);
 
-        // Lấy danh sách thành viên từ ProjectMemberHolder
-        List<ProjectMember> projectMembers = ProjectMemberHolder.get().getMembers();
-        TaskMemberAdapter adapter = new TaskMemberAdapter(projectMembers, member -> {
-            // Handle member selection
-        });
+        // Observe project members from ViewModel
+        viewModel.getProjectMembers().observe(this, members -> {
+            if (members != null) {
+                TaskMemberAdapter adapter = new TaskMemberAdapter(members, member -> {
+                    // Handle member selection
+                });
 
-        rvMembers.setLayoutManager(new LinearLayoutManager(this));
-        rvMembers.setAdapter(adapter);
+                rvMembers.setLayoutManager(new LinearLayoutManager(this));
+                rvMembers.setAdapter(adapter);
 
-        // Set initial selection if task has assigned member
-        if (currentTask.getAssignedTo() != 0) {
-            int position = adapter.getPositionById(currentTask.getAssignedTo());
-            if (position != -1) {
-                adapter.selectMember(position);
+                // Set initial selection if task has assigned member
+                if (currentTask.getAssignedTo() != 0) {
+                    int position = adapter.getPositionById(currentTask.getAssignedTo());
+                    if (position != -1) {
+                        adapter.selectMember(position);
+                    }
+                }
+
+                btnComplete.setOnClickListener(v -> {
+                    User selectedMember = adapter.getSelectedMember();
+                    if (selectedMember != null) {
+                        viewModel.assignTaskToMember(currentTask.getTaskID(), selectedMember.getId());
+                        updateMemberUI(selectedMember);
+                    }
+                    dialog.dismiss();
+                });
             }
-        }
-
-        btnComplete.setOnClickListener(v -> {
-            ProjectMember selectedMember = adapter.getSelectedMember();
-            if (selectedMember != null) {
-                viewModel.assignTaskToMember(currentTask.getTaskID(), selectedMember.getUser().getId());
-                updateMemberUI(selectedMember.getUser());
-            }
-            dialog.dismiss();
         });
 
         dialog.setOnDismissListener(dialogInterface -> {
@@ -1094,9 +1115,17 @@ public class TaskActivity extends AppCompatActivity {
         if (currentTask == null) return;
 
         if (currentTask.getAssignedTo() != 0) {
-            User assignedMember = viewModel.getMemberById(currentTask.getAssignedTo());
-            if (assignedMember != null) {
-                updateMemberUI(assignedMember);
+            // Find member in the list
+            List<User> members = viewModel.getProjectMembers().getValue();
+            if (members != null) {
+                User assignedMember = members.stream()
+                    .filter(m -> m.getId() == currentTask.getAssignedTo())
+                    .findFirst()
+                    .orElse(null);
+                
+                if (assignedMember != null) {
+                    updateMemberUI(assignedMember);
+                }
             }
         } else {
             binding.tvThanhvien.setVisibility(View.VISIBLE);

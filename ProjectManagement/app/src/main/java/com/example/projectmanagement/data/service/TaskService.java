@@ -102,4 +102,106 @@ public class TaskService {
             errorListener.onErrorResponse(new VolleyError("Error creating request body: " + e.getMessage()));
         }
     }
+
+    public static void getTaskDetail(Context context, int taskId,
+                                  Response.Listener<JSONObject> listener,
+                                  Response.ErrorListener errorListener) {
+        String url = TASKS_URL + "/" + taskId;
+        Log.d(TAG, "Fetching task details from: " + url);
+
+        JsonObjectRequest request = new JsonObjectRequest(
+            Request.Method.GET,
+            url,
+            null,
+            response -> {
+                Log.d(TAG, "Task detail response: " + response.toString());
+                listener.onResponse(response);
+            },
+            error -> {
+                Log.e(TAG, "Error fetching task details", error);
+                errorListener.onErrorResponse(error);
+            }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void getProjectMembers(Context context, int projectId,
+                                         Response.Listener<JSONObject> listener,
+                                         Response.ErrorListener errorListener) {
+        String url = BASE_URL + "/api/members/projects/" + projectId;
+        Log.d(TAG, "Fetching project members from: " + url);
+
+        JsonObjectRequest request = new JsonObjectRequest(
+            Request.Method.GET,
+            url,
+            null,
+            response -> {
+                Log.d(TAG, "Project members response: " + response.toString());
+                listener.onResponse(response);
+            },
+            error -> {
+                Log.e(TAG, "Error fetching project members", error);
+                errorListener.onErrorResponse(error);
+            }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void getUserInfo(Context context, int userId,
+                                 Response.Listener<JSONObject> listener,
+                                 Response.ErrorListener errorListener) {
+        String url = BASE_URL + "/api/users/" + userId;
+        Log.d(TAG, "Fetching user info from: " + url);
+
+        JsonObjectRequest request = new JsonObjectRequest(
+            Request.Method.GET,
+            url,
+            null,
+            response -> {
+                Log.d(TAG, "User info response: " + response.toString());
+                listener.onResponse(response);
+            },
+            error -> {
+                Log.e(TAG, "Error fetching user info", error);
+                errorListener.onErrorResponse(error);
+            }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
 }
