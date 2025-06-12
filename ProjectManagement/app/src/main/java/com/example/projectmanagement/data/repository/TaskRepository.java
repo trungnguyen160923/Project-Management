@@ -283,7 +283,7 @@ public class TaskRepository {
                                     processedMembers[0]++;
                                     if (processedMembers[0] == totalMembers) {
                                         projectMembersLiveData.setValue(users);
-                                        messageLiveData.setValue("Lấy danh sách thành viên thành công");
+                                        messageLiveData.setValue("Lấy danh sách thành viên thất bại");
                                     }
                                 }
                             );
