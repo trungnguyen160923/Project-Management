@@ -3,9 +3,12 @@ package com.example.projectmanagement.data.repository;
 import android.content.Context;
 import android.util.Log;
 
+import androidx.constraintlayout.widget.Placeholder;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
 import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
@@ -16,16 +19,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 public class TaskRepository {
     private static final String TAG = "TaskRepository";
     private static TaskRepository instance;
     private final Context context;
+    private final RequestQueue requestQueue;
     private final MutableLiveData<List<Task>> tasksLiveData;
     private final MutableLiveData<String> messageLiveData;
 
     private TaskRepository(Context ctx) {
         this.context = ctx.getApplicationContext();
+        this.requestQueue = Volley.newRequestQueue(context);
         this.tasksLiveData = new MutableLiveData<>(new ArrayList<>());
         this.messageLiveData = new MutableLiveData<>();
     }
@@ -38,71 +44,55 @@ public class TaskRepository {
     }
 
     public LiveData<List<Task>> getPhaseTasks(int phaseId) {
-        final int finalPhaseId = phaseId;
-        TaskService.getPhaseTasks(context, phaseId, response -> {
-            try {
-                if ("success".equals(response.optString("status"))) {
-                    List<Task> tasks = TaskService.parseTasksList(response);
-                    tasksLiveData.setValue(tasks);
-                    Log.d(TAG, "Loaded " + tasks.size() + " tasks for phase " + finalPhaseId);
-                } else {
-                    String err = response.optString("message", "Lấy tasks thất bại");
-                    Log.e(TAG, err);
-                    tasksLiveData.setValue(null);
-                    messageLiveData.setValue(err);
+        Project currentProject = ProjectHolder.get();
+        if (currentProject != null) {
+            for (Phase phase : currentProject.getPhases()) {
+                if (phase.getPhaseID() == phaseId) {
+                    List<Task> tasks = phase.getTasks();
+                    if (tasks != null) {
+                        tasksLiveData.setValue(tasks);
+                        Log.d(TAG, "Loaded " + tasks.size() + " tasks for phase " + phaseId);
+                    } else {
+                        tasksLiveData.setValue(new ArrayList<>());
+                        Log.d(TAG, "No tasks found for phase " + phaseId);
+                    }
+                    return tasksLiveData;
                 }
-            } catch (JSONException e) {
-                Log.e(TAG, "Parsing error", e);
-                tasksLiveData.setValue(null);
-                messageLiveData.setValue("Lỗi phân tích dữ liệu server");
             }
-        }, error -> {
-            Log.e(TAG, "Network error", error);
-            tasksLiveData.setValue(null);
-            messageLiveData.setValue(error.getMessage());
-        });
-
+        }
+        tasksLiveData.setValue(new ArrayList<>());
+        Log.d(TAG, "Phase " + phaseId + " not found");
         return tasksLiveData;
     }
 
-    public LiveData<String> getMessageLiveData() {
+    public LiveData<String> getMessage() {
         return messageLiveData;
     }
 
     public LiveData<Task> createTask(Task task) {
         final MutableLiveData<Task> result = new MutableLiveData<>();
-        final Task finalTask = task;
+        Project currentProject = ProjectHolder.get();
         
-        TaskService.createTask(context, task, response -> {
-            try {
-                if ("success".equals(response.optString("status"))) {
-                    Task createdTask = TaskService.parseTask(response);
-                    List<Task> currentTasks = tasksLiveData.getValue();
-                    if (currentTasks == null) {
-                        currentTasks = new ArrayList<>();
+        if (currentProject != null) {
+            for (Phase phase : currentProject.getPhases()) {
+                if (phase.getPhaseID() == task.getPhaseID()) {
+                    List<Task> tasks = phase.getTasks();
+                    if (tasks == null) {
+                        tasks = new ArrayList<>();
+                        phase.setTasks(tasks);
                     }
-                    currentTasks.add(createdTask);
-                    tasksLiveData.setValue(currentTasks);
-                    result.setValue(createdTask);
+                    tasks.add(task);
+                    ProjectHolder.set(currentProject);
+                    result.setValue(task);
                     messageLiveData.setValue("Tạo task thành công");
-                    Log.d(TAG, "Created task: " + finalTask.getTaskName());
-                } else {
-                    String err = response.optString("message", "Tạo task thất bại");
-                    Log.e(TAG, err);
-                    result.setValue(null);
-                    messageLiveData.setValue(err);
+                    Log.d(TAG, "Created task: " + task.getTaskName());
+                    return result;
                 }
-            } catch (JSONException e) {
-                Log.e(TAG, "Parsing error", e);
-                result.setValue(null);
-                messageLiveData.setValue("Lỗi phân tích dữ liệu server");
             }
-        }, error -> {
-            Log.e(TAG, "Network error", error);
-            result.setValue(null);
-            messageLiveData.setValue(error.getMessage());
-        });
-
+        }
+        
+        messageLiveData.setValue("Không tìm thấy phase để tạo task");
+        Log.e(TAG, "Phase not found for task creation");
         return result;
     }
 

@@ -409,49 +409,47 @@ public class ProjectService {
     // Parse danh sách tasks từ response
     public static List<Task> parseTasksList(JSONObject response) throws JSONException {
         List<Task> tasks = new ArrayList<>();
-        JSONArray data = response.optJSONArray("data");
-        if (data != null) {
-            for (int i = 0; i < data.length(); i++) {
-                JSONObject taskJson = data.getJSONObject(i);
-                Task task = new Task();
-                task.setTaskID(taskJson.optInt("id", -1));
-                task.setTaskName(taskJson.optString("taskName", ""));
-                task.setTaskDescription(taskJson.optString("description", ""));
-                task.setStatus(taskJson.optString("status", ""));
-                task.setPriority(taskJson.optString("priority", ""));
-                task.setDueDate(ParseDateUtil.parseDate(taskJson.optString("dueDate", "")));
-                task.setOrderIndex(taskJson.optInt("orderIndex", 0));
-                task.setCreateAt(ParseDateUtil.parseDate(taskJson.optString("createdAt", "")));
-                task.setLastUpdate(ParseDateUtil.parseDate(taskJson.optString("updatedAt", "")));
+        JSONArray data = response.getJSONArray("data");
+        for (int i = 0; i < data.length(); i++) {
+            JSONObject taskJson = data.getJSONObject(i);
+            Task task = new Task();
+            task.setTaskID(taskJson.optInt("id", -1));
+            task.setTaskName(taskJson.optString("taskName", ""));
+            task.setTaskDescription(taskJson.optString("description", ""));
+            task.setStatus(taskJson.optString("status", ""));
+            task.setPriority(taskJson.optString("priority", ""));
+            task.setDueDate(ParseDateUtil.parseDate(taskJson.optString("dueDate", "")));
+            task.setOrderIndex(taskJson.optInt("orderIndex", 0));
+            
+            // Parse phase information
+            if (!taskJson.isNull("phase")) {
+                JSONObject phaseJson = taskJson.getJSONObject("phase");
+                Phase phase = new Phase();
+                phase.setPhaseID(phaseJson.optInt("id", -1));
+                phase.setPhaseName(phaseJson.optString("phaseName", ""));
+                phase.setDescription(phaseJson.optString("description", ""));
+                phase.setStatus(phaseJson.optString("status", ""));
+                phase.setOrderIndex(phaseJson.optInt("orderIndex", 0));
                 
-                // Parse phase info
-                if (taskJson.has("phase")) {
-                    JSONObject phaseJson = taskJson.getJSONObject("phase");
-                    Phase phase = new Phase();
-                    phase.setPhaseID(phaseJson.optInt("id", -1));
-                    phase.setPhaseName(phaseJson.optString("phaseName", ""));
-                    phase.setDescription(phaseJson.optString("description", ""));
-                    phase.setStatus(phaseJson.optString("status", ""));
-//                    phase.setStartDate(ParseDateUtil.parseDate(phaseJson.optString("startDate", "")));
-//                    phase.setEndDate(ParseDateUtil.parseDate(phaseJson.optString("endDate", "")));
-                    phase.setOrderIndex(phaseJson.optInt("orderIndex", 0));
-                    task.setPhase(phase);
+                // Parse project information in phase
+                if (!phaseJson.isNull("project")) {
+                    JSONObject projectJson = phaseJson.getJSONObject("project");
+                    Project project = new Project();
+                    project.setProjectID(projectJson.optInt("id", -1));
+                    phase.setProject(project);
                 }
-
-                // Parse assigned user info
-                if (taskJson.has("assignedTo")) {
-                    JSONObject userJson = taskJson.getJSONObject("assignedTo");
-                    User user = new User();
-                    user.setId(userJson.optInt("id", -1));
-                    user.setUsername(userJson.optString("username", ""));
-                    user.setEmail(userJson.optString("email", ""));
-                    user.setFullname(userJson.optString("fullname", ""));
-                    user.setAvatar(userJson.optString("avatar", ""));
-                    task.setUser(user);
-                }
-
-                tasks.add(task);
+                
+                task.setPhase(phase);
             }
+            
+            // Handle assignedTo which might be null
+            if (!taskJson.isNull("assignedTo")) {
+                JSONObject assignedToJson = taskJson.getJSONObject("assignedTo");
+                // Parse assignedTo information if needed
+                // For now, we'll just skip it since it's not used in the current implementation
+            }
+            
+            tasks.add(task);
         }
         return tasks;
     }

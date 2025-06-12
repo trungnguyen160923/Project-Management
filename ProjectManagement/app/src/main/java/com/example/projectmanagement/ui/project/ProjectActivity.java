@@ -436,10 +436,15 @@ public class ProjectActivity extends AppCompatActivity implements
     }
     @Override public void onAddTask(int pos) { onAddTaskGeneric(pos); phaseAdapter.notifyItemChanged(pos);}
     private void onAddTaskGeneric(int pos) {
-        List<Task> tasks = phases.get(pos).getTasks();
-        String today = ParseDateUtil.formatDate(new Date());
-        tasks.add(new Task("Task mới", "", "WORKING", today, new ArrayList<>(), new ArrayList<>()));
-        ProjectHolder.set(project);
+        // Call ViewModel to add task
+        viewModel.addTask(pos, "Task mới");
+        
+        // Observe message for feedback
+        viewModel.getMessage().observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 

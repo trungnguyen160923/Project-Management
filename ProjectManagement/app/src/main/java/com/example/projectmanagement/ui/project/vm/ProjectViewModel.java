@@ -13,10 +13,14 @@ import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.repository.ProjectRepository;
 import com.example.projectmanagement.data.repository.PhaseRepository;
+import com.example.projectmanagement.data.service.TaskService;
+import com.example.projectmanagement.utils.ParseDateUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import org.json.JSONException;
 
 public class ProjectViewModel extends ViewModel {
     private ProjectRepository projectRepository;
@@ -26,11 +30,13 @@ public class ProjectViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isInputMode = new MutableLiveData<>(false);
     private int pendingPhase = -1;
     private final MutableLiveData<String> message = new MutableLiveData<>();
+    private Context context;
 
     public void init(Context context) {
         projectRepository = ProjectRepository.getInstance(context);
         phaseRepository = PhaseRepository.getInstance(context);
         phases.setValue(new ArrayList<>());
+        this.context = context;
     }
 
     public void setProject(Project project) {
@@ -138,9 +144,47 @@ public class ProjectViewModel extends ViewModel {
         List<Phase> currentPhases = phases.getValue();
         if (currentPhases != null && phasePosition >= 0 && phasePosition < currentPhases.size()) {
             Phase phase = currentPhases.get(phasePosition);
-            Task newTask = new Task(taskName, "", "WORKING", "", null, null);
-            phase.getTasks().add(newTask);
-            phases.setValue(currentPhases);
+            
+            // Create new task
+            Task newTask = new Task();
+            newTask.setTaskName(taskName);
+            newTask.setTaskDescription("");
+            newTask.setStatus("WORKING");
+            newTask.setPriority("MEDIUM");
+            newTask.setDueDate(new Date());
+            newTask.setOrderIndex(phase.getTasks().size());
+            newTask.setPhase(phase);
+            
+            // Get project ID
+            Project currentProject = project.getValue();
+            if (currentProject == null) {
+                message.setValue("Project not found");
+                return;
+            }
+
+            // Call API to create task
+            TaskService.createTask(
+                context,
+                newTask,
+                response -> {
+                    if ("success".equals(response.optString("status"))) {
+                        // Add task to phase
+                        phase.getTasks().add(newTask);
+                        phases.setValue(currentPhases);
+                        message.setValue("Task created successfully");
+                        Log.d("ProjectViewModel", "Task created successfully: " + taskName);
+                    } else {
+                        String errorMsg = response.optString("message", "Unknown error occurred");
+                        message.setValue(errorMsg);
+                        Log.e("ProjectViewModel", "Error creating task: " + errorMsg);
+                    }
+                },
+                error -> {
+                    String errorMsg = error.getMessage() != null ? error.getMessage() : "Unknown error occurred";
+                    message.setValue("Error creating task: " + errorMsg);
+                    Log.e("ProjectViewModel", "Error creating task", error);
+                }
+            );
         }
     }
 
