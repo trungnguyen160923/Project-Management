@@ -92,10 +92,44 @@ public class ProjectActivity extends AppCompatActivity implements
             return;
         }
 
+        // Debug log project data
+        Log.d("ProjectActivity", "Project data: " + 
+            "id=" + project.getProjectID() + 
+            ", name=" + project.getProjectName() + 
+            ", description=" + project.getProjectDescription());
+
+        // Khởi tạo ViewModel
+        viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
+        viewModel.init(this);
+        viewModel.setProject(project);
+
         bindViews();
         setupInitialToolbar();
         setupBoard();
         applyProjectBackground(project.getBackgroundImg());
+
+        // Observe project data changes
+        viewModel.getProject().observe(this, updatedProject -> {
+            if (updatedProject != null) {
+                project = updatedProject;
+                toolbar.setTitle(project.getProjectName());
+            }
+        });
+
+        // Observe phases data changes
+        viewModel.getPhases().observe(this, updatedPhases -> {
+            if (updatedPhases != null) {
+                phases = updatedPhases;
+                phaseAdapter.updatePhases(phases);
+            }
+        });
+
+        // Observe messages
+        viewModel.getMessage().observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void bindViews() {
@@ -362,15 +396,20 @@ public class ProjectActivity extends AppCompatActivity implements
     }
 
     @Override public void onAddPhase() {
-        List<Task> tasks = new ArrayList<>();
-        String today = ParseDateUtil.formatDate(new Date());
-        // ... tạo comments, files, task mẫu như bạn đã làm trước đó
-        phases.add(new Phase("Ds" + (phases.size() + 1), tasks));
-        project.setPhases(phases);
-        ProjectHolder.set(project);
+        // Debug log project data before creating phase
+        Log.d("ProjectActivity", "Creating phase with project: " + 
+            "id=" + project.getProjectID() + 
+            ", name=" + project.getProjectName());
 
-        // 2. Thông báo adapter về vị trí chèn
-        phaseAdapter.notifyItemInserted(phases.size() - 1);
+        // Call ViewModel to add phase
+        viewModel.addPhase(phases.size());
+        
+        // Observe message for feedback
+        viewModel.getMessage().observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     @Override public void onAddTask(int pos) { onAddTaskGeneric(pos); phaseAdapter.notifyItemChanged(pos);}
     private void onAddTaskGeneric(int pos) {

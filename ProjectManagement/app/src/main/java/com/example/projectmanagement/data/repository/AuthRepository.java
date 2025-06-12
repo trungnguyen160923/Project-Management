@@ -3,12 +3,8 @@ package com.example.projectmanagement.data.repository;
 import android.content.Context;
 import android.util.Log;
 
-import com.android.volley.NetworkError;
-import com.android.volley.NoConnectionError;
-import com.android.volley.Response;
-import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.example.projectmanagement.api.AuthService;
+import com.example.projectmanagement.data.service.AuthService;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.utils.UserPreferences;
 

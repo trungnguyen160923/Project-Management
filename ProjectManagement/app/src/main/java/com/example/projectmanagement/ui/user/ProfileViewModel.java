@@ -5,7 +5,7 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-import com.example.projectmanagement.api.UserService;
+import com.example.projectmanagement.data.service.UserService;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.utils.UserPreferences;

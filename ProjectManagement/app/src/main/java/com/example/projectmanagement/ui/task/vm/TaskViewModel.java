@@ -1,9 +1,10 @@
 package com.example.projectmanagement.ui.task.vm;
 
+import android.app.Application;
 import android.net.Uri;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class TaskViewModel extends ViewModel {
+public class TaskViewModel extends AndroidViewModel {
     private final TaskRepository taskRepository;
     private final MutableLiveData<Task> task = new MutableLiveData<>();
     private final MutableLiveData<List<Comment>> comments = new MutableLiveData<>(new ArrayList<>());
@@ -30,8 +31,9 @@ public class TaskViewModel extends ViewModel {
     private final MutableLiveData<List<Phase>> allProjectPhases = new MutableLiveData<>();
     private List<User> projectMembers;
 
-    public TaskViewModel() {
-        taskRepository = TaskRepository.getInstance();
+    public TaskViewModel(Application application) {
+        super(application);
+        taskRepository = TaskRepository.getInstance(application);
         fetchPhases();
         loadProjectMembers();
     }

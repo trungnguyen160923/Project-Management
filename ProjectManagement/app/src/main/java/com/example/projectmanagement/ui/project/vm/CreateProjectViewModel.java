@@ -37,7 +37,7 @@ public class CreateProjectViewModel extends ViewModel {
         );
         serverMessage = Transformations.switchMap(
                 requestProject,
-                project -> repo.getMessageLiveData()
+                project -> repo.getMessage()
         );
     }
 

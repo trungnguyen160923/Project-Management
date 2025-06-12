@@ -15,9 +15,13 @@ public class Phase implements Parcelable {
     private int projectID;
     private String phaseName;
     private String description;
+
+    private String status;
     private int orderIndex;
     private Date createAt;
     private List<Task> tasks;
+
+    private Project project;
 
     public Phase() {
         this.tasks = new ArrayList<>();
@@ -44,13 +48,17 @@ public class Phase implements Parcelable {
         this.tasks = tasks != null ? tasks : new ArrayList<>();
     }
 
+
+
     // Parcelable constructor
     protected Phase(Parcel in) {
         phaseID      = in.readInt();
         projectID    = in.readInt();
         phaseName    = in.readString();
         description  = in.readString();
+        status = in.readString();
         orderIndex   = in.readInt();
+        project = in.readParcelable(Project.class.getClassLoader());
         long createTs = in.readLong();
         createAt     = createTs == -1 ? null : new Date(createTs);
         // Read tasks list (Task must implement Parcelable)
@@ -63,7 +71,9 @@ public class Phase implements Parcelable {
         dest.writeInt(projectID);
         dest.writeString(phaseName);
         dest.writeString(description);
+        dest.writeString(status);
         dest.writeInt(orderIndex);
+        dest.writeParcelable(project, flags);
         dest.writeLong(createAt != null ? createAt.getTime() : -1);
         // Write tasks list
         dest.writeTypedList(tasks);
@@ -142,5 +152,21 @@ public class Phase implements Parcelable {
 
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
     }
 }

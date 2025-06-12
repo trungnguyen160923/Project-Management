@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Model Task implementing Parcelable, with comments and files lists
+ * Model Task implementing Parcelable, with comments, files lists, associated Phase and User
  */
 public class Task implements Parcelable {
     private int taskID;
@@ -27,6 +27,9 @@ public class Task implements Parcelable {
     private Date lastUpdate;
     private List<Comment> comments;
     private List<File> files;
+
+    private Phase phase;
+    private User user;
 
     public Task() {
         comments = new ArrayList<>();
@@ -62,7 +65,9 @@ public class Task implements Parcelable {
                 Date createAt,
                 Date lastUpdate,
                 List<Comment> comments,
-                List<File> files) {
+                List<File> files,
+                Phase phase,
+                User user) {
         this.taskID = taskID;
         this.phaseID = phaseID;
         this.taskName = taskName;
@@ -77,9 +82,10 @@ public class Task implements Parcelable {
         this.lastUpdate = lastUpdate;
         this.comments = comments != null ? comments : new ArrayList<>();
         this.files = files != null ? files : new ArrayList<>();
+        this.phase = phase;
+        this.user = user;
     }
 
-    // Parcelable constructor
     protected Task(Parcel in) {
         taskID          = in.readInt();
         phaseID         = in.readInt();
@@ -99,6 +105,8 @@ public class Task implements Parcelable {
         lastUpdate      = lu == -1 ? null : new Date(lu);
         comments        = in.createTypedArrayList(Comment.CREATOR);
         files           = in.createTypedArrayList(File.CREATOR);
+        phase           = in.readParcelable(Phase.class.getClassLoader());
+        user            = in.readParcelable(User.class.getClassLoader());
     }
 
     @Override
@@ -117,6 +125,8 @@ public class Task implements Parcelable {
         dest.writeLong(lastUpdate != null ? lastUpdate.getTime() : -1);
         dest.writeTypedList(comments);
         dest.writeTypedList(files);
+        dest.writeParcelable(phase, flags);
+        dest.writeParcelable(user, flags);
     }
 
     @Override
@@ -153,6 +163,9 @@ public class Task implements Parcelable {
     public int getAssignedTo() { return assignedTo; }
     public void setAssignedTo(int assignedTo) { this.assignedTo = assignedTo; }
 
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
@@ -179,4 +192,7 @@ public class Task implements Parcelable {
 
     public List<File> getFiles() { return files; }
     public void setFiles(List<File> files) { this.files = files; }
+
+    public Phase getPhase() { return phase; }
+    public void setPhase(Phase phase) { this.phase = phase; }
 }

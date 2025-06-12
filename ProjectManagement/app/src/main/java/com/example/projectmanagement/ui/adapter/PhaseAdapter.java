@@ -34,7 +34,7 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     RecyclerView rvBoard;
     private static final int TYPE_LIST = 0;
     private static final int TYPE_ADD = 1;
-    private final List<Phase> phases;
+    private List<Phase> phases;
     private final OnAddPhaseListener addPhaseListener;
     private final OnAddTaskListener addTaskListener;
     private final OnTaskActionListener taskListener;
@@ -315,7 +315,10 @@ public class PhaseAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         notifyItemChanged(phasePosition);
     }
 
-
+    public void updatePhases(List<Phase> newPhases) {
+        this.phases = newPhases;
+        notifyDataSetChanged();
+    }
 
     class PhaseViewHolder extends RecyclerView.ViewHolder {
         final TextView tvPhaseTitle, tvAddTask;

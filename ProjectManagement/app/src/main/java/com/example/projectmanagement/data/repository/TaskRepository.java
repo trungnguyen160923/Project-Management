@@ -1,8 +1,12 @@
 package com.example.projectmanagement.data.repository;
 
+import android.content.Context;
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
@@ -11,42 +15,94 @@ import com.example.projectmanagement.data.model.Task;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TaskRepository {
-    private static TaskRepository instance;
-    private final MutableLiveData<List<Task>> tasksLiveData = new MutableLiveData<>();
+import org.json.JSONException;
 
-    private TaskRepository() {
-        tasksLiveData.setValue(new ArrayList<>());
+public class TaskRepository {
+    private static final String TAG = "TaskRepository";
+    private static TaskRepository instance;
+    private final Context context;
+    private final MutableLiveData<List<Task>> tasksLiveData;
+    private final MutableLiveData<String> messageLiveData;
+
+    private TaskRepository(Context ctx) {
+        this.context = ctx.getApplicationContext();
+        this.tasksLiveData = new MutableLiveData<>(new ArrayList<>());
+        this.messageLiveData = new MutableLiveData<>();
     }
 
-    public static synchronized TaskRepository getInstance() {
+    public static TaskRepository getInstance(Context ctx) {
         if (instance == null) {
-            instance = new TaskRepository();
+            instance = new TaskRepository(ctx);
         }
         return instance;
     }
 
-    public LiveData<List<Task>> getAllTasks() {
+    public LiveData<List<Task>> getPhaseTasks(int phaseId) {
+        final int finalPhaseId = phaseId;
+        TaskService.getPhaseTasks(context, phaseId, response -> {
+            try {
+                if ("success".equals(response.optString("status"))) {
+                    List<Task> tasks = TaskService.parseTasksList(response);
+                    tasksLiveData.setValue(tasks);
+                    Log.d(TAG, "Loaded " + tasks.size() + " tasks for phase " + finalPhaseId);
+                } else {
+                    String err = response.optString("message", "Lấy tasks thất bại");
+                    Log.e(TAG, err);
+                    tasksLiveData.setValue(null);
+                    messageLiveData.setValue(err);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "Parsing error", e);
+                tasksLiveData.setValue(null);
+                messageLiveData.setValue("Lỗi phân tích dữ liệu server");
+            }
+        }, error -> {
+            Log.e(TAG, "Network error", error);
+            tasksLiveData.setValue(null);
+            messageLiveData.setValue(error.getMessage());
+        });
+
         return tasksLiveData;
     }
 
+    public LiveData<String> getMessageLiveData() {
+        return messageLiveData;
+    }
+
     public LiveData<Task> createTask(Task task) {
-        MutableLiveData<Task> result = new MutableLiveData<>();
-        Project currentProject = ProjectHolder.get();
-        if (currentProject != null) {
-            for (Phase phase : currentProject.getPhases()) {
-                if (phase.getPhaseID() == task.getPhaseID()) {
-                    // Đảm bảo list tasks không null
-                    if (phase.getTasks() == null) {
-                        phase.setTasks(new ArrayList<>());
-        }
-                    phase.getTasks().add(task.getOrderIndex(), task);
-                    ProjectHolder.set(currentProject); // Cập nhật ProjectHolder
-                    break;
+        final MutableLiveData<Task> result = new MutableLiveData<>();
+        final Task finalTask = task;
+        
+        TaskService.createTask(context, task, response -> {
+            try {
+                if ("success".equals(response.optString("status"))) {
+                    Task createdTask = TaskService.parseTask(response);
+                    List<Task> currentTasks = tasksLiveData.getValue();
+                    if (currentTasks == null) {
+                        currentTasks = new ArrayList<>();
+                    }
+                    currentTasks.add(createdTask);
+                    tasksLiveData.setValue(currentTasks);
+                    result.setValue(createdTask);
+                    messageLiveData.setValue("Tạo task thành công");
+                    Log.d(TAG, "Created task: " + finalTask.getTaskName());
+                } else {
+                    String err = response.optString("message", "Tạo task thất bại");
+                    Log.e(TAG, err);
+                    result.setValue(null);
+                    messageLiveData.setValue(err);
                 }
+            } catch (JSONException e) {
+                Log.e(TAG, "Parsing error", e);
+                result.setValue(null);
+                messageLiveData.setValue("Lỗi phân tích dữ liệu server");
             }
-        }
-        result.setValue(task);
+        }, error -> {
+            Log.e(TAG, "Network error", error);
+            result.setValue(null);
+            messageLiveData.setValue(error.getMessage());
+        });
+
         return result;
     }
 

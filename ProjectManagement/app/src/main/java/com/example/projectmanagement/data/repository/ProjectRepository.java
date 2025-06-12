@@ -7,7 +7,7 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.example.projectmanagement.api.ProjectService;
+import com.example.projectmanagement.data.service.ProjectService;
 import com.example.projectmanagement.data.model.Project;
 
 import org.json.JSONException;
@@ -16,14 +16,17 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+
 public class ProjectRepository {
     private static final String TAG = "ProjectRepository";
     private static ProjectRepository instance;
 
     private final Context context;
     private final MutableLiveData<List<Project>> projectsLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Project> projectLiveData  = new MutableLiveData<>();
-    private final MutableLiveData<String>  messageLiveData  = new MutableLiveData<>();
+    private final MutableLiveData<Project> projectLiveData = new MutableLiveData<>();
+    private final MutableLiveData<String> messageLiveData = new MutableLiveData<>();
 
     private ProjectRepository(Context ctx) {
         this.context = ctx.getApplicationContext();
@@ -37,25 +40,57 @@ public class ProjectRepository {
         return instance;
     }
 
-    public LiveData<List<Project>> getAllProjects() {
-        ProjectService.getAllProjects(context, response -> {
-            try {
-                if ("success".equals(response.optString("status"))) {
-                    projectsLiveData.setValue(ProjectService.parseProjectsList(response));
-                } else {
-                    String err = response.optString("message", "Lấy project thất bại");
-                    Log.e(TAG, err);
-                    projectsLiveData.setValue(null);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Parsing error", e);
-                projectsLiveData.setValue(null);
-            }
-        }, error -> {
-            Log.e(TAG, "Network error", error);
-            projectsLiveData.setValue(null);
-        });
+    public LiveData<List<Project>> getProjects() {
+        loadProjects();
         return projectsLiveData;
+    }
+
+    public LiveData<Project> getProject(int projectId) {
+        loadProject(projectId);
+        return projectLiveData;
+    }
+
+    public LiveData<String> getMessage() {
+        return messageLiveData;
+    }
+
+    private void loadProjects() {
+        ProjectService.getAllProjects(context,
+            response -> {
+                try {
+                    List<Project> projects = ProjectService.parseProjectsList(response);
+                    projectsLiveData.postValue(projects);
+                    Log.d(TAG, "Projects loaded successfully: " + projects.size());
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing projects", e);
+                    messageLiveData.postValue("Error loading projects: " + e.getMessage());
+                }
+            },
+            error -> {
+                Log.e(TAG, "Error loading projects", error);
+                messageLiveData.postValue("Error loading projects: " + error.getMessage());
+            }
+        );
+    }
+
+    private void loadProject(int projectId) {
+        Log.d(TAG, "Loading project with ID: " + projectId);
+        ProjectService.getProject(context, String.valueOf(projectId),
+            response -> {
+                try {
+                    Project project = ProjectService.parseProject(response);
+                    projectLiveData.postValue(project);
+                    Log.d(TAG, "Project loaded successfully: " + project.getProjectName());
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing project", e);
+                    messageLiveData.postValue("Error loading project: " + e.getMessage());
+                }
+            },
+            error -> {
+                Log.e(TAG, "Error loading project", error);
+                messageLiveData.postValue("Error loading project: " + error.getMessage());
+            }
+        );
     }
 
     /** Tạo project và trả về LiveData cho project & message */
@@ -100,30 +135,15 @@ public class ProjectRepository {
         return projectLiveData;
     }
 
-    /** LiveData expose message */
-    public LiveData<String> getMessageLiveData() {
-        return messageLiveData;
+    public void createProject(Project project, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        ProjectService.createProject(context, project, listener, errorListener);
     }
 
-    /** Lấy chi tiết project theo ID */
-    public LiveData<Project> getProjectDetail(String projectId) {
-        ProjectService.getProjectDetail(context, projectId, response -> {
-            try {
-                if ("success".equals(response.optString("status"))) {
-                    projectLiveData.setValue(ProjectService.parseProject(response));
-                } else {
-                    String err = response.optString("message", "Lấy project thất bại");
-                    Log.e(TAG, err);
-                    projectLiveData.setValue(null);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Parsing error", e);
-                projectLiveData.setValue(null);
-            }
-        }, error -> {
-            Log.e(TAG, "Network error", error);
-            projectLiveData.setValue(null);
-        });
-        return projectLiveData;
+    public void updateProject(String projectId, JSONObject projectData, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        ProjectService.updateProject(context, projectId, projectData, listener, errorListener);
+    }
+
+    public void deleteProject(String projectId, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        ProjectService.deleteProject(context, projectId, listener, errorListener);
     }
 }

@@ -1,6 +1,7 @@
 package com.example.projectmanagement.ui.project.vm;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -10,19 +11,24 @@ import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.repository.ProjectRepository;
+import com.example.projectmanagement.data.repository.PhaseRepository;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ProjectViewModel extends ViewModel {
     private ProjectRepository projectRepository;
+    private PhaseRepository phaseRepository;
     private final MutableLiveData<Project> project = new MutableLiveData<>();
     private final MutableLiveData<List<Phase>> phases = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isInputMode = new MutableLiveData<>(false);
     private int pendingPhase = -1;
+    private final MutableLiveData<String> message = new MutableLiveData<>();
 
     public void init(Context context) {
         projectRepository = ProjectRepository.getInstance(context);
+        phaseRepository = PhaseRepository.getInstance(context);
         phases.setValue(new ArrayList<>());
     }
 
@@ -44,15 +50,33 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void addPhase(int phaseId) {
-        List<Phase> currentPhases = phases.getValue();
-        if (currentPhases != null) {
-            // TODO: Add phase to API
-            Phase newPhase = new Phase();
-            newPhase.setPhaseID(phaseId);
-            newPhase.setPhaseName("Phase " + phaseId);
-            currentPhases.add(newPhase);
-            phases.setValue(currentPhases);
-        }
+        // Create new phase
+        Phase newPhase = new Phase();
+        newPhase.setPhaseName("Phase " + (phases.getValue() != null ? phases.getValue().size() + 1 : 1));
+        newPhase.setDescription("Description for " + newPhase.getPhaseName());
+        newPhase.setStatus("ACTIVE");
+        newPhase.setProjectID(project.getValue().getProjectID());
+        newPhase.setOrderIndex(phases.getValue() != null ? phases.getValue().size() : 0);
+
+        // Call repository to create phase
+        phaseRepository.createPhase(newPhase).observeForever(createdPhase -> {
+            if (createdPhase != null) {
+                List<Phase> currentPhases = phases.getValue();
+                if (currentPhases != null) {
+                    currentPhases.add(createdPhase);
+                    phases.setValue(currentPhases);
+                    Log.d("ProjectViewModel", "Phase added successfully: " + createdPhase.getPhaseName());
+                }
+            }
+        });
+
+        // Observe messages
+        phaseRepository.getMessageLiveData().observeForever(msg -> {
+            if (msg != null) {
+                message.setValue(msg);
+                Log.d("ProjectViewModel", "Phase creation message: " + msg);
+            }
+        });
     }
 
     public void deletePhase(int position) {
@@ -130,13 +154,43 @@ public class ProjectViewModel extends ViewModel {
         }
     }
 
-    public void loadProjectDetail(String projectId) {
-        projectRepository.getProjectDetail(projectId).observeForever(projectData -> {
+    public void loadProjectDetail(int projectId) {
+        projectRepository.getProject(projectId).observeForever(projectData -> {
             if (projectData != null) {
                 this.project.setValue(projectData);
-                // TODO: Load phases from API
-                phases.setValue(new ArrayList<>());
+                // Load phases
+                loadProjectPhases(projectId);
             }
         });
+    }
+
+    private void loadProjectPhases(int projectId) {
+        phaseRepository.getProjectPhases(projectId).observeForever(phasesList -> {
+            if (phasesList != null) {
+                this.phases.setValue(phasesList);
+            }
+        });
+    }
+
+    public void createPhase(Phase phase) {
+        phaseRepository.createPhase(phase).observeForever(createdPhase -> {
+            if (createdPhase != null) {
+                List<Phase> currentPhases = phases.getValue();
+                if (currentPhases != null) {
+                    currentPhases.add(createdPhase);
+                    phases.setValue(currentPhases);
+                }
+            }
+        });
+
+        phaseRepository.getMessageLiveData().observeForever(msg -> {
+            if (msg != null) {
+                message.setValue(msg);
+            }
+        });
+    }
+
+    public LiveData<String> getMessage() {
+        return message;
     }
 } 
