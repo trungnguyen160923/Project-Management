@@ -159,6 +159,14 @@ public class TaskActivity extends AppCompatActivity {
             if (task != null) {
                 boolean isDone = "DONE".equalsIgnoreCase(task.getStatus());
                 binding.checkboxCompleted.setChecked(isDone);
+//                String taskDes = task.getTaskDescription();
+//                if (taskDes.equals("null")) {
+//                    Log.d(TAG,">>> run null"+taskDes);
+//                    binding.etDescription.setHint("Nhập mô tả cho task của bạn...");
+//                } else {
+//                    Log.d(TAG,">>> run set text"+taskDes);
+//                    binding.etDescription.setText(taskDes);
+//                }
                 updateCardStrokeColor(isDone);
 
                 // Initialize member UI when task is loaded
@@ -169,7 +177,7 @@ public class TaskActivity extends AppCompatActivity {
         // Listener for checkbox
         binding.checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
             updateCardStrokeColor(isChecked);
-            viewModel.updateTaskStatus(isChecked ? "DONE" : "WORKING");
+            viewModel.updateTaskStatus(isChecked ? "DONE" : "IN_PROGRESS");
         });
 
         binding.etDescription.setOnFocusChangeListener((v, hasFocus) -> {
@@ -241,7 +249,7 @@ public class TaskActivity extends AppCompatActivity {
         });
 
         viewModel.getTaskDescription().observe(this, description -> {
-            if (description != null) {
+            if (!description.equals("null")) {
                 binding.etDescription.setText(description);
             }
         });
@@ -679,7 +687,7 @@ public class TaskActivity extends AppCompatActivity {
                                             JSONObject data = jsonObject.optJSONObject("data"); // nếu là object
                                             String error = jsonObject.optString("error");
                                             String filepath = String.valueOf(data.optString("filePath"));
-                                            Log.d(TAG,">>> img url: "+Helpers.createImageUrlEndpoint(filepath));
+                                            Log.d(TAG, ">>> img url: " + Helpers.createImageUrlEndpoint(filepath));
 //                                            Uri imgUri = null;
 //                                            try {
 //                                                 imgUri = FileService.downloadImageToMediaStore(this, Helpers.createImageUrlEndpoint(filepath), fileName, mimeType);
@@ -691,13 +699,13 @@ public class TaskActivity extends AppCompatActivity {
                                             executor.execute(() -> {
 
 
-                                            Uri imgURI =  FileService.downloadImageAndGetUri(this,Helpers.createImageUrlEndpoint(filepath));
+                                                Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(filepath));
 
-                                            viewModel.addImageUri(imgURI);
+                                                viewModel.addImageUri(imgURI);
 
-                                            Log.d(TAG, ">>> status: " + status);
-                                            Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
-                                            Log.d(TAG, ">>> error: " + error);
+                                                Log.d(TAG, ">>> status: " + status);
+                                                Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
+                                                Log.d(TAG, ">>> error: " + error);
                                             });
                                         } catch (Exception e) {
                                             Log.e(TAG, ">>> JSON parse error", e);
