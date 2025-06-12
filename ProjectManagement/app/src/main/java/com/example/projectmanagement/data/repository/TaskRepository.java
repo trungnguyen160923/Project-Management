@@ -105,32 +105,43 @@ public class TaskRepository {
 
     public LiveData<Task> updateTask(Task task) {
         MutableLiveData<Task> result = new MutableLiveData<>();
-        Project currentProject = ProjectHolder.get();
-        if (currentProject != null) {
-            for (Phase phase : currentProject.getPhases()) {
-                if (phase.getPhaseID() == task.getPhaseID()) {
-                    List<Task> tasksInPhase = phase.getTasks();
-                    if (tasksInPhase != null) {
-                        for (int i = 0; i < tasksInPhase.size(); i++) {
-                            if (tasksInPhase.get(i).getTaskID() == task.getTaskID()) {
-                                // Nếu task vẫn ở cùng một phase, chỉ cập nhật task tại vị trí đó
-                                tasksInPhase.set(i, task);
-                                ProjectHolder.set(currentProject); // Cập nhật ProjectHolder
-                    result.setValue(task);
-                                return result;
-                }
-            }
+        
+        // Gọi API để cập nhật task
+        TaskService.markTaskAsComplette(
+            context,
+            task.getTaskID(),
+            task.getStatus(),
+            response -> {
+                if ("success".equals(response.optString("status"))) {
+                    // Cập nhật task trong bộ nhớ local
+                    Project currentProject = ProjectHolder.get();
+                    if (currentProject != null) {
+                        for (Phase phase : currentProject.getPhases()) {
+                            if (phase.getPhaseID() == task.getPhaseID()) {
+                                List<Task> tasksInPhase = phase.getTasks();
+                                if (tasksInPhase != null) {
+                                    for (int i = 0; i < tasksInPhase.size(); i++) {
+                                        if (tasksInPhase.get(i).getTaskID() == task.getTaskID()) {
+                                            tasksInPhase.set(i, task);
+                                            ProjectHolder.set(currentProject);
+                                            result.setValue(task);
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
+                } else {
+                    String error = response.optString("error");
+                    Log.e(TAG, "Error updating task: " + error);
                 }
+            },
+            error -> {
+                Log.e(TAG, "Error updating task", error);
             }
-            // Nếu task được di chuyển sang phase khác, cần xóa khỏi phase cũ và thêm vào phase mới
-            // Logic này sẽ được xử lý trong TaskActivity/TaskViewModel khi gọi updateTaskPhaseAndOrder
-            // Tuy nhiên, nếu updateTask được gọi độc lập, chúng ta cần xử lý di chuyển ở đây.
-            // Để đơn giản, giả định updateTaskPhaseAndOrder đã xử lý việc di chuyển.
-            // Nếu task không tìm thấy trong phase hiện tại, có thể nó đã bị xóa hoặc di chuyển
-            // Hoặc đây là một trường hợp đặc biệt không cần cập nhật toàn bộ project ở đây
-            // Tôi sẽ chỉ cập nhật nếu task ở cùng phase
-        }
+        );
+        
         return result;
     }
 

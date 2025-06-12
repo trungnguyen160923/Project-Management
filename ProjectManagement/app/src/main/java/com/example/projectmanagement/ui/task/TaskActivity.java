@@ -162,7 +162,7 @@ public class TaskActivity extends AppCompatActivity {
         // Listener for checkbox
         binding.checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
             updateCardStrokeColor(isChecked);
-            viewModel.updateTaskStatus(isChecked ? "DONE" : "WORKING");
+            viewModel.markTaskAsComplete(isChecked);
         });
 
         binding.etDescription.setOnFocusChangeListener((v, hasFocus) -> {

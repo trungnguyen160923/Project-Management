@@ -142,6 +142,16 @@ public class ProjectActivity extends AppCompatActivity implements
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Cập nhật project từ ProjectHolder khi activity resume
+        Project currentProject = ProjectHolder.get();
+        if (currentProject != null) {
+            viewModel.setProject(currentProject);
+        }
+    }
+
     private void bindViews() {
         ivBackground     = findViewById(R.id.ivProjectBackground);
         coordinatorLayout= findViewById(R.id.coordinatorLayout);

@@ -9,6 +9,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.model.User;
@@ -261,6 +262,34 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     // Task operations
+    public void markTaskAsComplete(boolean isCompleted) {
+        Task currentTask = task.getValue();
+        if (currentTask != null) {
+            currentTask.setStatus(isCompleted ? "DONE" : "WORKING");
+            currentTask.setLastUpdate(new Date());
+            task.setValue(currentTask);
+            
+            // Cập nhật task trong ProjectHolder
+            Project currentProject = ProjectHolder.get();
+            if (currentProject != null && currentProject.getPhases() != null) {
+                for (Phase phase : currentProject.getPhases()) {
+                    if (phase.getTasks() != null) {
+                        for (Task t : phase.getTasks()) {
+                            if (t.getTaskID() == currentTask.getTaskID()) {
+                                t.setStatus(currentTask.getStatus());
+                                t.setLastUpdate(currentTask.getLastUpdate());
+                                break;
+                            }
+                        }
+                    }
+                }
+                ProjectHolder.set(currentProject);
+            }
+            
+            taskRepository.updateTask(currentTask);
+        }
+    }
+
     public void updateTaskStatus(String status) {
         Task currentTask = task.getValue();
         if (currentTask != null) {
