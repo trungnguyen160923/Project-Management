@@ -59,25 +59,25 @@ public class User implements Parcelable {
     }
 
     protected User(Parcel in) {
-        id             = in.readInt();
-        username       = in.readString();
-        email          = in.readString();
-        password       = in.readString();
-        fullname       = in.readString();
+        id = in.readInt();
+        username = in.readString();
+        email = in.readString();
+        password = in.readString();
+        fullname = in.readString();
 
-        long bd        = in.readLong();
-        birthday       = bd == -1 ? null : new Date(bd);
+        long bd = in.readLong();
+        birthday = bd == -1 ? null : new Date(bd);
 
-        gender         = in.readString();
-        social_links   = in.readString();
-        avatar         = in.readString();
-        bio            = in.readString();
+        gender = in.readString();
+        social_links = in.readString();
+        avatar = in.readString();
+        bio = in.readString();
 
-        long ca        = in.readLong();
-        created_at     = ca == -1 ? null : new Date(ca);
+        long ca = in.readLong();
+        created_at = ca == -1 ? null : new Date(ca);
 
-        long lu        = in.readLong();
-        last_updated   = lu == -1 ? null : new Date(lu);
+        long lu = in.readLong();
+        last_updated = lu == -1 ? null : new Date(lu);
 
         email_verified = in.readByte() != 0;
     }
@@ -109,6 +109,7 @@ public class User implements Parcelable {
         public User createFromParcel(Parcel in) {
             return new User(in);
         }
+
         @Override
         public User[] newArray(int size) {
             return new User[size];
@@ -120,6 +121,7 @@ public class User implements Parcelable {
     public int getId() {
         return id;
     }
+
     public void setId(int id) {
         this.id = id;
     }
@@ -127,6 +129,7 @@ public class User implements Parcelable {
     public String getUsername() {
         return username;
     }
+
     public void setUsername(String username) {
         this.username = username;
     }
@@ -134,6 +137,7 @@ public class User implements Parcelable {
     public String getEmail() {
         return email;
     }
+
     public void setEmail(String email) {
         this.email = email;
     }
@@ -141,6 +145,7 @@ public class User implements Parcelable {
     public String getPassword() {
         return password;
     }
+
     public void setPassword(String password) {
         this.password = password;
     }
@@ -148,6 +153,7 @@ public class User implements Parcelable {
     public String getFullname() {
         return fullname;
     }
+
     public void setFullname(String fullname) {
         this.fullname = fullname;
     }
@@ -155,6 +161,7 @@ public class User implements Parcelable {
     public Date getBirthday() {
         return birthday;
     }
+
     public void setBirthday(Date birthday) {
         this.birthday = birthday;
     }
@@ -162,6 +169,7 @@ public class User implements Parcelable {
     public String getGender() {
         return gender;
     }
+
     public void setGender(String gender) {
         this.gender = gender;
     }
@@ -169,6 +177,7 @@ public class User implements Parcelable {
     public String getSocial_links() {
         return social_links;
     }
+
     public void setSocial_links(String social_links) {
         this.social_links = social_links;
     }
@@ -176,6 +185,7 @@ public class User implements Parcelable {
     public String getAvatar() {
         return avatar;
     }
+
     public void setAvatar(String avatar) {
         this.avatar = avatar;
     }
@@ -183,6 +193,7 @@ public class User implements Parcelable {
     public String getBio() {
         return bio;
     }
+
     public void setBio(String bio) {
         this.bio = bio;
     }
@@ -190,6 +201,7 @@ public class User implements Parcelable {
     public Date getCreated_at() {
         return created_at;
     }
+
     public void setCreated_at(Date created_at) {
         this.created_at = created_at;
     }
@@ -197,6 +209,7 @@ public class User implements Parcelable {
     public Date getLast_updated() {
         return last_updated;
     }
+
     public void setLast_updated(Date last_updated) {
         this.last_updated = last_updated;
     }
@@ -204,7 +217,27 @@ public class User implements Parcelable {
     public Boolean getEmail_verified() {
         return email_verified;
     }
+
     public void setEmail_verified(Boolean email_verified) {
         this.email_verified = email_verified;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", fullname='" + fullname + '\'' +
+                ", birthday=" + birthday +
+                ", gender='" + gender + '\'' +
+                ", social_links='" + social_links + '\'' +
+                ", avatar='" + avatar + '\'' +
+                ", bio='" + bio + '\'' +
+                ", created_at=" + created_at +
+                ", last_updated=" + last_updated +
+                ", email_verified=" + email_verified +
+                '}';
     }
 }

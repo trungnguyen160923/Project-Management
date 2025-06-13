@@ -62,49 +62,64 @@ public class ProjectRepository {
 
     private void loadProjects() {
         ProjectService.getAllProjects(context,
-            response -> {
-                try {
-                    List<Project> projects = ProjectService.parseProjectsList(response);
-                    projectsLiveData.postValue(projects);
-                    Log.d(TAG, "Projects loaded successfully: " + projects.size());
-                } catch (Exception e) {
-                    Log.e(TAG, "Error parsing projects", e);
-                    messageLiveData.postValue("Error loading projects: " + e.getMessage());
+                response -> {
+                    try {
+                        List<Project> projects = ProjectService.parseProjectsList(response);
+                        ProjectService.getJoinedProjects(context, res -> {
+                            try {
+                                projects.addAll(ProjectService.parseProjectsList(res));
+                            } catch (JSONException e) {
+                                Log.e(TAG, ">>> Error parsing joined projects", e);
+                            }
+                            projectsLiveData.postValue(projects);
+                            Log.d(TAG, ">>> Projects loaded successfully: " + projects.size());
+                        }, err -> {
+                            String errMsg = "Không thể lấy danh sách các project";
+                            try {
+                                errMsg = Helpers.parseError(err);
+                            } catch (Exception e) {
+                            }
+                            messageLiveData.postValue("Error loading projects: " + errMsg);
+                        });
+                    } catch (Exception e) {
+                        Log.e(TAG, ">>> Error parsing projects", e);
+                        messageLiveData.postValue("Error loading projects: " + e.getMessage());
+                    }
+                },
+                error -> {
+                    Log.e(TAG, ">>> Error loading projects", error);
+                    messageLiveData.postValue("Error loading projects: " + error.getMessage());
                 }
-            },
-            error -> {
-
-                Log.e(TAG, "Error loading projects", error);
-                messageLiveData.postValue("Error loading projects: " + error.getMessage());
-            }
         );
     }
 
     private void loadProject(int projectId) {
         Log.d(TAG, "Loading project with ID: " + projectId);
         ProjectService.getProject(context, String.valueOf(projectId),
-            response -> {
-                try {
-                    Project project = ProjectService.parseProject(response);
-                    projectLiveData.postValue(project);
-                    Log.d(TAG, "Project loaded successfully: " + project.getProjectName());
-                } catch (Exception e) {
-                    Log.e(TAG, "Error parsing project", e);
-                    messageLiveData.postValue("Error loading project: " + e.getMessage());
+                response -> {
+                    try {
+                        Project project = ProjectService.parseProject(response);
+                        projectLiveData.postValue(project);
+                        Log.d(TAG, "Project loaded successfully: " + project.getProjectName());
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing project", e);
+                        messageLiveData.postValue("Error loading project: " + e.getMessage());
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Error loading project", error);
+                    messageLiveData.postValue("Error loading project: " + error.getMessage());
                 }
-            },
-            error -> {
-                Log.e(TAG, "Error loading project", error);
-                messageLiveData.postValue("Error loading project: " + error.getMessage());
-            }
         );
     }
 
-    /** Tạo project và trả về LiveData cho project & message */
+    /**
+     * Tạo project và trả về LiveData cho project & message
+     */
     public LiveData<Project> createProject(Project project) {
         ProjectService.createProject(context, project, response -> {
             String status = response.optString("status", "error");
-            String msg    = response.optString("message", null);
+            String msg = response.optString("message", null);
 
             if ("success".equals(status)) {
                 try {
@@ -133,8 +148,9 @@ public class ProjectRepository {
             try {
                 String body = new String(error.networkResponse.data, "UTF-8");
                 JSONObject o = new JSONObject(body);
-                errMsg       = o.optString("message", o.optString("error", ""));
-            } catch (Exception ignored) {}
+                errMsg = o.optString("message", o.optString("error", ""));
+            } catch (Exception ignored) {
+            }
             messageLiveData.setValue(!errMsg.isEmpty() ? errMsg : error.getMessage());
             projectLiveData.setValue(null);
         });
@@ -153,7 +169,7 @@ public class ProjectRepository {
             body.put("projectName", project.getProjectName());
             body.put("description", project.getProjectDescription());
             body.put("status", project.getStatus());
-            
+
             // Format dates in ISO 8601 format
             String endDate = ParseDateUtil.formatDate(project.getDeadline());
             String updatedAt = ParseDateUtil.formatDate(new Date());
@@ -165,7 +181,7 @@ public class ProjectRepository {
 
             body.put("endDate", endDate);
             body.put("updatedAt", updatedAt);
-            
+
             // Add owner information
             if (project.getUser() != null) {
                 JSONObject owner = new JSONObject();
@@ -185,12 +201,12 @@ public class ProjectRepository {
                     response -> {
                         Log.d(TAG, "updateProject: server response=" + response.toString());
                         String status = response.optString("status", "error");
-                        String msg    = response.optString("error", null);
+                        String msg = response.optString("error", null);
 
                         if ("success".equals(status)) {
                             try {
                                 JSONObject dataObj = response.getJSONObject("data");
-                                Log.d(TAG,">>> dt obj : "+dataObj.toString());
+                                Log.d(TAG, ">>> dt obj : " + dataObj.toString());
                                 Project updated = ProjectService.parseProject(response);
                                 Log.d(TAG, "updateProject: parsed updated projectId=" + updated.getProjectID());
                                 projectLiveData.setValue(updated);
@@ -225,11 +241,12 @@ public class ProjectRepository {
                             );
                         }
                     },
-                    err->{
+                    err -> {
                         String errorMessage = "Lỗi không xác định";
                         try {
                             errorMessage = Helpers.parseError(err);
-                        } catch (Exception e) {}
+                        } catch (Exception e) {
+                        }
                         Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show();
                         Log.d(TAG, errorMessage);
                     });
@@ -244,25 +261,24 @@ public class ProjectRepository {
     }
 
 
-
     private JSONObject projectToJson(Project project) throws JSONException {
         JSONObject json = new JSONObject();
-        json.put("id",          project.getProjectID());
+        json.put("id", project.getProjectID());
         json.put("projectName", project.getProjectName());
         json.put("description", project.getProjectDescription());
-        json.put("status",      project.getStatus());
+        json.put("status", project.getStatus());
 //        json.put("startDate",   project.getStartDate()); // ví dụ: "2025-06-12T18:16:42.541Z"
-        json.put("endDate",   ParseDateUtil.formatDate(project.getDeadline()));
+        json.put("endDate", ParseDateUtil.formatDate(project.getDeadline()));
         json.put("updatedAt", ParseDateUtil.formatDate(new Date()));
         // owner
         UserPreferences prefs = new UserPreferences(context);
         User user = prefs.getUser();
         if (user != null) {
             JSONObject owner = new JSONObject();
-            owner.put("id",          user.getId());
-            owner.put("username",    user.getUsername());
-            owner.put("email",       user.getEmail());
-            owner.put("fullname",    user.getFullname());
+            owner.put("id", user.getId());
+            owner.put("username", user.getUsername());
+            owner.put("email", user.getEmail());
+            owner.put("fullname", user.getFullname());
             // … các trường còn lại nếu backend cần …
             json.put("owner", owner);
         }
@@ -276,7 +292,7 @@ public class ProjectRepository {
 
     public LiveData<Boolean> deleteProject(int projectId) {
         MutableLiveData<Boolean> result = new MutableLiveData<>();
-        
+
         ProjectService.deleteProject(
                 context,
                 String.valueOf(projectId),
@@ -292,7 +308,7 @@ public class ProjectRepository {
                             list.removeIf(p -> p.getProjectID() == projectId);
                             projectsLiveData.setValue(list);
                         }
-                        
+
                         messageLiveData.setValue(
                                 !msg.isEmpty() && !msg.equals("null") ? msg : "Xóa project thành công"
                         );
@@ -310,7 +326,8 @@ public class ProjectRepository {
                     String errorMessage = "Lỗi không xác định";
                     try {
                         errorMessage = Helpers.parseError(error);
-                    } catch (Exception e) {}
+                    } catch (Exception e) {
+                    }
                     messageLiveData.setValue(errorMessage);
                     Log.e(TAG, "deleteProject error", error);
                     result.setValue(false);

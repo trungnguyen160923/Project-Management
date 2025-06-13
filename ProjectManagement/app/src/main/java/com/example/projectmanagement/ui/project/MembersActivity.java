@@ -5,7 +5,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RadioButton;
@@ -19,42 +18,31 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.projectmanagement.R;
-import com.example.projectmanagement.data.convertor.UserConvertor;
-import com.example.projectmanagement.data.model.Notification;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.User;
-import com.example.projectmanagement.data.service.UserService;
 import com.example.projectmanagement.databinding.ActivityInviteMemberBinding;
-import com.example.projectmanagement.ui.adapter.UserAdapter;
-import com.example.projectmanagement.ui.project.vm.InviteMemberViewModel;
+import com.example.projectmanagement.ui.adapter.MemberAdapter;
 import com.example.projectmanagement.ui.project.vm.MembersViewModel;
-import com.example.projectmanagement.utils.Helpers;
 import com.google.android.material.button.MaterialButton;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class InviteMemberActivity extends AppCompatActivity {
-    private String TAG = "InviteMemberActivity";
+public class MembersActivity extends AppCompatActivity {
+    private String TAG = "MembersActivity";
     private ActivityInviteMemberBinding binding;
-    private UserAdapter userAdapter;
-    private List<User> users = new ArrayList<>();
+    private MemberAdapter memberAdapter;
+    private List<ProjectMember> allMembers = new ArrayList<>();
+    private List<ProjectMember> filteredMembers = new ArrayList<>();
     private String inviteLink = "";
     private String projectName = "";
-    private InviteMemberViewModel viewModel;
-    private final long DEBOUNCE_DELAY = 300; // 300ms
-    private final android.os.Handler handler = new android.os.Handler();
-    private Runnable searchRunnable;
+    private MembersViewModel viewModel;
 
     @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, ">>> run Invite member activity");
         super.onCreate(savedInstanceState);
         binding = ActivityInviteMemberBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -73,31 +61,31 @@ public class InviteMemberActivity extends AppCompatActivity {
         binding.tvProjectName.setText(projectName);
 
         // Khởi tạo adapter
-        userAdapter = new UserAdapter(users, this,ProjectHolder.get());
+        memberAdapter = new MemberAdapter(filteredMembers, this);
         binding.rvMembers.setLayoutManager(new LinearLayoutManager(this));
-        binding.rvMembers.setAdapter(userAdapter);
-
+        binding.rvMembers.setAdapter(memberAdapter);
         // Khởi tạo ViewModel và observe danh sách thành viên
-        viewModel = new ViewModelProvider(this).get(InviteMemberViewModel.class);
-        viewModel.getUserListLive().observe(this, users -> {
-            users.clear();
-            users.addAll(users);
-            userAdapter.notifyDataSetChanged();
+        viewModel = new ViewModelProvider(this).get(MembersViewModel.class);
+        Project project = (Project) getIntent().getParcelableExtra("project");
+        viewModel.setProjectData(project);
+        viewModel.init(this);
+        viewModel.getMemberListLive().observe(this, members -> {
+            filteredMembers.clear();
+            filteredMembers.addAll(members);
+            memberAdapter.notifyDataSetChanged();
         });
 
         // Tìm kiếm thành viên
         binding.searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // Đã có debounce, không cần xử lý ở đây
+                filterMembers(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (searchRunnable != null) handler.removeCallbacks(searchRunnable);
-                searchRunnable = () -> searchUsers(newText);
-                handler.postDelayed(searchRunnable, DEBOUNCE_DELAY);
+                filterMembers(newText);
                 return true;
             }
         });
@@ -156,32 +144,22 @@ public class InviteMemberActivity extends AppCompatActivity {
         });
     }
 
-    private void searchUsers(String query) {
-        if (query.isEmpty()) return;
-        UserService.searchUsers(this, query, res -> {
-            Log.d(TAG, ">>> on success searchUsers: " + res.toString());
-            List<User> fetchedUsers = new ArrayList<>();
-            JSONArray data = res.optJSONArray("data");
-            if (data != null) {
-                try {
-                    for (int i = 0; i < data.length(); i++) {
-                        JSONObject json = data.getJSONObject(i);
-                        fetchedUsers.add(UserConvertor.fromJson(json));
-                    }
-                } catch (Exception e) {
+    private void filterMembers(String query) {
+        filteredMembers.clear();
+        List<ProjectMember> allMembers = viewModel.getMemberListLive().getValue();
+        if (allMembers == null) return;
+        if (query == null || query.isEmpty()) {
+            filteredMembers.addAll(allMembers);
+        } else {
+            for (ProjectMember member : allMembers) {
+                User user = member.getUser();
+                if (user != null && (user.getFullname().toLowerCase().contains(query.toLowerCase())
+                        || user.getEmail().toLowerCase().contains(query.toLowerCase())
+                        || user.getUsername().toLowerCase().contains(query.toLowerCase()))) {
+                    filteredMembers.add(member);
                 }
             }
-            users.clear();
-            users.addAll(fetchedUsers);
-            userAdapter.notifyDataSetChanged();
-        }, err -> {
-            Log.d(TAG, ">>> on error searchUsers: " + err.toString());
-            String errMsg = "lỗi không thể tìm kiếm thành viên";
-            try {
-                errMsg = Helpers.parseError(err);
-            } catch (Exception e) {
-            }
-            Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
-        });
+        }
+        memberAdapter.notifyDataSetChanged();
     }
 }

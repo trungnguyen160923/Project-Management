@@ -1,6 +1,7 @@
 package com.example.projectmanagement.ui.notification;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -19,6 +20,8 @@ import com.google.android.material.appbar.MaterialToolbar;
 
 public class NotificationActivity extends AppCompatActivity {
 
+    private static final String TAG = "NotificationActivity";
+
     private NotificationViewModel viewModel;
     private NotificationAdapter adapter;
 
@@ -31,13 +34,16 @@ public class NotificationActivity extends AppCompatActivity {
         RecyclerView rvNotifications = findViewById(R.id.rv_notifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         NotificationAdapter adapter = new NotificationAdapter(item -> {
-            Toast.makeText(this, "Bạn chọn: " + item.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, ">>> Bạn chọn: " + item.getMessage(), Toast.LENGTH_SHORT).show();
             viewModel.markAsRead(item.getNotificationId());
         });
+        adapter.setContext(this);
         rvNotifications.setAdapter(adapter);
 
+        Log.d(TAG, ">>> NotificationAdapter set up");
         // Lấy ViewModel và observe LiveData
         viewModel = new ViewModelProvider(this).get(NotificationViewModel.class);
+        viewModel.init(this);
         viewModel.filteredNotifications.observe(this, adapter::submitList);
 
         Spinner spinner = findViewById(R.id.spinner_type);

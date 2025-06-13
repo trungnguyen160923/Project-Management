@@ -42,6 +42,9 @@
             android:name=".ui.project.InviteMemberActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.project.MembersActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.project.MenuProjectActivity"
             android:exported="false" />
         <activity
