@@ -60,13 +60,13 @@ public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.MemberView
         // Role
         String roleText = "";
         switch (member.getRole()) {
-            case ADMIN:
+            case Admin:
                 roleText = "Quản trị viên";
                 break;
-            case LEADER:
+            case Leader:
                 roleText = "Trưởng nhóm";
                 break;
-            case MEMBER:
+            case Member:
                 roleText = "Thành viên";
                 break;
         }

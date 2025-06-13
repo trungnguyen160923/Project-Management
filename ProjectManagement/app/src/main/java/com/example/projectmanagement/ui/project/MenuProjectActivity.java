@@ -96,7 +96,7 @@ public class MenuProjectActivity extends AppCompatActivity {
                 
                 // Tìm và hiển thị thông tin admin
                 for (ProjectMember member : memberList) {
-                    if (member.getRole() == ProjectMember.Role.ADMIN) {
+                    if (member.getRole() == ProjectMember.Role.Admin) {
                         // Set avatar
                         if (member.getUser() != null && member.getUser().getAvatar() != null) {
                             binding.avatarView.setImage(Uri.parse(member.getUser().getAvatar()));

@@ -95,7 +95,7 @@ public class ProjectViewModel extends ViewModel {
         newPhase.setDescription("Description for " + newPhase.getPhaseName());
         newPhase.setStatus("ACTIVE");
         newPhase.setProjectID(project.getValue().getProjectID());
-        newPhase.setOrderIndex(currentPhases.size()); // Set order index to last position
+        newPhase.setOrderIndex(currentPhases.size()+1); // Set order index to last position
 
         // Set flag to prevent multiple creations
         isCreatingPhase = true;
@@ -164,7 +164,7 @@ public class ProjectViewModel extends ViewModel {
             newTask.setStatus("WORKING");
             newTask.setPriority("MEDIUM");
             newTask.setDueDate(new Date());
-            newTask.setOrderIndex(phase.getTasks().size());
+            newTask.setOrderIndex(phase.getTasks().size()+1);
             newTask.setPhase(phase);
             
             // Get project ID

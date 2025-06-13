@@ -449,6 +449,7 @@ public class ProjectActivity extends AppCompatActivity implements
         onAddTaskGeneric(pos); 
         phaseAdapter.notifyItemChanged(pos);
     }
+    @SuppressLint("NotifyDataSetChanged")
     private void onAddTaskGeneric(int pos) {
         // Lấy tên task từ adapter
         String taskName = phaseAdapter.getNewTaskName();

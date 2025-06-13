@@ -58,19 +58,19 @@ public class ProjectMemberHolder {
         user5.setEmail_verified(true);
 
         // Create project members
-        ProjectMember member1 = new ProjectMember(1, 1, 1, new Date(), ProjectMember.Role.MEMBER);
+        ProjectMember member1 = new ProjectMember(1, 1, 1, new Date(), ProjectMember.Role.Member);
         member1.setUser(user1);
 
-        ProjectMember member2 = new ProjectMember(1, 2, 2, new Date(), ProjectMember.Role.MEMBER);
+        ProjectMember member2 = new ProjectMember(1, 2, 2, new Date(), ProjectMember.Role.Member);
         member2.setUser(user2);
 
-        ProjectMember member3 = new ProjectMember(1, 3, 3, new Date(), ProjectMember.Role.LEADER);
+        ProjectMember member3 = new ProjectMember(1, 3, 3, new Date(), ProjectMember.Role.Leader);
         member3.setUser(user3);
 
-        ProjectMember member4 = new ProjectMember(1, 4, 4, new Date(), ProjectMember.Role.ADMIN);
+        ProjectMember member4 = new ProjectMember(1, 4, 4, new Date(), ProjectMember.Role.Member);
         member4.setUser(user4);
 
-        ProjectMember member5 = new ProjectMember(1, 5, 5, new Date(), ProjectMember.Role.LEADER);
+        ProjectMember member5 = new ProjectMember(1, 5, 5, new Date(), ProjectMember.Role.Leader);
         member5.setUser(user5);
 
         // Add members to list

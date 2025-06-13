@@ -436,8 +436,10 @@ public class ProjectService {
     public static List<Task> parseTasksList(JSONObject response) throws JSONException {
         List<Task> tasks = new ArrayList<>();
         JSONArray data = response.getJSONArray("data");
+        Log.d("ProjectService", "Parsing tasks response: " + response.toString());
         for (int i = 0; i < data.length(); i++) {
             JSONObject taskJson = data.getJSONObject(i);
+            Log.d("ProjectService", "Task " + i + " data: " + taskJson.toString());
             Task task = new Task();
             task.setTaskID(taskJson.optInt("id", -1));
             task.setTaskName(taskJson.optString("taskName", ""));
@@ -446,6 +448,17 @@ public class ProjectService {
             task.setPriority(taskJson.optString("priority", ""));
             task.setDueDate(ParseDateUtil.parseDate(taskJson.optString("dueDate", "")));
             task.setOrderIndex(taskJson.optInt("orderIndex", 0));
+
+            // Parse assignedTo information
+            if (!taskJson.isNull("assignedTo")) {
+                JSONObject assignedToJson = taskJson.getJSONObject("assignedTo");
+                int assignedToId = assignedToJson.optInt("id", 0);
+                Log.d("ProjectService", "Task " + task.getTaskName() + " assignedToId: " + assignedToId);
+                task.setAssignedTo(assignedToId);
+            } else {
+                Log.d("ProjectService", "Task " + task.getTaskName() + " has no assignedTo");
+                task.setAssignedTo(0);
+            }
 
             // Parse phase information
             if (!taskJson.isNull("phase")) {
@@ -466,13 +479,6 @@ public class ProjectService {
                 }
 
                 task.setPhase(phase);
-            }
-
-            // Handle assignedTo which might be null
-            if (!taskJson.isNull("assignedTo")) {
-                JSONObject assignedToJson = taskJson.getJSONObject("assignedTo");
-                // Parse assignedTo information if needed
-                // For now, we'll just skip it since it's not used in the current implementation
             }
 
             tasks.add(task);

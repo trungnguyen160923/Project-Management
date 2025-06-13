@@ -38,15 +38,15 @@ public class InviteMemberViewModel extends ViewModel {
         member.setAvatar(null);
 
         List<ProjectMember> mockMembers = new ArrayList<>();
-        ProjectMember pmAdmin = new ProjectMember(1, 1, 1, new Date(), ProjectMember.Role.ADMIN);
+        ProjectMember pmAdmin = new ProjectMember(1, 1, 1, new Date(), ProjectMember.Role.Admin);
         pmAdmin.setUser(admin);
         mockMembers.add(pmAdmin);
 
-        ProjectMember pmLeader = new ProjectMember(1, 2, 2, new Date(), ProjectMember.Role.LEADER);
+        ProjectMember pmLeader = new ProjectMember(1, 2, 2, new Date(), ProjectMember.Role.Leader);
         pmLeader.setUser(leader);
         mockMembers.add(pmLeader);
 
-        ProjectMember pmMember = new ProjectMember(1, 3, 3, new Date(), ProjectMember.Role.MEMBER);
+        ProjectMember pmMember = new ProjectMember(1, 3, 3, new Date(), ProjectMember.Role.Member);
         pmMember.setUser(member);
         mockMembers.add(pmMember);
 

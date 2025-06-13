@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.model.ProjectMember;
+import com.example.projectmanagement.data.model.ProjectMemberHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.ui.task.TaskActivity;
@@ -254,9 +256,30 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void bindAvatar(TaskViewHolder h, Task t) {
+        Log.d("TASKADAPTER:", String.valueOf(t.getAssignedTo()));
         if (t.getAssignedTo() != 0) {
             h.layoutInfoRow2.setVisibility(View.VISIBLE);
-            h.tvAvatar.setText(String.valueOf(t.getAssignedTo()));
+            // Lấy danh sách thành viên từ ProjectMemberHolder
+            List<ProjectMember> members = ProjectMemberHolder.get().getMembers();
+            // Tìm user được giao task
+            for (ProjectMember member : members) {
+                Log.d("TASKADAPTER:", member.getUser().getFullname());
+                if (member.getUser().getId() == t.getAssignedTo()) {
+                    // Lấy tên người dùng
+                    String fullName = member.getUser().getFullname();
+                    // Lấy chữ cái đầu của họ và tên
+                    String[] nameParts = fullName.split(" ");
+                    String initials = "";
+                    if (nameParts.length > 0) {
+                        initials = nameParts[0].substring(0, 1);
+                        if (nameParts.length > 1) {
+                            initials += nameParts[nameParts.length - 1].substring(0, 1);
+                        }
+                    }
+                    h.tvAvatar.setText(initials.toUpperCase());
+                    break;
+                }
+            }
         } else {
             h.layoutInfoRow2.setVisibility(View.GONE);
         }

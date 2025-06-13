@@ -12,9 +12,9 @@ public class ProjectMember {
     private User user;
 
     public enum Role {
-        ADMIN,
-        LEADER,
-        MEMBER
+        Admin,
+        Leader,
+        Member
     }
 
     private Role role;

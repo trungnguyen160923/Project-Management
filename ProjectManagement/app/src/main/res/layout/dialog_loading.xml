@@ -11,11 +11,13 @@
 
     <!-- ProgressBar để hiển thị hiệu ứng quay -->
     <ProgressBar
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:indeterminate="true"
+        android:indeterminateTint="@color/colorPrimary"
         android:layout_gravity="center"
-        android:layout_marginEnd="8dp" />
+        android:layout_marginEnd="8dp"
+        style="?android:attr/progressBarStyle" />
 
     <!-- Text hiển thị thông điệp Loading -->
     <TextView

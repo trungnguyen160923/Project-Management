@@ -2,15 +2,17 @@ package com.example.projectmanagement.ui.adapter;
 
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.utils.ParseDateUtil;
@@ -62,12 +64,15 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
         ImageView ivBg;
         TextView tvName, tvDesc, tvDeadline;
 
+        LinearLayout llDeadline;
+
         ViewHolder(@NonNull View v) {
             super(v);
             ivBg      = v.findViewById(R.id.ivItemBackground);
             tvName    = v.findViewById(R.id.tvProjectName);
             tvDesc    = v.findViewById(R.id.tvDescription);
             tvDeadline= v.findViewById(R.id.tvDeadline);
+            llDeadline = v.findViewById(R.id.llDeadline);
         }
 
         void bind(Project p) {
@@ -81,28 +86,47 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
             }
             // deadline
             if (p.getDeadline()!=null) {
-                tvDeadline.setVisibility(View.VISIBLE);
-                tvDeadline.setText("Hạn: "+ParseDateUtil.formatDate(p.getDeadline()));
-            } else tvDeadline.setVisibility(View.GONE);
+                llDeadline.setVisibility(View.VISIBLE);
+                tvDeadline.setText("Đến hạn vào: "+ParseDateUtil.toCustomDateTime(p.getDeadline()));
+            } else llDeadline.setVisibility(View.GONE);
 
-//            String bg = p.getBackgroundImg();
-//            if (bg.startsWith("http")) {
-//                Glide.with(ivBg.getContext()).load(bg).into(ivBg);
-//            } else if (bg.startsWith("COLOR;")) {
-//                ivBg.setBackgroundColor(Color.parseColor(bg.split(";",2)[1]));
-//            } else if (bg.startsWith("GRADIENT;")) {
-//                String[] parts = bg.split(";",3);
-//                String[] cols  = parts[1].split(",");
-//                int c1 = Color.parseColor(cols[0]);
-//                int c2 = Color.parseColor(cols[1]);
-//                int ori = Integer.parseInt(parts[2]);
-//                GradientDrawable gd = new GradientDrawable(
-//                        GradientDrawable.Orientation.values()[ori],
-//                        new int[]{c1,c2});
-//                ivBg.setBackground(gd);
-//            } else if (bg.startsWith("RESOURCE;")) {
-//                ivBg.setImageResource(Integer.parseInt(bg.split(";",2)[1]));
-//            }
+            String bg = (p.getBackgroundImg() != null && !p.getBackgroundImg().isEmpty())? p.getBackgroundImg(): "COLOR;#0C90F1";
+            Log.d("CHECK=>>>>>>>", bg);
+            int radius = ivBg.getContext()
+                    .getResources()
+                    .getDimensionPixelSize(R.dimen.corner_radius);
+            if (bg.startsWith("http")) {
+                Glide.with(ivBg.getContext())
+                        .load(bg)
+                        .transform(new RoundedCorners(radius))
+                        .into(ivBg);
+
+            } else if (bg.startsWith("COLOR;")) {
+                // tạo Drawable có bo góc luôn
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.parseColor(bg.split(";",2)[1]));
+                gd.setCornerRadius(radius);
+                ivBg.setBackground(gd);
+
+            } else if (bg.startsWith("GRADIENT;")) {
+                String[] parts = bg.split(";",3);
+                String[] cols  = parts[1].split(",");
+                int c1 = Color.parseColor(cols[0]);
+                int c2 = Color.parseColor(cols[1]);
+                int ori = Integer.parseInt(parts[2]);
+                GradientDrawable gd = new GradientDrawable(
+                        GradientDrawable.Orientation.values()[ori],
+                        new int[]{c1,c2});
+                gd.setCornerRadius(radius);
+                ivBg.setBackground(gd);
+
+            } else if (bg.startsWith("RESOURCE;")) {
+                int resId = Integer.parseInt(bg.split(";",2)[1]);
+                Glide.with(ivBg.getContext())
+                        .load(resId)
+                        .transform(new RoundedCorners(radius))
+                        .into(ivBg);
+            }
         }
     }
 }

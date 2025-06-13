@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.util.Log;
 import android.view.Window;
+import android.view.WindowManager;
 
 import com.example.projectmanagement.R;
 
@@ -22,6 +24,10 @@ public class LoadingDialog {
         // Đảm bảo background của dialog trong suốt, để hiển thị đúng layout custom
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            // Đặt dialog ở giữa màn hình
+            WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+            params.gravity = android.view.Gravity.CENTER;
+            dialog.getWindow().setAttributes(params);
         }
     }
 
@@ -29,8 +35,13 @@ public class LoadingDialog {
     public void show() {
         if (!dialog.isShowing()) {
             if (dialog.getContext() instanceof Activity && !((Activity)dialog.getContext()).isFinishing()) {
+                Log.d("LoadingDialog", "Showing loading dialog");
                 dialog.show();
+            } else {
+                Log.e("LoadingDialog", "Cannot show dialog: Context is not Activity or Activity is finishing");
             }
+        } else {
+            Log.d("LoadingDialog", "Dialog is already showing");
         }
     }
 
@@ -40,6 +51,7 @@ public class LoadingDialog {
             dialog.dismiss();
         }
     }
+
     public boolean isShowing() {
         return dialog.isShowing();
     }

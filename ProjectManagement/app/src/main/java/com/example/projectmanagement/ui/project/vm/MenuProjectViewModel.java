@@ -42,15 +42,15 @@ public class MenuProjectViewModel extends ViewModel {
         // Tạo mock ProjectMember và gán user
         List<ProjectMember> mockMembers = new ArrayList<>();
 
-        ProjectMember pmAdmin = new ProjectMember(1, 1, 101, new Date(), ProjectMember.Role.ADMIN);
+        ProjectMember pmAdmin = new ProjectMember(1, 1, 101, new Date(), ProjectMember.Role.Admin);
         pmAdmin.setUser(admin);
         mockMembers.add(pmAdmin);
 
-        ProjectMember pmLeader = new ProjectMember(1, 2, 102, new Date(), ProjectMember.Role.LEADER);
+        ProjectMember pmLeader = new ProjectMember(1, 2, 102, new Date(), ProjectMember.Role.Leader);
         pmLeader.setUser(leader);
         mockMembers.add(pmLeader);
 
-        ProjectMember pmMember = new ProjectMember(1, 3, 103, new Date(), ProjectMember.Role.MEMBER);
+        ProjectMember pmMember = new ProjectMember(1, 3, 103, new Date(), ProjectMember.Role.Member);
         pmMember.setUser(member);
         mockMembers.add(pmMember);
 
