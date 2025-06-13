@@ -5,6 +5,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -21,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
+import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.User;
@@ -32,7 +34,8 @@ import com.google.android.material.button.MaterialButton;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InviteMemberActivity extends AppCompatActivity {
+public class MembersActivity extends AppCompatActivity {
+    private String TAG = "MembersActivity";
     private ActivityInviteMemberBinding binding;
     private MemberAdapter memberAdapter;
     private List<ProjectMember> allMembers = new ArrayList<>();
@@ -65,9 +68,11 @@ public class InviteMemberActivity extends AppCompatActivity {
         memberAdapter = new MemberAdapter(filteredMembers, this);
         binding.rvMembers.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMembers.setAdapter(memberAdapter);
-
         // Khởi tạo ViewModel và observe danh sách thành viên
         viewModel = new ViewModelProvider(this).get(InviteMemberViewModel.class);
+        Project project = (Project) getIntent().getParcelableExtra("project");
+        viewModel.setProjectData(project);
+        viewModel.init(this);
         viewModel.getMemberListLive().observe(this, members -> {
             filteredMembers.clear();
             filteredMembers.addAll(members);
@@ -143,7 +148,7 @@ public class InviteMemberActivity extends AppCompatActivity {
         });
     }
 
-        private void filterMembers(String query) {
+    private void filterMembers(String query) {
         filteredMembers.clear();
         List<ProjectMember> allMembers = viewModel.getMemberListLive().getValue();
         if (allMembers == null) return;

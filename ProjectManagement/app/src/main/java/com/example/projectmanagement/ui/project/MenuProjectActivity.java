@@ -21,6 +21,7 @@ import com.example.projectmanagement.utils.ParseDateUtil;
 import java.util.Date;
 
 public class MenuProjectActivity extends AppCompatActivity {
+    private String TAG="MenuProjectActivity";
     private ActivityMenuProjectBinding binding;
     private MenuProjectViewModel viewModel;
     private Project project;
@@ -84,7 +85,7 @@ public class MenuProjectActivity extends AppCompatActivity {
         viewModel.getMemberListLive().observe(this, memberList -> {
             if (memberList != null) {
                 // Xóa các avatar cũ
-                binding.layoutAvatarList.removeAllViews();
+//                binding.layoutAvatarList.removeAllViews();
                 
                 // Tìm và hiển thị thông tin admin
                 for (ProjectMember member : memberList) {
@@ -129,7 +130,7 @@ public class MenuProjectActivity extends AppCompatActivity {
                     }
                     
                     // Thêm avatar vào layout
-                    binding.layoutAvatarList.addView(avatarView);
+//                    binding.layoutAvatarList.addView(avatarView);
                 }
             }
         });
@@ -142,6 +143,14 @@ public class MenuProjectActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
+        binding.members.setOnClickListener(v -> {
+            // Nếu muốn truyền projectId sang MembersActivity:
+            Intent intent = new Intent(this, MembersActivity.class);
+            Log.d(TAG,">>> click than vien: "+project);
+            intent.putExtra("project", project);
+            startActivity(intent);
+        });
+
         binding.btnInvite.setOnClickListener(v -> {
             // Nếu muốn truyền projectId sang InviteMemberActivity:
             Intent intent = new Intent(this, InviteMemberActivity.class);

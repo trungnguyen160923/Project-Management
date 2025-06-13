@@ -35,6 +35,9 @@
             android:name=".ui.user.ProfileUserActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.project.MembersActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.project.InviteMemberActivity"
             android:exported="false" />
         <activity

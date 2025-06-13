@@ -20,8 +20,40 @@ import java.util.Map;
 
 public class ProjectMemberService {
     private static final String TAG = "ProjectMemberService";
-    private static final String BASE_URL = ApiConfig.BASE_URL;
-    private static final String PROJECT_MEMBER_URL = BASE_URL + "/members";  // Bỏ dấu / ở cuối
+    private static final String PROJECT_MEMBER_URL = ApiConfig.BASE_URL + "/members";  // Bỏ dấu / ở cuối
+
+    public static void fetchProjectMembers(
+            Context context,
+            int projectId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener) {
+        String url = PROJECT_MEMBER_URL + "/projects/" + projectId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
 
     public static void addMember(
             Context context,
@@ -34,10 +66,10 @@ public class ProjectMemberService {
         // 1. Build URL with query-string parameters
         String url = PROJECT_MEMBER_URL
                 + "/add-member"  // Không còn 2 dấu // liên tiếp
-                + "?taskId="    + taskId
-                + "&userId="    + userId
+                + "?taskId=" + taskId
+                + "&userId=" + userId
                 + "&projectId=" + projectId;
-        
+
         Log.d(TAG, "Adding member with URL: " + url);
         Log.d(TAG, "TaskId: " + taskId + ", UserId: " + userId + ", ProjectId: " + projectId);
 
@@ -57,7 +89,7 @@ public class ProjectMemberService {
         ) {
             @Override
             public Map<String, String> getHeaders() {
-                Map<String,String> headers = new HashMap<>();
+                Map<String, String> headers = new HashMap<>();
                 String token = new UserPreferences(context).getJwtToken();
                 Log.d(TAG, "Using token: " + token);
                 headers.put("Cookie", "user_auth_token=" + token);

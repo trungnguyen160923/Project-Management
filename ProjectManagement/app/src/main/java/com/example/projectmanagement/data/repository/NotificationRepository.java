@@ -1,56 +1,22 @@
 package com.example.projectmanagement.data.repository;
 
-import com.example.projectmanagement.data.model.Notification;
+import android.content.Context;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.android.volley.VolleyError;
+import com.example.projectmanagement.data.service.NotificationService;
+import com.example.projectmanagement.utils.CustomCallback;
+
+import org.json.JSONObject;
 
 public class NotificationRepository {
+    private final Context context;
 
-    /**
-     * Trả về danh sách Notification mẫu để demo.
-     */
-    public List<Notification> getMockNotifications() {
-        List<Notification> list = new ArrayList<>();
+    public NotificationRepository(Context context) {
+        this.context = context;
+    }
 
-        list.add(new Notification(
-                1L,
-                "TASK_ASSIGNED",
-                new Date(),
-                false,
-                "Bạn vừa được giao task \u201CThiết kế UI\u201D",
-                "TASK",
-                101L,
-                10L,
-                5L
-        ));
-
-        list.add(new Notification(
-                2L,
-                "COMMENT_ADDED",
-                new Date(),
-                true,
-                "Alice đã bình luận vào task \u201CBackend API\u201D",
-                "COMMENT",
-                101L,
-                3L,
-                5L
-        ));
-
-        list.add(new Notification(
-                3L,
-                "PROJECT_CREATED",
-                new Date(),
-                false,
-                "Bạn đã tạo dự án \u201CMobile App\u201D thành công",
-                "PROJECT",
-                102L,
-                5L,
-                5L
-        ));
-
-        return list;
+    public void fetchNotifications(CustomCallback<JSONObject, VolleyError> callback) {
+        NotificationService.startRecursiveFetchNotifications(context, callback::onSuccess, callback::onError);
     }
 }
 

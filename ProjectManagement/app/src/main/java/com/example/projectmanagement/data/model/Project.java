@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import com.example.projectmanagement.utils.ParseDateUtil;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -65,22 +66,22 @@ public class Project implements Parcelable {
     }
 
     protected Project(Parcel in) {
-        projectID         = in.readInt();
-        projectName       = in.readString();
-        projectDescription= in.readString();
-        long dl           = in.readLong();
-        deadline          = dl == -1 ? null : new Date(dl);
-        status            = in.readString();
-        long ca           = in.readLong();
-        createAt          = ca == -1 ? null : new Date(ca);
-        long sd           = in.readLong();
-        startDate         = sd == -1 ? null : new Date(sd);
-        accessLevel       = in.readString();
-        inviteLinkToken   = in.readString();
-        backgroundImg     = in.readString();
-        long ua           = in.readLong();
-        updateAt          = ua == -1 ? null : new Date(ua);
-        user              = in.readParcelable(User.class.getClassLoader());
+        projectID = in.readInt();
+        projectName = in.readString();
+        projectDescription = in.readString();
+        long dl = in.readLong();
+        deadline = dl == -1 ? null : new Date(dl);
+        status = in.readString();
+        long ca = in.readLong();
+        createAt = ca == -1 ? null : new Date(ca);
+        long sd = in.readLong();
+        startDate = sd == -1 ? null : new Date(sd);
+        accessLevel = in.readString();
+        inviteLinkToken = in.readString();
+        backgroundImg = in.readString();
+        long ua = in.readLong();
+        updateAt = ua == -1 ? null : new Date(ua);
+        user = in.readParcelable(User.class.getClassLoader());
         phases = new ArrayList<>();
     }
 
@@ -119,42 +120,126 @@ public class Project implements Parcelable {
 
     // ===== Getters & Setters =====
 
-    public int getProjectID() { return projectID; }
-    public void setProjectID(int projectID) { this.projectID = projectID; }
+    public int getProjectID() {
+        return projectID;
+    }
 
-    public String getProjectName() { return projectName; }
-    public void setProjectName(String projectName) { this.projectName = projectName; }
+    public void setProjectID(int projectID) {
+        this.projectID = projectID;
+    }
 
-    public String getProjectDescription() { return projectDescription; }
-    public void setProjectDescription(String projectDescription) { this.projectDescription = projectDescription; }
+    public String getProjectName() {
+        return projectName;
+    }
 
-    public Date getDeadline() { return deadline; }
-    public void setDeadline(Date deadline) { this.deadline = deadline; }
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getProjectDescription() {
+        return projectDescription;
+    }
 
-    public Date getCreateAt() { return createAt; }
-    public void setCreateAt(Date createAt) { this.createAt = createAt; }
+    public void setProjectDescription(String projectDescription) {
+        this.projectDescription = projectDescription;
+    }
 
-    public Date getStartDate() { return startDate; }
-    public void setStartDate(Date startDate) { this.startDate = startDate; }
+    public Date getDeadline() {
+        return deadline;
+    }
 
-    public String getAccessLevel() { return accessLevel; }
-    public void setAccessLevel(String accessLevel) { this.accessLevel = accessLevel; }
+    public void setDeadline(Date deadline) {
+        this.deadline = deadline;
+    }
 
-    public String getInviteLinkToken() { return inviteLinkToken; }
-    public void setInviteLinkToken(String inviteLinkToken) { this.inviteLinkToken = inviteLinkToken; }
+    public String getStatus() {
+        return status;
+    }
 
-    public String getBackgroundImg() { return backgroundImg; }
-    public void setBackgroundImg(String backgroundImg) { this.backgroundImg = backgroundImg; }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    public Date getUpdateAt() { return updateAt; }
-    public void setUpdateAt(Date updateAt) { this.updateAt = updateAt; }
+    public Date getCreateAt() {
+        return createAt;
+    }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public void setCreateAt(Date createAt) {
+        this.createAt = createAt;
+    }
 
-    public List<Phase> getPhases() { return phases; }
-    public void setPhases(List<Phase> phases) { this.phases = phases; }
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public String getAccessLevel() {
+        return accessLevel;
+    }
+
+    public void setAccessLevel(String accessLevel) {
+        this.accessLevel = accessLevel;
+    }
+
+    public String getInviteLinkToken() {
+        return inviteLinkToken;
+    }
+
+    public void setInviteLinkToken(String inviteLinkToken) {
+        this.inviteLinkToken = inviteLinkToken;
+    }
+
+    public String getBackgroundImg() {
+        return backgroundImg;
+    }
+
+    public void setBackgroundImg(String backgroundImg) {
+        this.backgroundImg = backgroundImg;
+    }
+
+    public Date getUpdateAt() {
+        return updateAt;
+    }
+
+    public void setUpdateAt(Date updateAt) {
+        this.updateAt = updateAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public List<Phase> getPhases() {
+        return phases;
+    }
+
+    public void setPhases(List<Phase> phases) {
+        this.phases = phases;
+    }
+
+    @Override
+    public String toString() {
+        return "Project{" +
+                "projectID=" + projectID +
+                ", projectName='" + projectName + '\'' +
+                ", projectDescription='" + projectDescription + '\'' +
+                ", deadline=" + deadline +
+                ", status='" + status + '\'' +
+                ", createAt=" + createAt +
+                ", startDate=" + startDate +
+                ", accessLevel='" + accessLevel + '\'' +
+                ", inviteLinkToken='" + inviteLinkToken + '\'' +
+                ", backgroundImg='" + backgroundImg + '\'' +
+                ", updateAt=" + updateAt +
+                ", user=" + user +
+                ", phases=" + phases +
+                '}';
+    }
 }

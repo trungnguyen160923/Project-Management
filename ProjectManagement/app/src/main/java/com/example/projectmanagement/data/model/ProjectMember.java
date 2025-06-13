@@ -17,32 +17,62 @@ public class ProjectMember {
         MEMBER
     }
 
+    public ProjectMember() {
+    }
+
     private Role role;
+
     public ProjectMember(int projectID,
                          int memberID,
                          int userID,
                          Date joinAt,
                          Role role) {
         this.projectID = projectID;
-        this.memberID  = memberID;
-        this.userID    = userID;
-        this.joinAt    = joinAt;
-        this.role      = role;
+        this.memberID = memberID;
+        this.userID = userID;
+        this.joinAt = joinAt;
+        this.role = role;
     }
-    public int getProjectID() { return projectID; }
-    public void setProjectID(int projectID) { this.projectID = projectID; }
 
-    public int getMemberID() { return memberID; }
-    public void setMemberID(int memberID) { this.memberID = memberID; }
+    public int getProjectID() {
+        return projectID;
+    }
 
-    public int getUserID() { return userID; }
-    public void setUserID(int userID) { this.userID = userID; }
+    public void setProjectID(int projectID) {
+        this.projectID = projectID;
+    }
 
-    public Date getJoinAt() { return joinAt; }
-    public void setJoinAt(Date joinAt) { this.joinAt = joinAt; }
+    public int getMemberID() {
+        return memberID;
+    }
 
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
+    public void setMemberID(int memberID) {
+        this.memberID = memberID;
+    }
+
+    public int getUserID() {
+        return userID;
+    }
+
+    public void setUserID(int userID) {
+        this.userID = userID;
+    }
+
+    public Date getJoinAt() {
+        return joinAt;
+    }
+
+    public void setJoinAt(Date joinAt) {
+        this.joinAt = joinAt;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
 
     public Project getProject() {
         return project;

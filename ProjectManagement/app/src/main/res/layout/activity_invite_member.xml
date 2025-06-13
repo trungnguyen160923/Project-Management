@@ -30,50 +30,50 @@
             android:queryHint="Tên, Email, Tên đăng nhập"/>
     </androidx.cardview.widget.CardView>
 
-    <!-- Tạo liên kết mời -->
-    <LinearLayout
-        android:id="@+id/layout_create_link"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#E3F0FF"
-        android:padding="16dp"
-        android:layout_margin="12dp"
-        android:gravity="center_vertical">
+<!--    &lt;!&ndash; Tạo liên kết mời &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--        android:id="@+id/layout_create_link"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:background="#E3F0FF"-->
+<!--        android:padding="16dp"-->
+<!--        android:layout_margin="12dp"-->
+<!--        android:gravity="center_vertical">-->
 
-        <!-- Bên trái: TextView dọc -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+<!--        &lt;!&ndash; Bên trái: TextView dọc &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_weight="1"-->
+<!--            android:orientation="vertical">-->
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tạo liên kết mời bảng"
-                android:textColor="@color/colorPrimary"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Tạo liên kết mời bảng"-->
+<!--                android:textColor="@color/colorPrimary"-->
+<!--                android:textSize="16sp"-->
+<!--                android:textStyle="bold"/>-->
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Bất kỳ ai có đường liên kết đều có thể tham gia"
-                android:textColor="#4A6783"
-                android:textSize="14sp"
-                android:layout_marginTop="2dp"/>
-        </LinearLayout>
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Bất kỳ ai có đường liên kết đều có thể tham gia"-->
+<!--                android:textColor="#4A6783"-->
+<!--                android:textSize="14sp"-->
+<!--                android:layout_marginTop="2dp"/>-->
+<!--        </LinearLayout>-->
 
-        <!-- Bên phải: Icon căn giữa dọc -->
-        <ImageView
-            android:id="@+id/btn_create_link"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_plus"
-            android:layout_gravity="center_vertical"
-            android:padding="4dp"/>
-    </LinearLayout>
+<!--        &lt;!&ndash; Bên phải: Icon căn giữa dọc &ndash;&gt;-->
+<!--        <ImageView-->
+<!--            android:id="@+id/btn_create_link"-->
+<!--            android:layout_width="32dp"-->
+<!--            android:layout_height="32dp"-->
+<!--            android:src="@drawable/ic_plus"-->
+<!--            android:layout_gravity="center_vertical"-->
+<!--            android:padding="4dp"/>-->
+<!--    </LinearLayout>-->
 
 
     <!-- Layout hiển thị link mời (ẩn mặc định) -->
@@ -125,13 +125,13 @@
 
 
     <!-- Danh sách thành viên -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Thành viên của bảng thông tin (2)"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:padding="16dp"/>
+<!--    <TextView-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Thành viên của bảng thông tin (2)"-->
+<!--        android:textStyle="bold"-->
+<!--        android:textSize="16sp"-->
+<!--        android:padding="16dp"/>-->
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_members"
