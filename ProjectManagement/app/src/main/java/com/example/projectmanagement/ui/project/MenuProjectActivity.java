@@ -6,10 +6,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.projectmanagement.MainActivity;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
@@ -26,7 +26,7 @@ import com.example.projectmanagement.utils.LoadingDialog;
 import java.util.Date;
 
 public class MenuProjectActivity extends AppCompatActivity {
-    private String TAG="MenuProjectActivity";
+    private String TAG = "MenuProjectActivity";
     private ActivityMenuProjectBinding binding;
     private MenuProjectViewModel viewModel;
     private Project project;
@@ -45,17 +45,17 @@ public class MenuProjectActivity extends AppCompatActivity {
             finish();
             return;
         }
-        
+
         // Set project vào ViewModel
         viewModel.setProject(project);
-        
+
         // Log để debug
         Log.d("MenuProjectActivity", "Project: " + project.toString());
         Log.d("MenuProjectActivity", "Description: " + project.getProjectDescription());
         Log.d("MenuProjectActivity", "Deadline: " + project.getDeadline());
-        
+
         loadingDialog = new LoadingDialog(this);
-        
+
         observeData();
         setupToolbar();
         setupClickListeners();
@@ -65,7 +65,7 @@ public class MenuProjectActivity extends AppCompatActivity {
         viewModel.getProjectLive().observe(this, project -> {
             if (project != null) {
                 Log.d("MenuProjectActivity", "Project in ViewModel: " + project.toString());
-                
+
                 // Hiển thị thông tin project
                 String description = project.getProjectDescription();
                 Log.d("MenuProjectActivity", "Setting description: " + description);
@@ -94,7 +94,7 @@ public class MenuProjectActivity extends AppCompatActivity {
             if (memberList != null) {
                 // Xóa các avatar cũ
 //                binding.layoutAvatarList.removeAllViews();
-                
+
                 // Tìm và hiển thị thông tin admin
                 for (ProjectMember member : memberList) {
                     if (member.getRole() == ProjectMember.Role.ADMIN) {
@@ -104,21 +104,21 @@ public class MenuProjectActivity extends AppCompatActivity {
                         } else {
                             binding.avatarView.setName(member.getUser().getFullname());
                         }
-                        
+
                         // Set tên và email
                         binding.tvAuthorName.setText(member.getUser().getFullname());
                         binding.tvAuthorUsername.setText(member.getUser().getEmail());
                         break;
                     }
                 }
-                
+
                 // Thêm avatar cho từng thành viên
                 for (ProjectMember member : memberList) {
                     Log.d("MenuProjectActivity", "Member: " + member.toString());
                     Log.d("MenuProjectActivity", "User: " + (member.getUser() != null ? member.getUser().toString() : "null"));
-                    
+
                     AvatarView avatarView = new AvatarView(this, null);
-                    
+
                     // Thiết lập layout params cho avatar
                     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                             getResources().getDimensionPixelSize(R.dimen.avatar_size),
@@ -126,7 +126,7 @@ public class MenuProjectActivity extends AppCompatActivity {
                     );
                     params.setMarginEnd(getResources().getDimensionPixelSize(R.dimen.avatar_margin));
                     avatarView.setLayoutParams(params);
-                    
+
                     // Nếu có avatar thì set ảnh, không thì hiển thị chữ cái đầu
                     if (member.getUser() != null && member.getUser().getAvatar() != null) {
                         Log.d("MenuProjectActivity", "Setting avatar for: " + member.getUser().getFullname());
@@ -136,7 +136,7 @@ public class MenuProjectActivity extends AppCompatActivity {
                         Log.d("MenuProjectActivity", "Setting initials for: " + fullname);
                         avatarView.setName(fullname);
                     }
-                    
+
                     // Thêm avatar vào layout
 //                    binding.layoutAvatarList.addView(avatarView);
                 }
@@ -154,7 +154,7 @@ public class MenuProjectActivity extends AppCompatActivity {
         binding.members.setOnClickListener(v -> {
             // Nếu muốn truyền projectId sang MembersActivity:
             Intent intent = new Intent(this, MembersActivity.class);
-            Log.d(TAG,">>> click than vien: "+project);
+            Log.d(TAG, ">>> click thanh vien: " + project);
             intent.putExtra("project", project);
             startActivity(intent);
         });
@@ -176,7 +176,7 @@ public class MenuProjectActivity extends AppCompatActivity {
                     () -> {
                         // Hiển thị loading
                         loadingDialog.show();
-                        
+
                         // Gọi API xóa project
                         Project currentProject = ProjectHolder.get();
                         if (currentProject != null) {
@@ -187,7 +187,7 @@ public class MenuProjectActivity extends AppCompatActivity {
                                         if (success) {
                                             // Xóa thành công
                                             Toast.makeText(this, "Đã xoá project thành công!", Toast.LENGTH_SHORT).show();
-                                            
+
                                             // Chuyển về màn hình danh sách project
                                             Intent intent = new Intent(this, HomeActivity.class);
                                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);

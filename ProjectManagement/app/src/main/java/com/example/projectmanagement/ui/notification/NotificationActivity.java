@@ -34,10 +34,12 @@ public class NotificationActivity extends AppCompatActivity {
         RecyclerView rvNotifications = findViewById(R.id.rv_notifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         NotificationAdapter adapter = new NotificationAdapter(item -> {
-            Toast.makeText(this, "Bạn chọn: " + item.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, ">>> Bạn chọn: " + item.getMessage(), Toast.LENGTH_SHORT).show();
             viewModel.markAsRead(item.getNotificationId());
         });
+        adapter.setContext(this);
         rvNotifications.setAdapter(adapter);
+
         Log.d(TAG, ">>> NotificationAdapter set up");
         // Lấy ViewModel và observe LiveData
         viewModel = new ViewModelProvider(this).get(NotificationViewModel.class);

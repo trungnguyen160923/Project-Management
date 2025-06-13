@@ -2,12 +2,15 @@ package com.example.projectmanagement.data.service;
 
 import android.content.Context;
 import android.util.Log;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.model.User;
@@ -15,6 +18,7 @@ import com.example.projectmanagement.utils.UserPreferences;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.utils.ApiConfig;
+
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -56,7 +60,7 @@ public class ProjectService {
         String url = BASE_URL + endpoint;
         JsonObjectRequest request = new JsonObjectRequest(method, url, body,
                 listener, error -> {
-                Log.d(TAG,">>> er"+error.toString());
+            Log.d(TAG, ">>> er" + error.toString());
             errorListener.onErrorResponse(error);
         }) {
             @Override
@@ -84,7 +88,9 @@ public class ProjectService {
     }
 
 
-    /** Tạo project mới */
+    /**
+     * Tạo project mới
+     */
     public static void createProject(Context ctx,
                                      Project project,
                                      Response.Listener<JSONObject> listener,
@@ -163,7 +169,9 @@ public class ProjectService {
     }
 
 
-    /** Lấy danh sách tất cả project */
+    /**
+     * Lấy danh sách tất cả project
+     */
     public static void getAllProjects(Context ctx,
                                       Response.Listener<JSONObject> listener,
                                       Response.ErrorListener errorListener) {
@@ -178,11 +186,26 @@ public class ProjectService {
         ApiConfig.getInstance(ctx).addToRequestQueue(req);
     }
 
+    public static void getJoinedProjects(Context ctx,
+                                      Response.Listener<JSONObject> listener,
+                                      Response.ErrorListener errorListener) {
+        JsonObjectRequest req = makeRequest(
+                Request.Method.GET,
+                "/projects/joined",
+                null,
+                ctx,
+                listener,
+                errorListener
+        );
+        ApiConfig.getInstance(ctx).addToRequestQueue(req);
+    }
 
-    /** Lấy chi tiết project theo ID */
+    /**
+     * Lấy chi tiết project theo ID
+     */
     public static void getProject(Context context, String projectId,
-                                Response.Listener<JSONObject> listener,
-                                Response.ErrorListener errorListener) {
+                                  Response.Listener<JSONObject> listener,
+                                  Response.ErrorListener errorListener) {
         String url = BASE_URL + "/projects/" + projectId;
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
@@ -202,7 +225,9 @@ public class ProjectService {
         ApiConfig.getInstance(context).addToRequestQueue(request);
     }
 
-    /** Cập nhật project */
+    /**
+     * Cập nhật project
+     */
     public static void updateProject(Context context,
                                      String projectId,
                                      JSONObject projectData,
@@ -216,7 +241,7 @@ public class ProjectService {
             body.put("status", projectData.getString("status"));
             body.put("endDate", projectData.getString("endDate"));
             body.put("updatedAt", projectData.getString("updatedAt"));
-            
+
             // Add owner information if available
             if (projectData.has("owner")) {
                 body.put("owner", projectData.getJSONObject("owner"));
@@ -238,7 +263,9 @@ public class ProjectService {
         }
     }
 
-    /** Xóa project */
+    /**
+     * Xóa project
+     */
     public static void deleteProject(Context context,
                                      String projectId,
                                      Response.Listener<JSONObject> listener,
@@ -315,11 +342,13 @@ public class ProjectService {
         return project;
     }
 
-    /** Lấy danh sách phases của project */
+    /**
+     * Lấy danh sách phases của project
+     */
     public static void getProjectPhases(Context context,
-                                      String projectId,
-                                      Response.Listener<JSONObject> listener,
-                                      Response.ErrorListener errorListener) {
+                                        String projectId,
+                                        Response.Listener<JSONObject> listener,
+                                        Response.ErrorListener errorListener) {
         JsonObjectRequest req = new JsonObjectRequest(
                 Request.Method.GET,
                 BASE_URL + "/phases/project/" + projectId,
@@ -362,11 +391,13 @@ public class ProjectService {
         ApiConfig.getInstance(context).addToRequestQueue(req);
     }
 
-    /** Lấy danh sách tasks của phase */
+    /**
+     * Lấy danh sách tasks của phase
+     */
     public static void getPhaseTasks(Context context,
-                                   String phaseId,
-                                   Response.Listener<JSONObject> listener,
-                                   Response.ErrorListener errorListener) {
+                                     String phaseId,
+                                     Response.Listener<JSONObject> listener,
+                                     Response.ErrorListener errorListener) {
         JsonObjectRequest req = new JsonObjectRequest(
                 Request.Method.GET,
                 BASE_URL + "/tasks/phase/" + phaseId,
@@ -478,5 +509,65 @@ public class ProjectService {
             tasks.add(task);
         }
         return tasks;
+    }
+
+    public static void acceptProjectInvitation(
+            Context context,
+            long notificationId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener) {
+
+        String url = BASE_URL + "/projects/invitations/" + notificationId + "/accept";
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                url,
+                null, // Không có request body
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void rejectProjectInvitation(
+            Context context,
+            long notificationId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener) {
+
+        String url = BASE_URL + "/projects/invitations/" + notificationId + "/reject";
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                url,
+                null, // Không có body
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
     }
 }

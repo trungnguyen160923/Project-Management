@@ -1,5 +1,7 @@
 package com.example.projectmanagement.data.service;
 
+import static com.example.projectmanagement.utils.ApiConfig.BASE_URL;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -12,15 +14,17 @@ import com.android.volley.toolbox.Volley;
 import com.example.projectmanagement.utils.ApiConfig;
 import com.example.projectmanagement.utils.UserPreferences;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProjectMemberService {
     private static final String TAG = "ProjectMemberService";
-    private static final String PROJECT_MEMBER_URL = ApiConfig.BASE_URL + "/members";  // Bỏ dấu / ở cuối
+    private static final String PROJECT_MEMBER_URL = BASE_URL + "/members";  // Bỏ dấu / ở cuối
 
     public static void fetchProjectMembers(
             Context context,
@@ -151,4 +155,48 @@ public class ProjectMemberService {
         queue.add(request);
     }
 
+    public static void sendProjectInvitation(
+            Context context,
+            int projectId,
+            List<Integer> userIds,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener) {
+
+        String url = BASE_URL + "/projects/" + projectId + "/invite";
+
+        // Tạo JSON body
+        JSONObject requestBody = new JSONObject();
+        try {
+            JSONArray jsonArray = new JSONArray();
+            for (Integer id : userIds) {
+                jsonArray.put(id);
+            }
+            requestBody.put("userIds", jsonArray);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // Tạo request
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                url,
+                requestBody,
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
 }

@@ -1,15 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- res/layout/item_notification.xml -->
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?><!-- res/layout/item_notification.xml -->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/card_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
+    android:foreground="?attr/selectableItemBackground"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp"
-    android:foreground="?attr/selectableItemBackground">
+    app:cardElevation="2dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -30,8 +28,8 @@
             android:id="@+id/tv_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/view_unread_dot"
             android:layout_marginStart="8dp"
+            android:layout_toEndOf="@id/view_unread_dot"
             android:text="Tiêu đề thông báo"
             android:textSize="16sp" />
 
@@ -40,11 +38,41 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/tv_title"
-            android:layout_toEndOf="@id/view_unread_dot"
             android:layout_marginStart="8dp"
+            android:layout_toEndOf="@id/view_unread_dot"
             android:text="10:30 10/06/2025"
             android:textSize="12sp" />
 
+        <LinearLayout
+            android:id="@+id/layout_action_buttons"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_time"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_toEndOf="@id/view_unread_dot"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/btn_accept"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:backgroundTint="@android:color/holo_blue_dark"
+                android:text="Chấp nhận"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white" />
+
+            <Button
+                android:id="@+id/btn_reject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@android:color/holo_red_dark"
+                android:text="Từ chối"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
 

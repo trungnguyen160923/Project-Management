@@ -16,7 +16,7 @@ public class ProjectHolder {
 
     // Lấy project hiện tại
     public static Project get() {
-        Log.d(TAG, "Getting project: id=" + (project != null ? project.getProjectID() : "null") + 
+        Log.d(TAG, ">>> Getting project: id=" + (project != null ? project.getProjectID() : "null") +
             ", name=" + (project != null ? project.getProjectName() : "null"));
         return project;
     }

@@ -5,11 +5,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,16 +16,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.User;
-import com.example.projectmanagement.ui.adapter.MemberAdapter;
 import com.example.projectmanagement.databinding.ActivityInviteMemberBinding;
-import com.example.projectmanagement.ui.project.vm.InviteMemberViewModel;
+import com.example.projectmanagement.ui.adapter.MemberAdapter;
+import com.example.projectmanagement.ui.project.vm.MembersViewModel;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
@@ -42,7 +38,7 @@ public class MembersActivity extends AppCompatActivity {
     private List<ProjectMember> filteredMembers = new ArrayList<>();
     private String inviteLink = "";
     private String projectName = "";
-    private InviteMemberViewModel viewModel;
+    private MembersViewModel viewModel;
 
     @SuppressLint("NotifyDataSetChanged")
     @Override
@@ -69,7 +65,7 @@ public class MembersActivity extends AppCompatActivity {
         binding.rvMembers.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMembers.setAdapter(memberAdapter);
         // Khởi tạo ViewModel và observe danh sách thành viên
-        viewModel = new ViewModelProvider(this).get(InviteMemberViewModel.class);
+        viewModel = new ViewModelProvider(this).get(MembersViewModel.class);
         Project project = (Project) getIntent().getParcelableExtra("project");
         viewModel.setProjectData(project);
         viewModel.init(this);

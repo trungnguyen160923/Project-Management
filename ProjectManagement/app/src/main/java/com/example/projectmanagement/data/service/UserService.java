@@ -250,4 +250,34 @@ public class UserService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
+
+    public static void searchUsers(Context context, String keyword, Response.Listener<JSONObject> listener,
+                                   Response.ErrorListener errorListener) {
+        String url = BASE_URL + "/users/search?query=" + keyword;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
 }

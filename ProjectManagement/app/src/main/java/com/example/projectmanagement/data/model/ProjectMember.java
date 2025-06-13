@@ -89,4 +89,17 @@ public class ProjectMember {
     public void setUser(User user) {
         this.user = user;
     }
+
+    @Override
+    public String toString() {
+        return "ProjectMember{" +
+                "projectID=" + projectID +
+                ", memberID=" + memberID +
+                ", userID=" + userID +
+                ", joinAt=" + joinAt +
+                ", project=" + project +
+                ", user=" + user +
+                ", role=" + role +
+                '}';
+    }
 }

@@ -93,7 +93,7 @@ public class ProjectActivity extends AppCompatActivity implements
         // Lấy project từ ProjectHolder
         project = ProjectHolder.get();
         if (project == null) {
-            Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
