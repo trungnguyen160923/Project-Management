@@ -1,8 +1,11 @@
 package com.example.projectmanagement.data.service;
 
+import static com.example.projectmanagement.data.service.ProjectService.makeRequest;
+
 import android.content.Context;
 import android.util.Log;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -175,30 +178,69 @@ public class PhaseService {
 
     public static void movePhase(Context context, int phaseId, int newPosition, 
             Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
-        String url = BASE_URL + "/phases/" + phaseId + "/move";
+        String url = BASE_URL + "/phases/" + phaseId + "/move?position=" + newPosition;
         
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT, url, null,
+                listener, errorListener) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                UserPreferences prefs = new UserPreferences(context);
+                headers.put("Cookie", "user_auth_token="  + prefs.getJwtToken());
+                return headers;
+            }
+        };
+        
+        ApiConfig.getInstance(context).addToRequestQueue(request);
+    }
+
+    public static void updatePhase(
+            Context context,
+            int phaseId,
+            int projectId,
+            String phaseName,
+            String description,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
         try {
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("position", newPosition);
-            
-            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestBody,
-                    listener, errorListener) {
-                @Override
-                public Map<String, String> getHeaders() {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("Content-Type", "application/json");
-                    UserPreferences prefs = new UserPreferences(context);
-                    headers.put("Cookie", "user_auth_token="  + prefs.getJwtToken());
-                    return headers;
-                }
-            };
-            
-            RequestQueue queue = Volley.newRequestQueue(context);
-            queue.add(request);
-            
+            JSONObject body = new JSONObject();
+            body.put("phaseName", phaseName);
+            body.put("description", description);
+
+            String url = String.format("/phases/%d?projectId=%d", phaseId, projectId);
+
+            JsonObjectRequest request = makeRequest(
+                    Request.Method.PUT,
+                    url,
+                    body,
+                    context,
+                    listener,
+                    errorListener
+            );
+            ApiConfig.getInstance(context).addToRequestQueue(request);
         } catch (JSONException e) {
+            Log.e(TAG, "Error creating update phase request body", e);
             errorListener.onErrorResponse(new VolleyError("Error creating request body"));
         }
     }
 
+    public static void deletePhase(
+            Context context,
+            int phaseId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = String.format("/phases/%d", phaseId);
+        JsonObjectRequest request = makeRequest(
+                Request.Method.DELETE,
+                url,
+                null,
+                context,
+                listener,
+                errorListener
+        );
+        ApiConfig.getInstance(context).addToRequestQueue(request);
+    }
 }

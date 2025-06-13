@@ -1,22 +1,32 @@
 package com.example.projectmanagement.utils;
 
+import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.model.ProjectHolder;
+import com.example.projectmanagement.data.service.PhaseService;
 import com.google.android.material.textfield.TextInputEditText;
+
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 public class DetailPhaseDialogUtil {
+    private static final String TAG = "DetailPhaseDialogUtil";
 
     /** Callback để nhận sự kiện khi user cập nhật hoặc xóa Phase */
     public interface PhaseDialogListener {
@@ -103,10 +113,57 @@ public class DetailPhaseDialogUtil {
                 // lưu thay đổi
                 String newName = etName.getText().toString().trim();
                 String newDesc = etDesc.getText().toString().trim();
-                phase.setPhaseName(newName);
-                phase.setDescription(newDesc);
-                listener.onPhaseUpdated(phase);
-                dialog.dismiss();
+
+                // Validate input
+                if (newName.isEmpty()) {
+                    Toast.makeText(context, "Tên giai đoạn không được để trống", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Hiển thị loading
+                LoadingDialog loadingDialog = new LoadingDialog((Activity) context);
+                loadingDialog.show();
+
+                // Gọi API cập nhật phase
+                PhaseService.updatePhase(
+                        context,
+                        phase.getPhaseID(),
+                        ProjectHolder.get().getProjectID(),
+                        newName,
+                        newDesc,
+                        response -> {
+                            loadingDialog.dismiss();
+                            try {
+                                String status = response.optString("status", "error");
+                                String msg = response.optString("error", null);
+
+                                if ("success".equals(status)) {
+                                    // Cập nhật thành công
+                                    phase.setPhaseName(newName);
+                                    phase.setDescription(newDesc);
+                                    listener.onPhaseUpdated(phase);
+                                    Toast.makeText(context, "Cập nhật giai đoạn thành công!", Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
+                                } else {
+                                    // Cập nhật thất bại
+                                    String errorMsg = !msg.isEmpty() && !msg.equals("null") ? msg : "Không thể cập nhật giai đoạn";
+                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing response", e);
+                                Toast.makeText(context, "Lỗi xử lý dữ liệu", Toast.LENGTH_SHORT).show();
+                            }
+                        },
+                        error -> {
+                            loadingDialog.dismiss();
+                            String errorMessage = "Lỗi không xác định";
+                            try {
+                                errorMessage = Helpers.parseError(error);
+                            } catch (Exception e) {}
+                            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Update phase error", error);
+                        }
+                );
             }
         });
 
@@ -138,11 +195,47 @@ public class DetailPhaseDialogUtil {
                 .setTitle("Xác nhận xoá")
                 .setMessage("Bạn có chắc muốn xoá giai đoạn này?")
                 .setPositiveButton("Xoá", (d, w) -> {
-                    listener.onPhaseDeleted(phase);
-                    dialog.dismiss();
+                    // Hiển thị loading
+                    LoadingDialog loadingDialog = new LoadingDialog((Activity) ctx);
+                    loadingDialog.show();
+
+                    // Gọi API xóa phase
+                    PhaseService.deletePhase(
+                            ctx,
+                            phase.getPhaseID(),
+                            response -> {
+                                loadingDialog.dismiss();
+                                try {
+                                    String status = response.optString("status", "error");
+                                    String msg = response.optString("error", null);
+
+                                    if ("success".equals(status)) {
+                                        // Xóa thành công
+                                        listener.onPhaseDeleted(phase);
+                                        Toast.makeText(ctx, "Xóa giai đoạn thành công!", Toast.LENGTH_SHORT).show();
+                                        dialog.dismiss();
+                                    } else {
+                                        // Xóa thất bại
+                                        String errorMsg = !msg.isEmpty() && !msg.equals("null") ? msg : "Không thể xóa giai đoạn";
+                                        Toast.makeText(ctx, errorMsg, Toast.LENGTH_SHORT).show();
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error parsing response", e);
+                                    Toast.makeText(ctx, "Lỗi xử lý dữ liệu", Toast.LENGTH_SHORT).show();
+                                }
+                            },
+                            error -> {
+                                loadingDialog.dismiss();
+                                String errorMessage = "Lỗi không xác định";
+                                try {
+                                    errorMessage = Helpers.parseError(error);
+                                } catch (Exception e) {}
+                                Toast.makeText(ctx, errorMessage, Toast.LENGTH_SHORT).show();
+                                Log.e(TAG, "Delete phase error", error);
+                            }
+                    );
                 })
                 .setNegativeButton("Huỷ", null)
                 .show();
     }
-
 }

@@ -62,6 +62,7 @@ public class Project implements Parcelable {
         this.backgroundImg = backgroundImg;
         this.updateAt = updateAt;
         this.user = user;
+        this.startDate = startDate;
         this.phases = phases != null ? phases : new ArrayList<>();
     }
 

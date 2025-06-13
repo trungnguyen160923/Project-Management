@@ -47,15 +47,18 @@ public class ProjectService {
     /**
      * Tạo request chung với JsonObjectRequest, đính kèm headers và retry policy
      */
-    private static JsonObjectRequest makeRequest(int method,
-                                                 String endpoint,
-                                                 final JSONObject body,
-                                                 final Context context,
-                                                 Response.Listener<JSONObject> listener,
-                                                 Response.ErrorListener errorListener) {
+    static JsonObjectRequest makeRequest(int method,
+                                         String endpoint,
+                                         final JSONObject body,
+                                         final Context context,
+                                         Response.Listener<JSONObject> listener,
+                                         Response.ErrorListener errorListener) {
         String url = BASE_URL + endpoint;
         JsonObjectRequest request = new JsonObjectRequest(method, url, body,
-                listener, error -> { /* xử lý lỗi như cũ */ }) {
+                listener, error -> {
+                Log.d(TAG,">>> er"+error.toString());
+            errorListener.onErrorResponse(error);
+        }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> headers = new HashMap<>();
@@ -91,11 +94,11 @@ public class ProjectService {
             body.put("projectName", project.getProjectName());
             body.put("description", project.getProjectDescription());
             body.put("status", "ACTIVE");
-            
+
             // Format dates in ISO 8601 format
             String startDate = ParseDateUtil.formatDate(project.getStartDate());
             String endDate = ParseDateUtil.formatDate(project.getDeadline());
-            
+
             // Convert to ISO format if needed
             if (startDate.contains("/")) {
                 startDate = startDate.replace("/", "-");
@@ -103,7 +106,7 @@ public class ProjectService {
             if (endDate.contains("/")) {
                 endDate = endDate.replace("/", "-");
             }
-            
+
             body.put("startDate", startDate);
             body.put("endDate", endDate);
             body.put("backgroundImg", project.getBackgroundImg());
@@ -177,11 +180,11 @@ public class ProjectService {
 
 
     /** Lấy chi tiết project theo ID */
-    public static void getProject(Context context, String projectId, 
+    public static void getProject(Context context, String projectId,
                                 Response.Listener<JSONObject> listener,
                                 Response.ErrorListener errorListener) {
         String url = BASE_URL + "/projects/" + projectId;
-        
+
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 listener, errorListener) {
             @Override
@@ -205,15 +208,34 @@ public class ProjectService {
                                      JSONObject projectData,
                                      Response.Listener<JSONObject> listener,
                                      Response.ErrorListener errorListener) {
-        JsonObjectRequest req = makeRequest(
-                Request.Method.PUT,
-                "/projects/" + projectId,
-                projectData,
-                context,
-                listener,
-                errorListener
-        );
-        ApiConfig.getInstance(context).addToRequestQueue(req);
+        try {
+            JSONObject body = new JSONObject();
+            body.put("id", Integer.parseInt(projectId));
+            body.put("projectName", projectData.getString("projectName"));
+            body.put("description", projectData.getString("description"));
+            body.put("status", projectData.getString("status"));
+            body.put("endDate", projectData.getString("endDate"));
+            body.put("updatedAt", projectData.getString("updatedAt"));
+            
+            // Add owner information if available
+            if (projectData.has("owner")) {
+                body.put("owner", projectData.getJSONObject("owner"));
+            }
+
+            String url = "/projects/" + projectId;
+            JsonObjectRequest req = makeRequest(
+                    Request.Method.PUT,
+                    url,
+                    body,
+                    context,
+                    listener,
+                    errorListener
+            );
+            ApiConfig.getInstance(context).addToRequestQueue(req);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating update request body", e);
+            errorListener.onErrorResponse(new VolleyError("Error creating request body"));
+        }
     }
 
     /** Xóa project */
@@ -221,13 +243,17 @@ public class ProjectService {
                                      String projectId,
                                      Response.Listener<JSONObject> listener,
                                      Response.ErrorListener errorListener) {
+        String url = "/projects/" + projectId;
         JsonObjectRequest req = makeRequest(
                 Request.Method.DELETE,
-                "/projects/" + projectId,
+                url,
                 null,
                 context,
                 listener,
-                errorListener
+                error -> {
+                    Log.d(TAG, ">>> delete error: " + error.toString());
+                    errorListener.onErrorResponse(error);
+                }
         );
         ApiConfig.getInstance(context).addToRequestQueue(req);
     }
@@ -259,21 +285,21 @@ public class ProjectService {
     public static Project parseProject(JSONObject response) throws JSONException {
         JSONObject data = response.getJSONObject("data");
         Project project = new Project();
-        
+
         project.setProjectID(data.getInt("id"));
         project.setProjectName(data.getString("projectName"));
         project.setProjectDescription(data.getString("description"));
         project.setStatus(data.getString("status"));
         project.setStartDate(ParseDateUtil.parseDate(data.getString("startDate")));
         project.setDeadline(ParseDateUtil.parseDate(data.getString("endDate")));
-        
+
         // Parse owner
         if (data.has("owner")) {
             JSONObject owner = data.getJSONObject("owner");
             project.getUser().setId(owner.getInt("id"));
             project.getUser().setUsername(owner.getString("fullname"));
         }
-        
+
         // Parse phases
         if (data.has("phases")) {
             JSONArray phasesArray = data.getJSONArray("phases");
@@ -285,7 +311,7 @@ public class ProjectService {
             }
             project.setPhases(phases);
         }
-        
+
         return project;
     }
 
@@ -420,7 +446,7 @@ public class ProjectService {
             task.setPriority(taskJson.optString("priority", ""));
             task.setDueDate(ParseDateUtil.parseDate(taskJson.optString("dueDate", "")));
             task.setOrderIndex(taskJson.optInt("orderIndex", 0));
-            
+
             // Parse phase information
             if (!taskJson.isNull("phase")) {
                 JSONObject phaseJson = taskJson.getJSONObject("phase");
@@ -430,7 +456,7 @@ public class ProjectService {
                 phase.setDescription(phaseJson.optString("description", ""));
                 phase.setStatus(phaseJson.optString("status", ""));
                 phase.setOrderIndex(phaseJson.optInt("orderIndex", 0));
-                
+
                 // Parse project information in phase
                 if (!phaseJson.isNull("project")) {
                     JSONObject projectJson = phaseJson.getJSONObject("project");
@@ -438,17 +464,17 @@ public class ProjectService {
                     project.setProjectID(projectJson.optInt("id", -1));
                     phase.setProject(project);
                 }
-                
+
                 task.setPhase(phase);
             }
-            
+
             // Handle assignedTo which might be null
             if (!taskJson.isNull("assignedTo")) {
                 JSONObject assignedToJson = taskJson.getJSONObject("assignedTo");
                 // Parse assignedTo information if needed
                 // For now, we'll just skip it since it's not used in the current implementation
             }
-            
+
             tasks.add(task);
         }
         return tasks;

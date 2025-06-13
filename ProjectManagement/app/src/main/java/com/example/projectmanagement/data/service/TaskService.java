@@ -25,6 +25,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.Map;
+import java.util.HashMap;
 
 public class TaskService {
     private static final String TAG = "TaskService";
@@ -232,5 +234,37 @@ public class TaskService {
 
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
+    }
+
+    public static void moveTask(Context context, int taskId, int phaseId, int position, int projectId,
+            Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        String url = BASE_URL + "/tasks/" + taskId + "/move?phaseId=" + phaseId + 
+            "&position=" + position + "&projectId=" + projectId;
+        
+        Log.d(TAG, "Moving task - URL: " + url);
+        
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT, url, null,
+                response -> {
+                    Log.d(TAG, "Task move response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Error moving task: " + error.getMessage());
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                UserPreferences prefs = new UserPreferences(context);
+                headers.put("Cookie", "user_auth_token=" + prefs.getJwtToken());
+                Log.d(TAG, "Request headers: " + headers);
+                return headers;
+            }
+        };
+        
+        Log.d(TAG, "Adding move task request to queue");
+        ApiConfig.getInstance(context).addToRequestQueue(request);
     }
 }

@@ -8,15 +8,20 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.example.projectmanagement.MainActivity;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.databinding.ActivityMenuProjectBinding;
+import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.ui.project.vm.MenuProjectViewModel;
 import com.example.projectmanagement.utils.ConfirmDialogUtil;
 import com.example.projectmanagement.viewmodel.AvatarView;
 import com.example.projectmanagement.utils.ParseDateUtil;
+import com.example.projectmanagement.data.repository.ProjectRepository;
+import com.example.projectmanagement.utils.LoadingDialog;
 
 import java.util.Date;
 
@@ -25,6 +30,7 @@ public class MenuProjectActivity extends AppCompatActivity {
     private ActivityMenuProjectBinding binding;
     private MenuProjectViewModel viewModel;
     private Project project;
+    private LoadingDialog loadingDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +53,8 @@ public class MenuProjectActivity extends AppCompatActivity {
         Log.d("MenuProjectActivity", "Project: " + project.toString());
         Log.d("MenuProjectActivity", "Description: " + project.getProjectDescription());
         Log.d("MenuProjectActivity", "Deadline: " + project.getDeadline());
+        
+        loadingDialog = new LoadingDialog(this);
         
         observeData();
         setupToolbar();
@@ -164,12 +172,43 @@ public class MenuProjectActivity extends AppCompatActivity {
                     "Bạn có chắc chắn muốn xoá project này không? Hành động này không thể hoàn tác.", // message
                     "Xoá", // textConfirm
                     "Huỷ", // textCancel
-                    R.drawable.ic_warning, // iconResId (nếu không icon thì truyền 0)
+                    R.drawable.ic_warning, // iconResId
                     () -> {
-                        // TODO: callback thực hiện xoá
-                        Toast.makeText(this, "Đã xoá!", Toast.LENGTH_SHORT).show();
+                        // Hiển thị loading
+                        loadingDialog.show();
+                        
+                        // Gọi API xóa project
+                        Project currentProject = ProjectHolder.get();
+                        if (currentProject != null) {
+                            ProjectRepository.getInstance(this).deleteProject(currentProject.getProjectID())
+                                    .observe(this, success -> {
+                                        loadingDialog.dismiss();
+                                        Log.d("KKKKKKKKK", success.toString());
+                                        if (success) {
+                                            // Xóa thành công
+                                            Toast.makeText(this, "Đã xoá project thành công!", Toast.LENGTH_SHORT).show();
+                                            
+                                            // Chuyển về màn hình danh sách project
+                                            Intent intent = new Intent(this, HomeActivity.class);
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                            startActivity(intent);
+                                            finish();
+                                        } else {
+                                            // Xóa thất bại
+                                            Toast.makeText(this, "Không thể xoá project", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                        } else {
+                            loadingDialog.dismiss();
+                            Toast.makeText(this, "Không tìm thấy project", Toast.LENGTH_SHORT).show();
+                        }
                     }
             );
+        });
+
+        binding.btnUpdateProject.setOnClickListener(v -> {
+            Intent intent = new Intent(this, UpdateProjectActivity.class);
+            startActivity(intent);
         });
     }
 
