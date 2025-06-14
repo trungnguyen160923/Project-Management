@@ -1,6 +1,7 @@
 package com.example.projectmanagement.data.convertor;
 
 import com.example.projectmanagement.data.model.File;
+import com.example.projectmanagement.utils.Helpers;
 
 import org.json.JSONObject;
 
@@ -20,7 +21,10 @@ public class FileConvertor {
         file.setFileName(jsonObject.optString("fileName", null));
         file.setFilePath(jsonObject.optString("filePath", null));
         file.setFileSize(jsonObject.has("fileSize") ? jsonObject.optLong("fileSize") : null);
-        file.setFileType(jsonObject.optString("fileType", null));
+        String fileTypeStr = jsonObject.optString("fileType", null);
+        if (fileTypeStr != null && !fileTypeStr.isEmpty()) {
+            file.setFileType(Helpers.getFileExtensionFromMimeType(fileTypeStr));
+        }
         file.setTaskID(jsonObject.optInt("taskID"));
         file.setUserID(jsonObject.optInt("userID"));
 

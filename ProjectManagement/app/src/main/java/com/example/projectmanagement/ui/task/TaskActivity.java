@@ -78,6 +78,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.convertor.CommentConvertor;
+import com.example.projectmanagement.data.convertor.FileConvertor;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
@@ -92,6 +93,7 @@ import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
+import com.example.projectmanagement.utils.EnumFileType;
 import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.UserPreferences;
 import com.example.projectmanagement.viewmodel.AvatarView;
@@ -103,6 +105,7 @@ import android.text.style.ClickableSpan;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class TaskActivity extends AppCompatActivity {
@@ -116,6 +119,7 @@ public class TaskActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> filePickerLauncher;
     private TaskMemberAdapter adapter;
     private UserPreferences userPreferences;
+    private String fullComment = "";
 
     private Task savedTask;
 
@@ -126,6 +130,7 @@ public class TaskActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        viewModel.setContext(this);
 
         userPreferences = new UserPreferences(this);
 
@@ -133,19 +138,11 @@ public class TaskActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
-            Toast.makeText(this, "task id: " + task.getTaskID(), Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "task id: " + task.getTaskID(), Toast.LENGTH_SHORT).show();
             savedTask = task;
             if (task != null) {
-                // images and files
-                List<File> files = task.getFiles();
-                Log.d(TAG, ">>> view files list on create task activity: " + files);
-                for (File file : files) {
-                    Log.d(TAG, ">>> file details on create task activity: " + file);
-                    addImageAsUri(file.getFilePath());
-                }
-
                 // Fetch task details from API
-                viewModel.fetchTaskDetail(task.getTaskID());
+                viewModel.fetchTaskDetail(task);
 
                 // Fetch project members
                 viewModel.fetchProjectMembers();
@@ -747,6 +744,12 @@ public class TaskActivity extends AppCompatActivity {
                                             Log.d(TAG, ">>> error: " + error);
 
                                             addImageAsUri(filepath);
+
+                                            // Add image reference to comment
+                                            appendToComment("[Image] " + fileName, true);
+
+                                            // Show image section
+                                            viewModel.toggleImagesExpanded();
                                         } catch (Exception e) {
                                             Log.e(TAG, ">>> JSON parse error", e);
                                         }
@@ -757,13 +760,6 @@ public class TaskActivity extends AppCompatActivity {
                                 } catch (FileNotFoundException e) {
                                     throw new RuntimeException(e);
                                 }
-
-                                // Add image reference to comment
-                                String imageComment = String.format("[Image] %s", fileName);
-                                appendToComment(imageComment, true);
-
-                                // Show image section
-                                viewModel.toggleImagesExpanded();
                             }
                         }
                     }
@@ -779,44 +775,50 @@ public class TaskActivity extends AppCompatActivity {
                             String mimeType = getContentResolver().getType(uri);
 
                             if (mimeType != null && mimeType.startsWith("image/")) {
-                                showToast("File là ảnh, vui lòng chọn trong phần tải ảnh: " + fileName);
+                                showToast("File \"" + fileName + "\" là ảnh, vui lòng chọn mục tải ảnh");
                                 continue;
                             }
 
-                            // Add file to task
-                            String ext = getFileExtension(uri);
-                            long size = getFileSize(uri);
-                            File file = new File(
-                                    viewModel.getFiles().getValue() != null ? viewModel.getFiles().getValue().size() + 1 : 1,
-                                    fileName,
-                                    uri.toString(),
-                                    size,
-                                    ext,
-                                    1,
-                                    1,
-                                    new Date(),
-                                    new Date()
-                            );
-                            viewModel.addFile(file);
+                            // Add document (file) to task
+                            try {
+                                FileService.uploadFile(this, savedTask.getTaskID(), getContentResolver().openInputStream(uri), fileName, mimeType,
+                                        res -> {
+                                            String jsonString = new String(res.data, StandardCharsets.UTF_8);
+                                            JSONObject jsonObject = null;
+                                            try {
+                                                jsonObject = new JSONObject(jsonString);
+                                            } catch (JSONException e) {
+                                                Log.e(TAG, ">>> JSON parse error at file upload response: " + e);
+                                            }
+                                            JSONObject data = jsonObject.optJSONObject("data"); // nếu là object
+                                            Log.d(TAG, ">>> file uploaded just now: " + data);
+                                            File file = FileConvertor.fromJson(data);
 
-                            // Add file reference to comment
-                            String fileComment = String.format("[File] %s", fileName);
-                            appendToComment(fileComment, true);
+                                            // Add file to task
+                                            addDocument(file);
 
-                            // Show file section
-                            viewModel.toggleFilesExpanded();
+                                            // Add file reference to comment
+                                            appendToComment("[File] " + fileName, true);
+
+                                            // Show file section
+                                            viewModel.toggleFilesExpanded();
+                                        }, err -> {
+                                        });
+                            } catch (Exception e) {
+                                Log.d(TAG, ">>> fail to add document to task: " + e.getMessage());
+                            }
                         }
                     }
                 }
         );
     }
 
+    private void addDocument(File file) {
+        viewModel.addDocument(file);
+    }
+
     private void addImageAsUri(String filepathFromApiData) {
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(filepathFromApiData));
-            viewModel.addImageUri(imgURI);
-        });
+        viewModel.addImageAsUri(filepathFromApiData);
     }
 
     private String getFileName(Uri uri) {
@@ -1471,35 +1473,18 @@ public class TaskActivity extends AppCompatActivity {
     private void appendToComment(String text, boolean isFile) {
         String currentText = binding.etComment.getText().toString();
 
-        if (isFile) {
-            // Nếu là file, kiểm tra xem đã có file trong comment chưa
-            if (currentText.contains("[File]")) {
-                // Nếu đã có file, thay thế file cũ
-                int fileStart = currentText.indexOf("[File]");
-                int fileEnd = currentText.indexOf("[/File]", fileStart);
-                if (fileEnd == -1) fileEnd = currentText.length();
-
-                // Thu gọn tên file mới
-                String fileName = text.substring(text.indexOf("]") + 2);
-                String truncatedName = truncateFileName(fileName, 20);
-                String newFileText = "[File]" + truncatedName + "[/File]";
-
-                // Thay thế file cũ bằng file mới
-                currentText = currentText.substring(0, fileStart) + newFileText + currentText.substring(fileEnd + 7);
-            } else {
-                // Nếu chưa có file, thêm file mới
-                String fileName = text.substring(text.indexOf("]") + 2);
-                String truncatedName = truncateFileName(fileName, 20);
-                text = "[File]" + truncatedName + "[/File]";
-                currentText = currentText.isEmpty() ? text : currentText + text;
-            }
+        if (isFile) { // Nếu là file, kiểm tra xem đã có file trong comment chưa
+            String fileName = text.substring(text.indexOf("]") + 2);
+            String truncatedName = truncateFileName(fileName, 20);
+            text = "[File]" + truncatedName + "[/File]";
+            currentText = currentText.isEmpty() ? text : currentText + text;
 
             // Tạo SpannableString với style cho tên file
-            SpannableString spannableString = new SpannableString(currentText);
-            int fileStart = currentText.indexOf("[File]");
+            SpannableString spannableString = new SpannableString(text);
+            int fileStart = text.indexOf("[File]");
             int nameStart = fileStart + 6; // Sau "[File]"
-            int nameEnd = currentText.indexOf("[/File]", nameStart);
-            if (nameEnd == -1) nameEnd = currentText.length();
+            int nameEnd = text.indexOf("[/File]", nameStart);
+            if (nameEnd == -1) nameEnd = text.length();
 
             // Thêm style cho tên file
             spannableString.setSpan(new UnderlineSpan(), nameStart, nameEnd, 0);
@@ -1508,22 +1493,23 @@ public class TaskActivity extends AppCompatActivity {
                     nameStart, nameEnd, 0
             );
 
-            binding.etComment.setText(spannableString);
-        } else {
-            // Nếu là text thông thường
-            if (currentText.contains("[File]")) {
-                // Nếu đã có file, thêm text vào sau file
-                int fileEnd = currentText.indexOf("[/File]", currentText.indexOf("[File]")) + 7;
-                if (fileEnd == -1) fileEnd = currentText.length();
-
-                // Thêm text vào sau file
-                currentText = currentText.substring(0, fileEnd) + text;
-            } else {
-                // Nếu chưa có file, thêm text bình thường
-                currentText = currentText.isEmpty() ? text : currentText + text;
-            }
+            fullComment += spannableString;
             binding.etComment.setText(currentText);
         }
+//        else { // Nếu là text thông thường
+//            if (currentText.contains("[File]")) {
+//                // Nếu đã có file, thêm text vào sau file
+//                int fileEnd = currentText.indexOf("[/File]", currentText.indexOf("[File]")) + 7;
+//                if (fileEnd == -1) fileEnd = currentText.length();
+//
+//                // Thêm text vào sau file
+//                currentText = currentText.substring(0, fileEnd) + text;
+//            } else {
+//                // Nếu chưa có file, thêm text bình thường
+//                currentText = currentText.isEmpty() ? text : currentText + text;
+//            }
+//            binding.etComment.setText(currentText);
+//        }
 
         // Move cursor to end
         binding.etComment.setSelection(binding.etComment.getText().length());
@@ -1583,7 +1569,6 @@ public class TaskActivity extends AppCompatActivity {
 
         // Handle download button
         btnDownload.setOnClickListener(v -> {
-            // TODO: Implement image download
             showToast("Đang tải xuống ảnh...");
             dialog.dismiss();
         });

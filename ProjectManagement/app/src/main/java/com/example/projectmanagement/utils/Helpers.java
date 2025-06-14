@@ -22,6 +22,51 @@ public class Helpers {
     }
 
     public static String createImageUrlEndpoint(String filename) {
-        return ApiConfig.BASE_URL+"/files/images/" + filename;
+        return ApiConfig.BASE_URL + "/files/images/" + filename;
+    }
+
+    public static String getFileExtensionFromMimeType(String mimeType) {
+        if (mimeType == null) return "bin";
+
+        mimeType = mimeType.toLowerCase(); // phòng khi server trả viết hoa
+
+        if (mimeType.contains("pdf")) return "pdf";
+        if (mimeType.contains("word") || mimeType.contains("msword") || mimeType.contains("officedocument.wordprocessingml"))
+            return "doc";
+        if (mimeType.contains("excel") || mimeType.contains("spreadsheet") || mimeType.contains("officedocument.spreadsheetml"))
+            return "xls";
+        if (mimeType.contains("powerpoint") || mimeType.contains("presentation") || mimeType.contains("officedocument.presentationml"))
+            return "ppt";
+        if (mimeType.contains("text")) return "txt";
+        if (mimeType.contains("zip") || mimeType.contains("compressed") || mimeType.contains("application/x-zip-compressed"))
+            return "zip";
+        if (mimeType.contains("image/jpeg")) return "jpg";
+        if (mimeType.contains("image/png")) return "png";
+        if (mimeType.contains("image")) return "img"; // fallback cho các định dạng ảnh khác
+
+        return "bin"; // không xác định
+    }
+
+    public static EnumFileType getFileCategoryFromMimeType(String mimeType) {
+        if (mimeType == null) return EnumFileType.OTHER;
+
+        mimeType = mimeType.toLowerCase();
+
+        if (mimeType.startsWith("image/") || mimeType.contains("jpg") || mimeType.contains("jpeg") ||
+                mimeType.contains("png") || mimeType.contains("webp")) {
+            return EnumFileType.IMAGE;
+        }
+
+        if (
+                mimeType.contains("pdf") ||
+                        mimeType.contains("word") || mimeType.contains("msword") || mimeType.contains("officedocument.wordprocessingml") ||
+                        mimeType.contains("excel") || mimeType.contains("spreadsheet") || mimeType.contains("officedocument.spreadsheetml") ||
+                        mimeType.contains("powerpoint") || mimeType.contains("presentation") || mimeType.contains("officedocument.presentationml") ||
+                        mimeType.contains("text")
+        ) {
+            return EnumFileType.DOCUMENT;
+        }
+
+        return EnumFileType.OTHER;
     }
 }

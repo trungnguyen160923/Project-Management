@@ -1,7 +1,9 @@
 package com.example.projectmanagement.ui.task.vm;
 
 import android.app.Application;
+import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -15,12 +17,18 @@ import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.data.repository.TaskRepository;
+import com.example.projectmanagement.data.service.FileService;
+import com.example.projectmanagement.utils.EnumFileType;
+import com.example.projectmanagement.utils.Helpers;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class TaskViewModel extends AndroidViewModel {
+    private String TAG = "TaskViewModel";
     private final TaskRepository taskRepository;
     private final MutableLiveData<Task> task = new MutableLiveData<>();
     private final MutableLiveData<List<Comment>> comments = new MutableLiveData<>(new ArrayList<>());
@@ -34,6 +42,7 @@ public class TaskViewModel extends AndroidViewModel {
     private final MutableLiveData<String> message = new MutableLiveData<>();
     private final MutableLiveData<List<User>> projectMembers = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<String>> imageUrls = new MutableLiveData<>(new ArrayList<>());
+    private Context context;
 
     public LiveData<List<String>> getImageUrls() {
         return imageUrls;
@@ -86,9 +95,15 @@ public class TaskViewModel extends AndroidViewModel {
         }
     }
 
+    public void setContext(Context cntxt) {
+        context = cntxt;
+    }
+
     public void setTask(Task task) {
+        Log.d(TAG, ">>> task at set task: " + task);
         this.task.setValue(task);
         if (task != null) {
+            Log.d(TAG, ">>> task description 106: " + task.getTaskDescription());
             taskDescription.setValue(task.getTaskDescription());
             loadComments();
             loadFiles();
@@ -108,11 +123,30 @@ public class TaskViewModel extends AndroidViewModel {
     private void loadFiles() {
         Task currentTask = task.getValue();
         if (currentTask != null) {
-            List<File> taskFiles = currentTask.getFiles();
-            if (taskFiles != null) {
-                files.setValue(taskFiles);
+            List<File> files = currentTask.getFiles();
+            Log.d(TAG, ">>> count files list on create task activity: " + files.size());
+            for (File file : files) {
+                if (Helpers.getFileCategoryFromMimeType(file.getFileType()).equals(EnumFileType.IMAGE)) {
+                    Log.d(TAG, ">>> add image as uri: " + file.getFileType());
+                    addImageAsUri(file.getFilePath());
+                } else if (Helpers.getFileCategoryFromMimeType(file.getFileType()).equals(EnumFileType.DOCUMENT)) {
+                    Log.d(TAG, ">>> add document: " + file.getFileType());
+                    addDocument(file);
+                }
             }
         }
+    }
+
+    public void addDocument(File file) {
+        addFile(file);
+    }
+
+    public void addImageAsUri(String filepathFromApiData) {
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            Uri imgURI = FileService.downloadImageAndGetUri(context, Helpers.createImageUrlEndpoint(filepathFromApiData));
+            addImageUri(imgURI);
+        });
     }
 
     private void fetchPhases() {
@@ -212,7 +246,7 @@ public class TaskViewModel extends AndroidViewModel {
                     userId,
                     new Date()
             );
-            currentComments.add(newComment);
+            currentComments.add(0, newComment);
             updateComments(currentComments);
         }
     }
@@ -243,7 +277,7 @@ public class TaskViewModel extends AndroidViewModel {
     public void addFile(File file) {
         List<File> currentFiles = files.getValue();
         if (currentFiles != null) {
-            currentFiles.add(file);
+            currentFiles.add(0, file);
             updateFiles(currentFiles);
         }
     }
@@ -260,7 +294,7 @@ public class TaskViewModel extends AndroidViewModel {
     public void addImageUri(Uri uri) {
         List<Uri> currentUris = imageUris.getValue();
         if (currentUris != null) {
-            currentUris.add(uri);
+            currentUris.add(0, uri);
             updateImageUris(currentUris);
         }
     }
@@ -344,19 +378,14 @@ public class TaskViewModel extends AndroidViewModel {
         }
     }
 
-    public void fetchTaskDetail(int taskId) {
-        taskRepository.fetchTaskDetail(taskId).observeForever(task -> {
-            if (task != null) {
-                setTask(task);
-                // Load additional data
-                loadComments();
-                loadFiles();
-                // Update UI state
-                isImagesExpanded.setValue(false);
-                isFilesExpanded.setValue(false);
-                isCommentsExpanded.setValue(false);
-            }
-        });
+    public void fetchTaskDetail(Task task) {
+        if (task != null) {
+            setTask(task);
+            loadComments();
+            isImagesExpanded.setValue(false);
+            isFilesExpanded.setValue(false);
+            isCommentsExpanded.setValue(false);
+        }
     }
 
     @Override

@@ -217,6 +217,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     if (data != null) {
                         for (int i = 0; i < data.length(); i++) {
                             JSONObject jsonObject = data.optJSONObject(i);
+                            Log.d(TAG, ">>> fetched task at task adapter: " + jsonObject);
                             File file = FileConvertor.fromJson(jsonObject);
                             files.add(file);
                         }

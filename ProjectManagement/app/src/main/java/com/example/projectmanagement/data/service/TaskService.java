@@ -325,7 +325,7 @@ public class TaskService {
             Response.Listener<JSONObject> listener,
             Response.ErrorListener errorListener
     ) {
-        String url = ApiConfig.BASE_URL + "/task/" + taskId + "?projectId=" + projectId;
+        String url = ApiConfig.BASE_URL + "/tasks/" + taskId + "?projectId=" + projectId;
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.DELETE,
