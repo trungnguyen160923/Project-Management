@@ -141,7 +141,7 @@ public class FileService {
     public static void fetchFilesByTask(Context context, long taskId,
                                         Response.Listener<JSONObject> listener,
                                         Response.ErrorListener errorListener) {
-        String url = ApiConfig.BASE_URL + "/task/" + taskId;
+        String url = ApiConfig.BASE_URL + "/files/task/" + taskId;
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,

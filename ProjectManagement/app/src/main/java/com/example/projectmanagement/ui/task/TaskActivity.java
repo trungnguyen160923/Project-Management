@@ -133,8 +133,17 @@ public class TaskActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
+            Toast.makeText(this, "task id: " + task.getTaskID(), Toast.LENGTH_SHORT).show();
             savedTask = task;
             if (task != null) {
+                // images and files
+                List<File> files = task.getFiles();
+                Log.d(TAG, ">>> view files list on create task activity: " + files);
+                for (File file : files) {
+                    Log.d(TAG, ">>> file details on create task activity: " + file);
+                    addImageAsUri(file.getFilePath());
+                }
+
                 // Fetch task details from API
                 viewModel.fetchTaskDetail(task.getTaskID());
 
@@ -733,24 +742,17 @@ public class TaskActivity extends AppCompatActivity {
 //                                            }catch (Exception e){
 //                                                Log.d(TAG,">>> "+ e.getMessage());
 //                                            }
-                                            Executor executor = Executors.newSingleThreadExecutor();
-                                            executor.execute(() -> {
+                                            Log.d(TAG, ">>> status: " + status);
+                                            Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
+                                            Log.d(TAG, ">>> error: " + error);
 
-
-                                                Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(filepath));
-
-                                                viewModel.addImageUri(imgURI);
-
-                                                Log.d(TAG, ">>> status: " + status);
-                                                Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
-                                                Log.d(TAG, ">>> error: " + error);
-                                            });
+                                            addImageAsUri(filepath);
                                         } catch (Exception e) {
                                             Log.e(TAG, ">>> JSON parse error", e);
                                         }
                                         ;
                                     }, err -> {
-                                        Log.d(TAG, ">>> err: " + err.toString());
+                                        Log.d(TAG, ">>> fail to upload image: " + err);
                                     });
                                 } catch (FileNotFoundException e) {
                                     throw new RuntimeException(e);
@@ -807,6 +809,14 @@ public class TaskActivity extends AppCompatActivity {
                     }
                 }
         );
+    }
+
+    private void addImageAsUri(String filepathFromApiData) {
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(filepathFromApiData));
+            viewModel.addImageUri(imgURI);
+        });
     }
 
     private String getFileName(Uri uri) {
@@ -1306,7 +1316,7 @@ public class TaskActivity extends AppCompatActivity {
                 // TODO: Load avatar using your image loading library
                 // Glide.with(binding.avThanhVien).load(member.getAvatar()).into(binding.avThanhVien);
             } else {
-                binding.avThanhvien.setName(member.getFullname()!=null?member.getFullname():"lam dat");
+                binding.avThanhvien.setName(member.getFullname() != null ? member.getFullname() : "lam dat");
             }
         } else {
             binding.tvThanhvien.setVisibility(View.VISIBLE);
@@ -1429,7 +1439,7 @@ public class TaskActivity extends AppCompatActivity {
                     } catch (Exception e) {
                     }
                 }, err -> {
-                    Log.d(TAG,">>> createCommentErr: "+err.getMessage());
+                    Log.d(TAG, ">>> createCommentErr: " + err.getMessage());
                     String errMsg = "Không thể tạo bình luận";
                     try {
                         errMsg = Helpers.parseError(err);
