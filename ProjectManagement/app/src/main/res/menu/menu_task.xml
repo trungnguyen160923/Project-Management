@@ -9,7 +9,7 @@
 
     <item
         android:id="@+id/action_copy"
-        android:title="Sao chép thẻ"
+        android:title="Chỉnh sửa tiêu đề"
         android:icon="@drawable/ic_copy"/>
 
     <item

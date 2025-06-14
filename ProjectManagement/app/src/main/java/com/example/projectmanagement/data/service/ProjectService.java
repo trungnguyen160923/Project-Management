@@ -297,10 +297,10 @@ public class ProjectService {
                 project.setProjectName(projectJson.optString("projectName", ""));
                 project.setProjectDescription(projectJson.optString("description", ""));
                 project.setStatus(projectJson.optString("status", ""));
-                project.setStartDate(ParseDateUtil.parseDate(projectJson.optString("startDate", "")));
-                project.setDeadline(ParseDateUtil.parseDate(projectJson.optString("endDate", "")));
-                project.setCreateAt(ParseDateUtil.parseDate(projectJson.optString("createdAt", "")));
-                project.setUpdateAt(ParseDateUtil.parseDate(projectJson.optString("updatedAt", "")));
+                project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("startDate", "")));
+                project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("endDate", "")));
+                project.setCreateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("createdAt", "")));
+                project.setUpdateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("updatedAt", "")));
                 project.setBackgroundImg(projectJson.optString("backgroundImg", ""));
                 projects.add(project);
             }
@@ -317,8 +317,8 @@ public class ProjectService {
         project.setProjectName(data.getString("projectName"));
         project.setProjectDescription(data.getString("description"));
         project.setStatus(data.getString("status"));
-        project.setStartDate(ParseDateUtil.parseDate(data.getString("startDate")));
-        project.setDeadline(ParseDateUtil.parseDate(data.getString("endDate")));
+        project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(data.getString("startDate")));
+        project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(data.getString("endDate")));
 
         // Parse owner
         if (data.has("owner")) {
@@ -455,7 +455,7 @@ public class ProjectService {
 //                phase.setStartDate(ParseDateUtil.parseDate(phaseJson.optString("startDate", "")));
 //                phase.setEndDate(ParseDateUtil.parseDate(phaseJson.optString("endDate", "")));
                 phase.setOrderIndex(phaseJson.optInt("orderIndex", 0));
-                phase.setCreateAt(ParseDateUtil.parseDate(phaseJson.optString("createdAt", "")));
+                phase.setCreateAt(ParseDateUtil.parseFlexibleIsoDate(phaseJson.optString("createdAt", "")));
 //                phase.set(ParseDateUtil.parseDate(phaseJson.optString("updatedAt", "")));
                 phases.add(phase);
             }
@@ -477,7 +477,7 @@ public class ProjectService {
             task.setTaskDescription(taskJson.optString("description", ""));
             task.setStatus(taskJson.optString("status", ""));
             task.setPriority(taskJson.optString("priority", ""));
-            task.setDueDate(ParseDateUtil.parseDate(taskJson.optString("dueDate", "")));
+            task.setDueDate(ParseDateUtil.parseFlexibleIsoDate(taskJson.optString("dueDate", "")));
             task.setOrderIndex(taskJson.optInt("orderIndex", 0));
 
             // Parse assignedTo information

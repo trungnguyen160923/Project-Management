@@ -236,7 +236,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private void bindDate(TaskViewHolder h, Task t) {
         if (t.getDueDate() != null) {
             h.layoutInfoRow.setVisibility(View.VISIBLE);
-            h.tvDateRange.setText(ParseDateUtil.formatDate(t.getDueDate()));
+            h.tvDateRange.setText(ParseDateUtil.toCustomDateTime(t.getDueDate()));
         } else {
             h.layoutInfoRow.setVisibility(View.GONE);
         }

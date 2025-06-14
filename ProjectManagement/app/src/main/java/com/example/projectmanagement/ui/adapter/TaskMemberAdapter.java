@@ -22,6 +22,7 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
     private List<User> members;
     private OnMemberSelectedListener listener;
     private int selectedPosition = -1;
+    private int assignedPosition = -1;
     private boolean itemsEnabled = true;
 
     public interface OnMemberSelectedListener {
@@ -45,7 +46,8 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
     public void onBindViewHolder(@NonNull MemberViewHolder holder, int position) {
         User member = members.get(position);
         boolean isSelected = position == selectedPosition;
-        holder.bind(member, isSelected);
+        boolean isAssigned = position == assignedPosition && selectedPosition == -1;
+        holder.bind(member, isSelected, isAssigned);
     }
 
     @Override
@@ -64,15 +66,20 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
         }
         if (position != -1) {
             notifyItemChanged(position);
-            if (listener != null) {
-                listener.onMemberSelected(members.get(position));
-            }
+        }
+        if (assignedPosition != -1) {
+            notifyItemChanged(assignedPosition);
+        }
+        
+        if (listener != null) {
+            listener.onMemberSelected(position != -1 ? members.get(position) : null);
         }
     }
 
     public void selectMemberById(int userId) {
         for (int i = 0; i < members.size(); i++) {
             if (members.get(i).getId() == userId) {
+                assignedPosition = i;
                 selectMember(i);
                 break;
             }
@@ -84,6 +91,12 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
         selectedPosition = -1;
         if (oldPosition != -1) {
             notifyItemChanged(oldPosition);
+            if (listener != null) {
+                listener.onMemberSelected(null);
+            }
+        }
+        if (assignedPosition != -1) {
+            notifyItemChanged(assignedPosition);
         }
     }
 
@@ -115,10 +128,9 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
             });
         }
 
-        public void bind(User member, boolean isSelected) {
+        public void bind(User member, boolean isSelected, boolean isAssigned) {
             if (member == null) return;
 
-            // Xử lý tên
             String fullName = member.getFullname();
             if (tvName != null) {
                 if (fullName != null && !fullName.isEmpty()) {
@@ -129,7 +141,6 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
                 }
             }
 
-            // Xử lý avatar
             if (avatar != null) {
                 String avatarUrl = member.getAvatar();
                 Log.d("CHECK", avatarUrl);
@@ -147,9 +158,8 @@ public class TaskMemberAdapter extends RecyclerView.Adapter<TaskMemberAdapter.Me
                 }
             }
 
-            // Xử lý trạng thái chọn
             if (ivCheck != null) {
-                ivCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
+                ivCheck.setVisibility(isSelected || isAssigned ? View.VISIBLE : View.GONE);
             }
         }
     }

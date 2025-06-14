@@ -290,10 +290,26 @@ public class TaskActivity extends AppCompatActivity {
             }
         });
 
+        // Observe both task and project members
         viewModel.getTask().observe(this, task -> {
             if (task != null) {
-                // Update UI when task changes
-                initMemberUI();
+                // Check if project members are loaded
+                List<User> members = viewModel.getProjectMembers().getValue();
+                if (members != null && !members.isEmpty()) {
+                    // Both task and members are loaded, update UI
+                    initMemberUI();
+                }
+            }
+        });
+
+        viewModel.getProjectMembers().observe(this, members -> {
+            if (members != null && !members.isEmpty()) {
+                // Check if task is loaded
+                Task task = viewModel.getTask().getValue();
+                if (task != null) {
+                    // Both task and members are loaded, update UI
+                    initMemberUI();
+                }
             }
         });
 
@@ -896,6 +912,8 @@ public class TaskActivity extends AppCompatActivity {
         return true;
     }
 
+
+
     @Override
     public boolean onMenuOpened(int featureId, Menu menu) {
         if (menu != null && "MenuBuilder".equals(menu.getClass().getSimpleName())) {
@@ -908,6 +926,24 @@ public class TaskActivity extends AppCompatActivity {
             }
         }
         return super.onMenuOpened(featureId, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_move) {
+            showMoveTaskDialog();
+            return true;
+        } else if (id == R.id.action_copy) {
+            showEditTaskTitleDialog();
+            return true;
+        } else if (id == R.id.action_delete) {
+            confirmDeleteTask();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -1176,7 +1212,11 @@ public class TaskActivity extends AppCompatActivity {
             if (members == null) return;
 
             adapter = new TaskMemberAdapter(members, member -> {
-                if (member == null) return;
+                if (member == null) {
+                    // Khi bỏ chọn thành viên
+                    btnComplete.setEnabled(true);
+                    return;
+                }
 
                 int clickedId = member.getId();
                 int prevAssigneeId = currentTask.getAssignedTo();
@@ -1185,7 +1225,6 @@ public class TaskActivity extends AppCompatActivity {
                 if (clickedId == prevAssigneeId) {
                     // Bỏ chọn người đang được gán
                     adapter.deselectAll();
-                    btnComplete.setEnabled(true);
                 } else {
                     // Chọn người khác
                     btnComplete.setEnabled(true);
@@ -1195,13 +1234,16 @@ public class TaskActivity extends AppCompatActivity {
             rvMembers.setLayoutManager(new LinearLayoutManager(this));
             rvMembers.setAdapter(adapter);
 
-            // Nếu đã có người được gán, đánh dấu ngay lúc load
-            if (currentTask.getAssignedTo() != 0) {
-                adapter.selectMemberById(currentTask.getAssignedTo());
-                btnComplete.setEnabled(false); // Ban đầu disable nút Complete
-            } else {
-                btnComplete.setEnabled(false);
-            }
+            // Đảm bảo adapter đã được set trước khi chọn thành viên
+            rvMembers.post(() -> {
+                // Nếu đã có người được gán, đánh dấu ngay lúc load
+                if (currentTask.getAssignedTo() != 0) {
+                    adapter.selectMemberById(currentTask.getAssignedTo());
+                    btnComplete.setEnabled(false); // Ban đầu disable nút Complete
+                } else {
+                    btnComplete.setEnabled(false);
+                }
+            });
 
             // Xử lý khi bấm nút Complete
             btnComplete.setOnClickListener(v -> {
@@ -1611,4 +1653,39 @@ public class TaskActivity extends AppCompatActivity {
 
         dialog.show();
     }
+    private void showEditTaskTitleDialog() {
+        Task currentTask = viewModel.getTask().getValue();
+        if (currentTask == null) return;
+
+        EditText input = new EditText(this);
+        input.setText(currentTask.getTaskName());
+
+        new AlertDialog.Builder(this)
+                .setTitle("Chỉnh sửa tiêu đề")
+                .setView(input)
+                .setPositiveButton("Lưu", (dialog, which) -> {
+                    String newTitle = input.getText().toString().trim();
+                    if (!newTitle.isEmpty()) {
+                        currentTask.setTaskName(newTitle);
+                        viewModel.updateTask(currentTask);
+                        showToast("Đã cập nhật tiêu đề");
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+    private void confirmDeleteTask() {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc chắn muốn xóa thẻ này?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+//                    viewModel.deleteTask(savedTask.getTaskID(), () -> {
+//                        showToast("Đã xóa thẻ");
+//                        finish();
+//                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
 }
