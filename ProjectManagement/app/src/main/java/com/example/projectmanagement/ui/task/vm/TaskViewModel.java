@@ -2,6 +2,7 @@ package com.example.projectmanagement.ui.task.vm;
 
 import android.app.Application;
 import android.net.Uri;
+
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -200,16 +201,16 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     // Comment operations
-    public void addComment(String content) {
+    public void addComment(Comment comment, int userId) {
         List<Comment> currentComments = comments.getValue();
         Task currentTask = task.getValue();
         if (currentTask != null && currentComments != null) {
             Comment newComment = new Comment(
-                currentComments.size() + 1,
-                content,
-                currentTask.getTaskID(),
-                1, // TODO: Replace with actual user ID
-                new Date()
+                    comment.getId(),
+                    comment.getContent(),
+                    currentTask.getTaskID(),
+                    userId,
+                    new Date()
             );
             currentComments.add(newComment);
             updateComments(currentComments);
@@ -279,7 +280,7 @@ public class TaskViewModel extends AndroidViewModel {
             currentTask.setStatus(isCompleted ? "DONE" : "WORKING");
             currentTask.setLastUpdate(new Date());
             task.setValue(currentTask);
-            
+
             // Cập nhật task trong ProjectHolder
             Project currentProject = ProjectHolder.get();
             if (currentProject != null && currentProject.getPhases() != null) {
@@ -296,7 +297,7 @@ public class TaskViewModel extends AndroidViewModel {
                 }
                 ProjectHolder.set(currentProject);
             }
-            
+
             taskRepository.updateTask(currentTask);
         }
     }

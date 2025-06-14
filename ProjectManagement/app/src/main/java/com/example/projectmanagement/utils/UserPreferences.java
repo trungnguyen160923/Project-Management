@@ -3,13 +3,14 @@ package com.example.projectmanagement.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
+
 import com.example.projectmanagement.data.model.User;
 import com.google.gson.Gson;
 
 public class UserPreferences {
     private static final String TAG = "UserPreferences";
     private static final String PREF_NAME = "user_prefs";
-    
+
     // Keys for user info
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_EMAIL = "email";
@@ -54,11 +55,11 @@ public class UserPreferences {
     public User getUser() {
         try {
             String userJson = preferences.getString(KEY_USER, null);
-            Log.d(TAG, "Getting user: " + userJson);
+            Log.d(TAG, ">>> Getting user from preferences: " + userJson);
             if (userJson == null) return null;
             return gson.fromJson(userJson, User.class);
         } catch (Exception e) {
-            Log.e(TAG, "Error getting user: " + e.getMessage());
+            Log.e(TAG, ">>> Error getting user from preferences: " + e.getMessage());
             return null;
         }
     }

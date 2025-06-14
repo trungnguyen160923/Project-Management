@@ -9,6 +9,7 @@
     android:background="@drawable/background"
     android:orientation="vertical"
     android:gravity="center_horizontal"
+    android:fitsSystemWindows="true"
     tools:context=".ui.auth.RegisterActivity">
 
     <!-- Tiêu đề ứng dụng -->

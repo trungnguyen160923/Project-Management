@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <ImageView
         android:id="@+id/ivProjectBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
-        android:scaleType="centerCrop"
-        android:contentDescription="@null" />
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
+
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/coordinatorLayout"
         android:layout_width="match_parent"
@@ -29,13 +30,13 @@
                 android:id="@+id/toolbar_project"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@android:color/transparent"
                 android:layout_marginTop="4dp"
+                android:background="@android:color/transparent"
                 app:contentInsetStart="0dp"
-                app:popupTheme="@style/ThemeOverlay.MaterialComponents.Light"
-                app:titleTextColor="@android:color/white"
+                app:menu="@menu/menu_project_toolbar"
                 app:navigationIcon="@drawable/ic_back"
-                app:menu="@menu/menu_project_toolbar"/>
+                app:popupTheme="@style/ThemeOverlay.MaterialComponents.Light"
+                app:titleTextColor="@android:color/white" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <!-- 2. RecyclerView với Behavior -->
@@ -48,20 +49,20 @@
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <!-- 3. FAB neo trong CoordinatorLayout -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabZoom"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_margin="16dp"
-            android:contentDescription="@string/zoom"
-            android:src="@drawable/ic_zoom_out"
-            app:backgroundTint="@color/lime_green"
-            app:tint="@android:color/white"
-            app:fabSize="normal"
-            app:useCompatPadding="true"
-            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.FabSquare"
-            app:layout_anchor="@id/rvPhase"
-            app:layout_anchorGravity="bottom|end"/>
+<!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+<!--            android:id="@+id/fabZoom"-->
+<!--            android:layout_width="56dp"-->
+<!--            android:layout_height="56dp"-->
+<!--            android:layout_margin="16dp"-->
+<!--            android:contentDescription="@string/zoom"-->
+<!--            android:src="@drawable/ic_zoom_out"-->
+<!--            app:backgroundTint="@color/lime_green"-->
+<!--            app:fabSize="normal"-->
+<!--            app:layout_anchor="@id/rvPhase"-->
+<!--            app:layout_anchorGravity="bottom|end"-->
+<!--            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.FabSquare"-->
+<!--            app:tint="@android:color/white"-->
+<!--            app:useCompatPadding="true" />-->
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 

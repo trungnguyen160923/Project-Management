@@ -77,12 +77,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.projectmanagement.R;
+import com.example.projectmanagement.data.convertor.CommentConvertor;
 import com.example.projectmanagement.data.model.Comment;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.model.User;
+import com.example.projectmanagement.data.service.CommentService;
 import com.example.projectmanagement.data.service.ProjectMemberService;
 import com.example.projectmanagement.data.service.FileService;
 import com.example.projectmanagement.databinding.ActivityTaskBinding;
@@ -91,12 +93,16 @@ import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
 import com.example.projectmanagement.utils.Helpers;
+import com.example.projectmanagement.utils.UserPreferences;
 import com.example.projectmanagement.viewmodel.AvatarView;
 import com.example.projectmanagement.data.model.ProjectMemberHolder;
 
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class TaskActivity extends AppCompatActivity {
@@ -109,6 +115,7 @@ public class TaskActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> imagePickerLauncher;
     private ActivityResultLauncher<String[]> filePickerLauncher;
     private TaskMemberAdapter adapter;
+    private UserPreferences userPreferences;
 
     private Task savedTask;
 
@@ -119,6 +126,8 @@ public class TaskActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+
+        userPreferences = new UserPreferences(this);
 
         // Get task from intent
         Bundle extras = getIntent().getExtras();
@@ -220,6 +229,27 @@ public class TaskActivity extends AppCompatActivity {
             } else {
                 binding.confirmBar.setY(screenHeight - barH);
             }
+        });
+
+        CommentService.fetchCommentsByTaskId(this, savedTask.getTaskID(), res -> {
+            JSONArray data = res.optJSONArray("data");
+            if (data != null) {
+                try {
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject jsonObject = data.getJSONObject(i);
+                        Comment comment = CommentConvertor.fromJson(jsonObject);
+                        viewModel.addComment(comment, comment.getUserID());
+                    }
+                } catch (Exception e) {
+                }
+            }
+        }, err -> {
+            String errMsg = "Không thể lấy danh sách các bình luận";
+            try {
+                errMsg = Helpers.parseError(err);
+            } catch (Exception e) {
+            }
+            Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -325,7 +355,7 @@ public class TaskActivity extends AppCompatActivity {
                     if (commentUser.getAvatar() != null && !commentUser.getAvatar().isEmpty()) {
                         // TODO: Load avatar using your image loading library
                         // Glide.with(avatar).load(commentUser.getAvatar()).into(avatar);
-                    }else {
+                    } else {
                         avatar.setName(commentUser.getFullname());
                     }
                 }
@@ -949,6 +979,7 @@ public class TaskActivity extends AppCompatActivity {
                 })
                 .show();
     }
+
     private void loadSampleData() {
         binding.imgAvatar.setName("Nguyễn Thành Trung");
 
@@ -976,6 +1007,7 @@ public class TaskActivity extends AppCompatActivity {
         viewModel.toggleImagesExpanded();
         viewModel.toggleFilesExpanded();
     }
+
     private void updateCardStrokeColor(boolean isChecked) {
         int colorResId = isChecked
                 ? R.color.card_stroke_checked
@@ -1130,8 +1162,8 @@ public class TaskActivity extends AppCompatActivity {
         View bottomSheetView = getLayoutInflater().inflate(R.layout.dialog_select_member, null);
         bottomSheetDialog.setContentView(bottomSheetView);
 
-        RecyclerView rvMembers    = bottomSheetView.findViewById(R.id.rv_members);
-        Button      btnComplete   = bottomSheetView.findViewById(R.id.btn_complete);
+        RecyclerView rvMembers = bottomSheetView.findViewById(R.id.rv_members);
+        Button btnComplete = bottomSheetView.findViewById(R.id.btn_complete);
 
         // Tối ưu RecyclerView
         rvMembers.setHasFixedSize(true);
@@ -1142,10 +1174,10 @@ public class TaskActivity extends AppCompatActivity {
         // Observer để load lại khi ViewModel thay đổi
         viewModel.getProjectMembers().observe(this, members -> {
             if (members == null) return;
-            
+
             adapter = new TaskMemberAdapter(members, member -> {
                 if (member == null) return;
-                
+
                 int clickedId = member.getId();
                 int prevAssigneeId = currentTask.getAssignedTo();
 
@@ -1181,7 +1213,7 @@ public class TaskActivity extends AppCompatActivity {
                     // Bỏ gán task
                     btnComplete.setEnabled(false);
                     toggleRemove(prevAssigneeId, currentTask, adapter);
-                } 
+                }
                 // Nếu có người được chọn và khác với người đang được gán
                 else if (sel != null && sel.getId() != prevAssigneeId) {
                     // Gán task cho người mới
@@ -1201,14 +1233,16 @@ public class TaskActivity extends AppCompatActivity {
             rvMembers.clearOnScrollListeners();
             rvMembers.removeAllViews();
         });
-        
+
         bottomSheetDialog.show();
     }
 
-    /** Khi click vào item đang gán: gọi remove luôn */
+    /**
+     * Khi click vào item đang gán: gọi remove luôn
+     */
     private void toggleRemove(int userId,
-                            Task currentTask,
-                            TaskMemberAdapter adapter) {
+                              Task currentTask,
+                              TaskMemberAdapter adapter) {
         // Disable UI
         adapter.setItemsEnabled(false);
         // Gọi API remove
@@ -1232,11 +1266,13 @@ public class TaskActivity extends AppCompatActivity {
         );
     }
 
-    /** Add assignee mới, sau đó update UI/Model và đóng dialog */
+    /**
+     * Add assignee mới, sau đó update UI/Model và đóng dialog
+     */
     private void addNewAssignee(Task currentTask,
-                              User selectedMember,
-                              BottomSheetDialog dialog,
-                              Button btnComplete) {
+                                User selectedMember,
+                                BottomSheetDialog dialog,
+                                Button btnComplete) {
         ProjectMemberService.addMember(
                 this,
                 currentTask.getTaskID(),
@@ -1253,7 +1289,8 @@ public class TaskActivity extends AppCompatActivity {
                     String msg = "Lỗi thêm thành viên";
                     try {
                         msg = Helpers.parseError(err);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                     Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
                     btnComplete.setEnabled(true);
                     Log.e("TaskActivity", "addMemberErr", err);
@@ -1269,7 +1306,7 @@ public class TaskActivity extends AppCompatActivity {
                 // TODO: Load avatar using your image loading library
                 // Glide.with(binding.avThanhVien).load(member.getAvatar()).into(binding.avThanhVien);
             } else {
-                binding.avThanhvien.setName(member.getFullname());
+                binding.avThanhvien.setName(member.getFullname()!=null?member.getFullname():"lam dat");
             }
         } else {
             binding.tvThanhvien.setVisibility(View.VISIBLE);
@@ -1383,9 +1420,23 @@ public class TaskActivity extends AppCompatActivity {
         binding.btnSend.setOnClickListener(v -> {
             String commentText = binding.etComment.getText().toString().trim();
             if (!commentText.isEmpty()) {
-                viewModel.addComment(commentText);
-                binding.etComment.setText("");
-                imm.hideSoftInputFromWindow(binding.etComment.getWindowToken(), 0);
+                CommentService.createComment(this, savedTask.getTaskID(), commentText, false, res -> {
+                    try {
+                        Comment comment = CommentConvertor.fromJson(res.optJSONObject("data"));
+                        viewModel.addComment(comment, userPreferences.getUser().getId());
+                        binding.etComment.setText("");
+                        imm.hideSoftInputFromWindow(binding.etComment.getWindowToken(), 0);
+                    } catch (Exception e) {
+                    }
+                }, err -> {
+                    Log.d(TAG,">>> createCommentErr: "+err.getMessage());
+                    String errMsg = "Không thể tạo bình luận";
+                    try {
+                        errMsg = Helpers.parseError(err);
+                    } catch (Exception e) {
+                    }
+                    Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+                });
             }
         });
 

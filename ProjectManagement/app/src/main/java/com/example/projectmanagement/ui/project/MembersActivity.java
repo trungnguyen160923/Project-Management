@@ -52,7 +52,7 @@ public class MembersActivity extends AppCompatActivity {
             projectName = ProjectHolder.get().getProjectName();
         }
         // Set tiêu đề toolbar: "Mời tham gia <tên project>"
-        String toolbarTitle = "Mời tham gia" + (projectName != null && !projectName.isEmpty() ? " " + projectName : "");
+        String toolbarTitle = "Thành viên của " + (projectName != null && !projectName.isEmpty() ? " " + projectName : "");
         binding.toolbarInvite.setTitle(toolbarTitle);
         setSupportActionBar(binding.toolbarInvite);
         // Xử lý nút X (navigation icon)

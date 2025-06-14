@@ -158,7 +158,7 @@ public class ProjectActivity extends AppCompatActivity implements
         coordinatorLayout= findViewById(R.id.coordinatorLayout);
         toolbar          = findViewById(R.id.toolbar_project);
         rvBoard          = findViewById(R.id.rvPhase);
-        fabZoom          = findViewById(R.id.fabZoom);
+//        fabZoom          = findViewById(R.id.fabZoom);
     }
 
     private void setupInitialToolbar() {

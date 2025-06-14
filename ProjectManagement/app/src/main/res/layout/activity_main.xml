@@ -5,9 +5,10 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@drawable/background"
+    android:fitsSystemWindows="true"
     android:gravity="center_horizontal"
+    android:orientation="vertical"
     tools:context=".MainActivity">
 
     <TextView
@@ -31,16 +32,16 @@
         android:id="@+id/app_description_tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:layout_marginStart="25dp"
         android:layout_marginTop="15dp"
         android:layout_marginEnd="25dp"
         android:gravity="center"
-        android:layout_gravity="center"
-        android:textStyle="bold"
         android:lineSpacingExtra="5dp"
         android:text="@string/tieu_de"
         android:textColor="@color/secondary_text_color"
-        android:textSize="24sp" />
+        android:textSize="24sp"
+        android:textStyle="bold" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/sign_up_btn"
@@ -80,10 +81,10 @@
         android:id="@+id/app_description_tv2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
         android:layout_marginStart="20dp"
         android:layout_marginTop="15dp"
         android:layout_marginEnd="20dp"
+        android:gravity="center"
         android:lineSpacingExtra="5dp"
         android:text="@string/chu_thich"
         android:textColor="@color/secondary_text_color"
@@ -93,10 +94,10 @@
         android:id="@+id/app_description_tv3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
         android:layout_marginStart="20dp"
         android:layout_marginTop="15dp"
         android:layout_marginEnd="20dp"
+        android:gravity="center"
         android:lineSpacingExtra="5dp"
         android:text="@string/bophanhotro"
         android:textColor="@color/secondary_text_color"
