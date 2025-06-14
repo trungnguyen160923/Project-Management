@@ -56,6 +56,7 @@ dependencies {
 
     implementation ("com.android.volley:volley:1.2.1")
     implementation ("com.google.android.material:material:1.10.0")
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
 
 
