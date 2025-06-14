@@ -194,4 +194,26 @@ public class Task implements Parcelable {
 
     public Phase getPhase() { return phase; }
     public void setPhase(Phase phase) { this.phase = phase; }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "taskID=" + taskID +
+                ", phaseID=" + phaseID +
+                ", taskName='" + taskName + '\'' +
+                ", taskDescription='" + taskDescription + '\'' +
+                ", assignedTo=" + assignedTo +
+                ", status='" + status + '\'' +
+                ", priority='" + priority + '\'' +
+                ", dueDate=" + dueDate +
+                ", allowSelfAssign=" + allowSelfAssign +
+                ", orderIndex=" + orderIndex +
+                ", createAt=" + createAt +
+                ", lastUpdate=" + lastUpdate +
+                ", comments=" + comments +
+                ", files=" + files +
+                ", phase=" + phase +
+                ", user=" + user +
+                '}';
+    }
 }
