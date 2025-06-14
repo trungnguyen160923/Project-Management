@@ -12,11 +12,15 @@ import androidx.core.content.FileProvider;
 
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.projectmanagement.utils.ApiConfig;
 import com.example.projectmanagement.utils.UserPreferences;
 import com.example.projectmanagement.utils.VolleyMultipartRequest;
+
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -82,6 +86,7 @@ public class FileService {
         }
         return null;
     }
+
     static public Uri downloadImageAndGetUri(Context context, String imageUrl) {
         try {
             // Step 1: Open connection to image URL
@@ -131,5 +136,32 @@ public class FileService {
             Log.e(TAG, "Error converting URI to Android Uri: " + e.getMessage());
             return null;
         }
+    }
+
+    public static void fetchFilesByTask(Context context, long taskId,
+                                        Response.Listener<JSONObject> listener,
+                                        Response.ErrorListener errorListener) {
+        String url = ApiConfig.BASE_URL + "/task/" + taskId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
     }
 }

@@ -35,7 +35,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private static final String TAG="TaskAdapter";
+    private static final String TAG = "TaskAdapter";
 
     private static final int TYPE_TASK = 1;
     private static final int TYPE_PLACEHOLDER = 2;
@@ -43,7 +43,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<Task> tasks;
     private Phase parentPhase;
     private int placeholderPosition = -1;
-    private int placeholderWidth  = ViewGroup.LayoutParams.MATCH_PARENT;
+    private int placeholderWidth = ViewGroup.LayoutParams.MATCH_PARENT;
     private int placeholderHeight = ViewGroup.LayoutParams.WRAP_CONTENT;
 
     private TaskService taskService;
@@ -60,7 +60,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return;
         }
         this.placeholderPosition = pos;
-        this.placeholderWidth  = width;
+        this.placeholderWidth = width;
         this.placeholderHeight = height;
         notifyDataSetChanged();
     }
@@ -154,19 +154,19 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardTask       = itemView.findViewById(R.id.cardTask);
-            checkBoxTask   = itemView.findViewById(R.id.checkBoxTask);
-            tvTaskTitle    = itemView.findViewById(R.id.tvTaskTitle);
-            tvTaskDes      = itemView.findViewById(R.id.tvTaskDes);
-            tvDateRange    = itemView.findViewById(R.id.tvDateRange);
-            tvAvatar       = itemView.findViewById(R.id.tvAvatar);
+            cardTask = itemView.findViewById(R.id.cardTask);
+            checkBoxTask = itemView.findViewById(R.id.checkBoxTask);
+            tvTaskTitle = itemView.findViewById(R.id.tvTaskTitle);
+            tvTaskDes = itemView.findViewById(R.id.tvTaskDes);
+            tvDateRange = itemView.findViewById(R.id.tvDateRange);
+            tvAvatar = itemView.findViewById(R.id.tvAvatar);
             tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
-            tvFileCnt      = itemView.findViewById(R.id.tvFileCnt);
-            layoutInfoRow  = itemView.findViewById(R.id.layoutInfoRow);
+            tvFileCnt = itemView.findViewById(R.id.tvFileCnt);
+            layoutInfoRow = itemView.findViewById(R.id.layoutInfoRow);
             layoutInfoRow1 = itemView.findViewById(R.id.layoutInfoRow1);
             layoutInfoRow2 = itemView.findViewById(R.id.layoutInfoRow2);
-            imgComment     = itemView.findViewById(R.id.imgComment);
-            imgfile        = itemView.findViewById(R.id.imgfile);
+            imgComment = itemView.findViewById(R.id.imgComment);
+            imgfile = itemView.findViewById(R.id.imgfile);
         }
 
         void bind(Task t, Phase parentPhase, List<Task> tasks) {
@@ -183,16 +183,16 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             checkBoxTask.setChecked(done);
             updateCardStroke(this, done);
             checkBoxTask.setOnCheckedChangeListener((btn, isChecked) -> {
-                Log.d(TAG,"run this");
+                Log.d(TAG, ">>> run this");
                 updateCardStroke(this, isChecked);
-                String status=isChecked?"DONE":"IN_PROGRESS";
-                taskService.markTaskAsComplette(itemView.getContext(),t.getTaskID(),status,res->{
-
-                },err->{
+                String status = isChecked ? "DONE" : "IN_PROGRESS";
+                taskService.markTaskAsComplette(itemView.getContext(), t.getTaskID(), status, res -> {
+                }, err -> {
                     String errorMessage = "Lỗi không xác định";
                     try {
                         errorMessage = Helpers.parseError(err);
-                    } catch (Exception e) {}
+                    } catch (Exception e) {
+                    }
                     Toast.makeText(itemView.getContext(), errorMessage, Toast.LENGTH_SHORT).show();
                 });
                 t.setStatus(isChecked ? "DONE" : "IN_PROGRESS");
@@ -200,6 +200,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             // Click -> TaskActivity
             itemView.setOnClickListener(v -> {
+
                 Context ctx = v.getContext();
                 Intent intent = new Intent(ctx, TaskActivity.class);
                 Bundle bundle = new Bundle();

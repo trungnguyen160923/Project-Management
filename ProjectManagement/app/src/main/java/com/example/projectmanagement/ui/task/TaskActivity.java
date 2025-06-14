@@ -876,7 +876,7 @@ public class TaskActivity extends AppCompatActivity {
     private void setupListeners() {
         binding.rowMember.setOnClickListener(v -> showMemberSelectionDialog());
         binding.rowDueDate.setOnClickListener(v -> showDateTimePicker());
-        binding.llMainFiles.setOnClickListener(v -> uploadFileFromDevice());
+//        binding.llMainFiles.setOnClickListener(v -> uploadFileFromDevice());
 
         binding.rowImageAttachments.setOnClickListener(v -> viewModel.toggleImagesExpanded());
         binding.rowFileAttachments.setOnClickListener(v -> viewModel.toggleFilesExpanded());
