@@ -23,6 +23,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -68,6 +69,7 @@ public class NotificationViewModel extends ViewModel {
                             notification.setProjectId(notificationJson.optLong("projectId"));
                             notification.setSenderId(notificationJson.optLong("senderId"));
                             notification.setUserId(notificationJson.optLong("userId"));
+                            notification.setCreatedAt(ParseDateUtil.parseFlexibleIsoDate(notificationJson.optString("createdAt")));
                             notifications.add(notification);
                         }
                     }

@@ -119,7 +119,7 @@ public class NotificationAdapter
 
         void bind(@NonNull Notification item) {
             tvTitle.setText(item.getMessage());
-            tvTime.setText(ParseDateUtil.formatDate(item.getCreatedAt()));
+            tvTime.setText("Lúc " + ParseDateUtil.toCustomDateTime(item.getCreatedAt()));
 
             boolean isUnread = Boolean.FALSE.equals(item.getIsRead());
 

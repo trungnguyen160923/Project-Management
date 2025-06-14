@@ -144,4 +144,23 @@ public final class ParseDateUtil {
             return null;
         }
     }
+    public static Date parseFlexibleIsoDate(String input) {
+        if (input == null || input.trim().isEmpty()) return null;
+        String trimmed = input.trim();
+        if (trimmed.contains(".")) {
+            int dotIndex = trimmed.indexOf(".");
+            if (trimmed.length() >= dotIndex + 4) {
+                trimmed = trimmed.substring(0, dotIndex + 4);
+            } else {
+                trimmed = trimmed.substring(0, dotIndex);
+            }
+        }
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC")); // hoặc setDefault()
+            return sdf.parse(trimmed);
+        } catch (ParseException e) {
+            return null;
+        }
+    }
 }
