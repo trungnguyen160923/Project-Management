@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.ui.adapter.NotificationAdapter;
@@ -24,6 +25,7 @@ public class NotificationActivity extends AppCompatActivity {
 
     private NotificationViewModel viewModel;
     private NotificationAdapter adapter;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -33,18 +35,31 @@ public class NotificationActivity extends AppCompatActivity {
         // Thiết lập RecyclerView và Adapter
         RecyclerView rvNotifications = findViewById(R.id.rv_notifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
-        NotificationAdapter adapter = new NotificationAdapter(item -> {
+        adapter = new NotificationAdapter(item -> {
             Toast.makeText(this, ">>> Bạn chọn: " + item.getMessage(), Toast.LENGTH_SHORT).show();
             viewModel.markAsRead(item.getNotificationId());
         });
         adapter.setContext(this);
         rvNotifications.setAdapter(adapter);
 
+        // Thiết lập SwipeRefreshLayout
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            viewModel.refreshNotifications();
+        });
+        swipeRefreshLayout.setColorSchemeResources(
+            R.color.colorAccent,
+            R.color.colorPrimary
+        );
+
         Log.d(TAG, ">>> NotificationAdapter set up");
         // Lấy ViewModel và observe LiveData
         viewModel = new ViewModelProvider(this).get(NotificationViewModel.class);
         viewModel.init(this);
-        viewModel.filteredNotifications.observe(this, adapter::submitList);
+        viewModel.filteredNotifications.observe(this, notifications -> {
+            adapter.submitList(notifications);
+            swipeRefreshLayout.setRefreshing(false);
+        });
 
         Spinner spinner = findViewById(R.id.spinner_type);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {

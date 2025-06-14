@@ -337,5 +337,27 @@ public class ProjectRepository {
         return result;
     }
 
+    public interface ProjectCallback {
+        void onSuccess(Project project);
+        void onError(String error);
+    }
+
+    public void getProjectById(int projectId, ProjectCallback callback) {
+        ProjectService.getProject(context, String.valueOf(projectId),
+            response -> {
+                try {
+                    Project project = ProjectService.parseProject(response);
+                    callback.onSuccess(project);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing project", e);
+                    callback.onError("Error loading project: " + e.getMessage());
+                }
+            },
+            error -> {
+                Log.e(TAG, "Error loading project", error);
+                callback.onError("Error loading project: " + error.getMessage());
+            }
+        );
+    }
 
 }

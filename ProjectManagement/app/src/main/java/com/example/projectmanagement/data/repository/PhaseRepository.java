@@ -8,8 +8,11 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.projectmanagement.data.service.PhaseService;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.service.ProjectService;
 
 import org.json.JSONException;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,5 +96,34 @@ public class PhaseRepository {
 
     public LiveData<String> getMessageLiveData() {
         return messageLiveData;
+    }
+
+    public interface PhaseCallback {
+        void onSuccess(List<Phase> phases);
+        void onError(String error);
+    }
+
+    public void getPhasesByProjectId(int projectId, PhaseCallback callback) {
+        ProjectService.getProjectPhases(context, String.valueOf(projectId),
+            response -> {
+                try {
+                    List<Phase> phases = new ArrayList<>();
+                    JSONArray data = response.getJSONArray("data");
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject phaseObj = data.getJSONObject(i);
+                        Phase phase = PhaseService.parsePhase(phaseObj);
+                        phases.add(phase);
+                    }
+                    callback.onSuccess(phases);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing phases", e);
+                    callback.onError("Error loading phases: " + e.getMessage());
+                }
+            },
+            error -> {
+                Log.e(TAG, "Error loading phases", error);
+                callback.onError("Error loading phases: " + error.getMessage());
+            }
+        );
     }
 }

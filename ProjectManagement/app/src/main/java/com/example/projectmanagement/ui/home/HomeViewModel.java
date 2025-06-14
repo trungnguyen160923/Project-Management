@@ -22,6 +22,11 @@ public class HomeViewModel extends ViewModel {
         loadProjects();
     }
 
+    public void refresh() {
+        Log.d(TAG, "Refreshing projects");
+        loadProjects();
+    }
+
     private void loadProjects() {
         Log.d(TAG, "Loading projects");
         projectRepository.getProjects().observeForever(projectsList -> {

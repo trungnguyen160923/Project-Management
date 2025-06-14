@@ -1,52 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/fragment_home"
+    android:id="@+id/swipeRefreshLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
     tools:context=".ui.home.HomeFragment">
 
     <LinearLayout
-        android:id="@+id/empty_view"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:layout_gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <ImageView
-            android:layout_width="300dp"
-            android:layout_height="200dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/cat_empty_f" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/home_text_donot_have_project"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:textSize="18sp" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/home_text_create_first_project"
-            android:textColor="@android:color/darker_gray"
-            android:textSize="18sp" />
-    </LinearLayout>
-
-    <!-- RecyclerView hiển thị danh sách bảng -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvProject"
+        android:id="@+id/fragment_home"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:orientation="vertical"
+        android:gravity="center">
 
-</LinearLayout>
+        <LinearLayout
+            android:id="@+id/empty_view"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="300dp"
+                android:layout_height="200dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/cat_empty_f" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/home_text_donot_have_project"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:textSize="18sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/home_text_create_first_project"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <!-- RecyclerView hiển thị danh sách bảng -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvProject"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

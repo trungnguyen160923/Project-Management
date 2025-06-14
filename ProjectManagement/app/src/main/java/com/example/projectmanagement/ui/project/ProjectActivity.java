@@ -29,6 +29,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -71,6 +72,7 @@ public class ProjectActivity extends AppCompatActivity implements
     private CoordinatorLayout coordinatorLayout;
     private MaterialToolbar toolbar;
     private FloatingActionButton fabZoom;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private Project project;
     private List<Phase> phases = new ArrayList<>();
@@ -90,7 +92,7 @@ public class ProjectActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_project);
 
-        // Lấy project từ ProjectHolder
+        // Lấy project từ ProjectHolder chỉ một lần khi khởi tạo
         project = ProjectHolder.get();
         if (project == null) {
             Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
@@ -105,7 +107,7 @@ public class ProjectActivity extends AppCompatActivity implements
             ", description=" + project.getProjectDescription() +
             ", phases=" + (project.getPhases() != null ? project.getPhases().size() : 0));
 
-        // Khởi tạo ViewModel
+        // Khởi tạo ViewModel và chuyển dữ liệu cho ViewModel quản lý
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
         viewModel.init(this);
         viewModel.setProject(project);
@@ -113,9 +115,10 @@ public class ProjectActivity extends AppCompatActivity implements
         bindViews();
         setupInitialToolbar();
         setupBoard();
+        setupSwipeRefresh();
         applyProjectBackground(project.getBackgroundImg());
 
-        // Observe project data changes
+        // Observe project data changes từ ViewModel
         viewModel.getProject().observe(this, updatedProject -> {
             if (updatedProject != null) {
                 project = updatedProject;
@@ -124,7 +127,7 @@ public class ProjectActivity extends AppCompatActivity implements
             }
         });
 
-        // Observe phases data changes
+        // Observe phases data changes từ ViewModel
         viewModel.getPhases().observe(this, updatedPhases -> {
             if (updatedPhases != null) {
                 phases = updatedPhases;
@@ -146,10 +149,20 @@ public class ProjectActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        // Cập nhật project từ ProjectHolder khi activity resume
-        Project currentProject = ProjectHolder.get();
-        if (currentProject != null) {
-            viewModel.setProject(currentProject);
+        // Không cần cập nhật từ ProjectHolder nữa vì dữ liệu đã được quản lý bởi ViewModel
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("ProjectActivity", "onActivityResult called with requestCode: " + requestCode + ", resultCode: " + resultCode);
+        if (requestCode == 1001) {
+            if (resultCode == RESULT_OK) {
+                Log.d("ProjectActivity", "Task was modified, refreshing data...");
+                viewModel.refreshProject();
+            } else {
+                Log.d("ProjectActivity", "Task was not modified, no refresh needed");
+            }
         }
     }
 
@@ -158,6 +171,7 @@ public class ProjectActivity extends AppCompatActivity implements
         coordinatorLayout= findViewById(R.id.coordinatorLayout);
         toolbar          = findViewById(R.id.toolbar_project);
         rvBoard          = findViewById(R.id.rvPhase);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
     }
 
     private void setupInitialToolbar() {
@@ -300,6 +314,32 @@ public class ProjectActivity extends AppCompatActivity implements
         ItemTouchHelper.Callback phaseOrderCallback = new PhaseOrderTouchCallback(phases, phaseAdapter);
         ItemTouchHelper phaseTouchHelper = new ItemTouchHelper(phaseOrderCallback);
         phaseTouchHelper.attachToRecyclerView(rvBoard);
+    }
+
+    private void setupSwipeRefresh() {
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            // Refresh project data
+            viewModel.refreshProject();
+        });
+
+        // Set color scheme
+        swipeRefreshLayout.setColorSchemeResources(
+            R.color.colorAccent,
+            R.color.colorPrimary
+        );
+
+        // Observe phases data changes
+        viewModel.getPhases().observe(this, updatedPhases -> {
+            if (updatedPhases != null) {
+                phases = updatedPhases;
+                Log.d("ProjectActivity", "Phases updated: " + phases.size() + " phases");
+                phaseAdapter.updatePhases(phases);
+                // Force refresh UI
+                phaseAdapter.notifyDataSetChanged();
+                // Tắt SwipeRefreshLayout
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        });
     }
 
     private void applyProjectBackground(String bgImg) {

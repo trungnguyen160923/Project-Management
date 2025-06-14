@@ -169,4 +169,52 @@ public class NotificationViewModel extends ViewModel {
             _filteredNotifications.setValue(tmp);
         }
     }
+
+    public void refreshNotifications() {
+        // Load lại danh sách thông báo
+        loadNotifications();
+    }
+
+    private void loadNotifications() {
+        repository.fetchNotifications(new CustomCallback<JSONObject, VolleyError>() {
+            @Override
+            public void onSuccess(JSONObject result) {
+                Log.d(TAG, ">>> onSuccess: " + result.toString());
+                List<Notification> notifications = new ArrayList<>();
+                JSONArray data = result.optJSONArray("data");
+                try {
+                    if (data != null) {
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject notificationJson = data.getJSONObject(i);
+                            Notification notification = new Notification();
+                            notification.setNotificationId(notificationJson.optLong("notificationId"));
+                            notification.setAction(notificationJson.optString("action"));
+                            notification.setMessage(notificationJson.optString("message"));
+                            notification.setType(notificationJson.optString("type"));
+                            notification.setIsRead(notificationJson.optBoolean("isRead"));
+                            notification.setProjectId(notificationJson.optLong("projectId"));
+                            notification.setSenderId(notificationJson.optLong("senderId"));
+                            notification.setUserId(notificationJson.optLong("userId"));
+                            notification.setCreatedAt(ParseDateUtil.parseFlexibleIsoDate(notificationJson.optString("createdAt")));
+                            notifications.add(notification);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                _allNotifications.setValue(notifications);
+            }
+
+            @Override
+            public void onError(VolleyError volleyError) {
+                String errMsg = "lỗi không thể lấy thông báo";
+                try {
+                    errMsg = Helpers.parseError(volleyError);
+                } catch (Exception e) {
+                }
+                Log.d(TAG, ">>> error to fetch notifications: " + errMsg);
+                Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 }

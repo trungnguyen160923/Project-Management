@@ -39,14 +39,21 @@
                 app:titleTextColor="@android:color/white" />
         </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- 2. RecyclerView với Behavior -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvPhase"
+        <!-- 2. SwipeRefreshLayout bao quanh RecyclerView -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="8dp"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvPhase"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <!-- 3. FAB neo trong CoordinatorLayout -->
 <!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->

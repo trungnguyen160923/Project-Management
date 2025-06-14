@@ -1,6 +1,7 @@
 package com.example.projectmanagement.ui.adapter;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -23,6 +24,8 @@ import com.example.projectmanagement.data.convertor.FileConvertor;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
 import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
+import com.example.projectmanagement.data.model.Project;
+import com.example.projectmanagement.data.model.ProjectHolder;
 import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.ProjectMemberHolder;
 import com.example.projectmanagement.data.model.Task;
@@ -195,6 +198,21 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 updateCardStroke(this, isChecked);
                 String status = isChecked ? "DONE" : "IN_PROGRESS";
                 taskService.markTaskAsComplette(itemView.getContext(), t.getTaskID(), status, res -> {
+                    // Update task status in ProjectHolder after successful API call
+                    Project currentProject = ProjectHolder.get();
+                    if (currentProject != null && currentProject.getPhases() != null) {
+                        for (Phase phase : currentProject.getPhases()) {
+                            if (phase.getTasks() != null) {
+                                for (Task task : phase.getTasks()) {
+                                    if (task.getTaskID() == t.getTaskID()) {
+                                        task.setStatus(status);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        ProjectHolder.set(currentProject);
+                    }
                 }, err -> {
                     String errorMessage = "Lỗi không xác định";
                     try {
@@ -226,7 +244,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     t.setFiles(files);
                     bundle.putParcelable("task", t);
                     intent.putExtras(bundle);
-                    ctx.startActivity(intent);
+                    if (ctx instanceof Activity) {
+                        Log.d(TAG, "Starting TaskActivity with requestCode 1001");
+                        ((Activity) ctx).startActivityForResult(intent, 1001);
+                    } else {
+                        Log.d(TAG, "Starting TaskActivity without requestCode");
+                        ctx.startActivity(intent);
+                    }
                 }, err -> {
                     String errMsg = "Không thể lấy danhs sách các file";
                     try {
@@ -235,6 +259,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     }
                     Toast.makeText(ctx, errMsg, Toast.LENGTH_SHORT).show();
                 });
+            });
+
+            // Thêm click listener riêng cho checkbox
+            checkBoxTask.setOnClickListener(v -> {
+                // Ngăn sự kiện click lan ra ngoài
+                v.setClickable(true);
+                v.setFocusable(true);
             });
 
             // Long-click -> drag

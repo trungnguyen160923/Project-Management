@@ -311,18 +311,19 @@ public class TaskViewModel extends AndroidViewModel {
     public void markTaskAsComplete(boolean isCompleted) {
         Task currentTask = task.getValue();
         if (currentTask != null) {
-            currentTask.setStatus(isCompleted ? "DONE" : "WORKING");
+            String newStatus = isCompleted ? "DONE" : "WORKING";
+            currentTask.setStatus(newStatus);
             currentTask.setLastUpdate(new Date());
             task.setValue(currentTask);
 
-            // Cập nhật task trong ProjectHolder
+            // Update task status in ProjectHolder
             Project currentProject = ProjectHolder.get();
             if (currentProject != null && currentProject.getPhases() != null) {
                 for (Phase phase : currentProject.getPhases()) {
                     if (phase.getTasks() != null) {
                         for (Task t : phase.getTasks()) {
                             if (t.getTaskID() == currentTask.getTaskID()) {
-                                t.setStatus(currentTask.getStatus());
+                                t.setStatus(newStatus);
                                 t.setLastUpdate(currentTask.getLastUpdate());
                                 break;
                             }

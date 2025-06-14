@@ -127,6 +127,7 @@ public class TaskActivity extends AppCompatActivity {
     private String fullComment = "";
 
     private Task savedTask;
+    private boolean isTaskModified = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,7 +144,6 @@ public class TaskActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
-//            Toast.makeText(this, "task id: " + task.getTaskID(), Toast.LENGTH_SHORT).show();
             savedTask = task;
             if (task != null) {
                 // Fetch task details from API
@@ -159,6 +159,11 @@ public class TaskActivity extends AppCompatActivity {
                     }
                 });
             }
+        }
+
+        // Restore task modification state if activity was recreated
+        if (savedInstanceState != null) {
+            isTaskModified = savedInstanceState.getBoolean("isTaskModified", false);
         }
 
         initEdgeToEdge();
@@ -179,31 +184,11 @@ public class TaskActivity extends AppCompatActivity {
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(binding.etDescription, InputMethodManager.SHOW_IMPLICIT);
 
-        // Set initial state of checkbox and card color based on task status
-        viewModel.getTask().observe(this, task -> {
-            if (task != null) {
-                boolean isDone = "DONE".equalsIgnoreCase(task.getStatus());
-                binding.checkboxCompleted.setChecked(isDone);
-//                String taskDes = task.getTaskDescription();
-//                if (taskDes.equals("null")) {
-//                    Log.d(TAG,">>> run null"+taskDes);
-//                    binding.etDescription.setHint("Nhập mô tả cho task của bạn...");
-//                } else {
-//                    Log.d(TAG,">>> run set text"+taskDes);
-//                    binding.etDescription.setText(taskDes);
-//                }
-                updateCardStrokeColor(isDone);
-
-                // Initialize member UI when task is loaded
-                initMemberUI();
-            }
-        });
-
         // Listener for checkbox
         binding.checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
             updateCardStrokeColor(isChecked);
             viewModel.markTaskAsComplete(isChecked);
-            viewModel.updateTaskStatus(isChecked ? "DONE" : "IN_PROGRESS");
+            isTaskModified = true;
         });
 
         binding.etDescription.setOnFocusChangeListener((v, hasFocus) -> {
@@ -300,6 +285,32 @@ public class TaskActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("isTaskModified", isTaskModified);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause called, isTaskModified: " + isTaskModified);
+        if (isTaskModified) {
+            setResult(RESULT_OK);
+            Log.d(TAG, "Setting result to RESULT_OK in onPause");
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        Log.d(TAG, "onBackPressed called, isTaskModified: " + isTaskModified);
+        if (isTaskModified) {
+            setResult(RESULT_OK);
+            Log.d(TAG, "Setting result to RESULT_OK in onBackPressed");
+        }
+        super.onBackPressed();
+    }
+
     private void setupObservers() {
         viewModel.getIsImagesExpanded().observe(this, isExpanded -> {
             if (isExpanded) {
@@ -337,7 +348,7 @@ public class TaskActivity extends AppCompatActivity {
             }
         });
 
-        // Observe both task and project members
+        // Observe task data
         viewModel.getTask().observe(this, task -> {
             if (task != null) {
                 // Set task name in toolbar
@@ -351,14 +362,11 @@ public class TaskActivity extends AppCompatActivity {
                     binding.tvDueDate.setText("Chưa có ngày hết hạn");
                 }
 
-                // Set status
+                // Set status - chỉ set một lần khi task được load
                 if (task.getStatus() != null && !task.getStatus().isEmpty()) {
-                    binding.checkboxCompleted.setChecked(task.getStatus().equals("completed"));
-                }
-
-                // Set priority
-                if (task.getPriority() != null && !task.getPriority().isEmpty()) {
-                    // TODO: Add priority UI element and set it here
+                    boolean isDone = "DONE".equalsIgnoreCase(task.getStatus());
+                    binding.checkboxCompleted.setChecked(isDone);
+                    updateCardStrokeColor(isDone);
                 }
 
                 // Check if project members are loaded
@@ -1825,6 +1833,12 @@ public class TaskActivity extends AppCompatActivity {
                                         binding.toolbarTask.setTitle(newTitle);
                                         viewModel.updateTask(currentTask);
                                         showToast("Đã cập nhật tiêu đề");
+                                        // Đánh dấu task đã được sửa đổi
+                                        isTaskModified = true;
+                                        Log.d(TAG, "Task title updated, isTaskModified set to true");
+                                        // Set result ngay sau khi cập nhật thành công
+                                        setResult(RESULT_OK);
+                                        Log.d(TAG, "Setting result to RESULT_OK after title update");
                                     } else {
                                         String error = response.optString("error");
                                         showToast("Lỗi: " + error);

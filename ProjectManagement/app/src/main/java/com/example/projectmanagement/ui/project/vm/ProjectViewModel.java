@@ -14,6 +14,7 @@ import com.example.projectmanagement.data.model.Task;
 import com.example.projectmanagement.data.repository.ProjectRepository;
 import com.example.projectmanagement.data.repository.PhaseRepository;
 import com.example.projectmanagement.data.service.TaskService;
+import com.example.projectmanagement.data.service.ProjectService;
 import com.example.projectmanagement.utils.ParseDateUtil;
 
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class ProjectViewModel extends ViewModel {
     private int pendingPhase = -1;
     private final MutableLiveData<String> message = new MutableLiveData<>();
     private boolean isCreatingPhase = false; // Flag to control phase creation
+    private boolean isLoading = false;
 
     public ProjectViewModel() {
         // Default constructor for ViewModelProvider
@@ -252,80 +254,116 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void loadProjectDetail(int projectId) {
-        projectRepository.getProject(projectId).observeForever(projectData -> {
-            if (projectData != null) {
-                this.project.setValue(projectData);
-                // Load phases
-                loadProjectPhases(projectId);
+        projectRepository.getProjectById(projectId, new ProjectRepository.ProjectCallback() {
+            @Override
+            public void onSuccess(Project project) {
+                ProjectViewModel.this.project.postValue(project);
+            }
+
+            @Override
+            public void onError(String error) {
+                message.postValue(error);
             }
         });
+    }
+
+    public void refreshProject() {
+        if (isLoading) {
+            return;
+        }
+        isLoading = true;
+        
+        Project currentProject = project.getValue();
+        if (currentProject != null) {
+            // Load lại phase và task
+            loadProjectPhases(currentProject.getProjectID());
+        }
     }
 
     private void loadProjectPhases(int projectId) {
-        Log.d("ProjectViewModel", "Loading phases for project: " + projectId);
-        phaseRepository.getProjectPhases(projectId).observeForever(phasesList -> {
-            if (phasesList != null && !phasesList.isEmpty()) {
-                Log.d("ProjectViewModel", "Loaded " + phasesList.size() + " phases from API");
-                this.phases.setValue(phasesList);
+        phaseRepository.getPhasesByProjectId(projectId, new PhaseRepository.PhaseCallback() {
+            @Override
+            public void onSuccess(List<Phase> phaseList) {
+                // Cập nhật phases
+                phases.postValue(phaseList);
                 
-                // Update project with loaded phases
+                // Cập nhật project với phases mới
                 Project currentProject = project.getValue();
                 if (currentProject != null) {
-                    currentProject.setPhases(phasesList);
-                    project.setValue(currentProject);
+                    currentProject.setPhases(phaseList);
+                    project.postValue(currentProject);
                 }
+
+                // Load tasks cho tất cả phase
+                int[] loadedPhases = {0};
+                int totalPhases = phaseList.size();
                 
-                // Load tasks for each phase
-                for (Phase phase : phasesList) {
-                    loadPhaseTasks(phase.getPhaseID());
+                if (totalPhases == 0) {
+                    isLoading = false;
+                    return;
                 }
-            } else {
-                Log.e("ProjectViewModel", "No phases loaded from API");
+
+                for (Phase phase : phaseList) {
+                    loadPhaseTasks(phase.getPhaseID(), () -> {
+                        loadedPhases[0]++;
+                        if (loadedPhases[0] == totalPhases) {
+                            isLoading = false;
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                message.postValue(error);
+                isLoading = false;
             }
         });
     }
 
-    private void loadPhaseTasks(int phaseId) {
-        Log.d("ProjectViewModel", "Loading tasks for phase: " + phaseId);
+    private void loadPhaseTasks(int phaseId, Runnable onComplete) {
+        Log.d(TAG, "Loading tasks for phase: " + phaseId);
         
-        // Get project from ProjectHolder
-        Project currentProject = ProjectHolder.get();
-        if (currentProject == null || currentProject.getPhases() == null) {
-            Log.e("ProjectViewModel", "Project or phases not found in ProjectHolder");
+        // Get current phases
+        List<Phase> currentPhases = phases.getValue();
+        if (currentPhases == null) {
+            Log.e(TAG, "No phases available");
+            onComplete.run();
             return;
         }
 
-        // Find phase and its tasks
-        Phase targetPhase = null;
-        for (Phase phase : currentProject.getPhases()) {
-            if (phase.getPhaseID() == phaseId) {
-                targetPhase = phase;
-                break;
-            }
-        }
+        // Find target phase
+        Phase targetPhase = currentPhases.stream()
+            .filter(phase -> phase.getPhaseID() == phaseId)
+            .findFirst()
+            .orElse(null);
 
         if (targetPhase == null) {
-            Log.e("ProjectViewModel", "Phase not found: " + phaseId);
+            Log.e(TAG, "Phase not found: " + phaseId);
+            onComplete.run();
             return;
         }
 
-        // Get tasks from phase
-        List<Task> tasks = targetPhase.getTasks();
-        Log.d("ProjectViewModel", "Found " + (tasks != null ? tasks.size() : 0) + " tasks for phase: " + phaseId);
-
-        // Update phase with tasks
-        List<Phase> currentPhases = phases.getValue();
-        if (currentPhases != null) {
-            for (Phase phase : currentPhases) {
-                if (phase.getPhaseID() == phaseId) {
-                    phase.setTasks(tasks);
-                    phases.setValue(currentPhases);
-                    Log.d("ProjectViewModel", "Updated phase " + phaseId + " with " + 
-                        (tasks != null ? tasks.size() : 0) + " tasks");
-                    break;
+        // Get tasks from API
+        ProjectService.getPhaseTasks(context, String.valueOf(phaseId),
+            response -> {
+                try {
+                    List<Task> tasks = ProjectService.parseTasksList(response);
+                    targetPhase.setTasks(tasks);
+                    phases.postValue(currentPhases);
+                    Log.d(TAG, "Updated phase " + phaseId + " with " + tasks.size() + " tasks");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing tasks", e);
+                    message.postValue("Error loading tasks: " + e.getMessage());
                 }
+                onComplete.run();
+            },
+            error -> {
+                Log.e(TAG, "Error loading tasks", error);
+                message.postValue("Error loading tasks: " + error.getMessage());
+                onComplete.run();
             }
-        }
+        );
     }
 
     public void createPhase(Phase phase) {

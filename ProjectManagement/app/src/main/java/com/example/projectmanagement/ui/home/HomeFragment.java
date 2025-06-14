@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.projectmanagement.data.service.ProjectService;
 import com.example.projectmanagement.data.model.ProjectHolder;
@@ -46,6 +47,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
     private ProjectAdapter adapter;
     private boolean isNavigating = false;
     private ProjectRepository projectRepository;
+    private LoadingDialog loadingDialog;
 
     @Nullable
     @Override
@@ -81,6 +83,22 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
 
         // Khởi tạo ProjectRepository
         projectRepository = ProjectRepository.getInstance(requireContext());
+
+        // Setup SwipeRefreshLayout
+        setupSwipeRefresh();
+    }
+
+    private void setupSwipeRefresh() {
+        binding.swipeRefreshLayout.setOnRefreshListener(() -> {
+            Log.d(TAG, "Swipe refresh triggered");
+            viewModel.refresh();
+        });
+        binding.swipeRefreshLayout.setColorSchemeResources(
+            android.R.color.holo_blue_bright,
+            android.R.color.holo_green_light,
+            android.R.color.holo_orange_light,
+            android.R.color.holo_red_light
+        );
     }
 
     private void renderProjects(List<Project> projects) {
@@ -90,6 +108,10 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         binding.rvProject.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
         if (!isEmpty) {
             adapter.setData(projects);
+        }
+        // Dừng animation refresh nếu đang chạy
+        if (binding.swipeRefreshLayout.isRefreshing()) {
+            binding.swipeRefreshLayout.setRefreshing(false);
         }
     }
 
@@ -127,7 +149,6 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         }
     }
 
-
     private void fetchPhasesData() {
         Log.d(TAG, ">>> fetching phases");
         // Get project phases
@@ -148,6 +169,8 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
 
                         // Load tasks for each phase
                         int[] loadedPhases = {0};
+                        int totalPhases = phases.size();
+                        
                         for (Phase phase : phases) {
                             ProjectService.getPhaseTasks(requireContext(),
                                     String.valueOf(phase.getPhaseID()),
@@ -157,24 +180,40 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
                                             phase.setTasks(tasks);
                                             Log.d(TAG, "Loaded " + tasks.size() +
                                                     " tasks for phase " + phase.getPhaseName());
+                                            
+                                            loadedPhases[0]++;
+                                            if (loadedPhases[0] == totalPhases) {
+                                                // Tất cả phase đã load xong task
+                                                ProjectHolder.get().setPhases(phases);
+                                                fetchProjectMembersData();
+                                            }
                                         } catch (Exception e) {
                                             Log.e(TAG, "Error parsing tasks", e);
+                                            loadedPhases[0]++;
+                                            if (loadedPhases[0] == totalPhases) {
+                                                ProjectHolder.get().setPhases(phases);
+                                                fetchProjectMembersData();
+                                            }
                                         }
                                     },
                                     error -> {
                                         Log.e(TAG, "Error loading tasks", error);
+                                        loadedPhases[0]++;
+                                        if (loadedPhases[0] == totalPhases) {
+                                            ProjectHolder.get().setPhases(phases);
+                                            fetchProjectMembersData();
+                                        }
                                     });
                         }
-                        ProjectHolder.get().setPhases(phases);
-                        fetchProjectMembersData();
                     } catch (Exception e) {
                         Log.e(TAG, ">>> Error parsing phases", e);
+                        fetchProjectMembersData();
                     }
                 },
                 error -> {
                     Log.e(TAG, ">>> Error fetching phases", error);
+                    fetchProjectMembersData();
                 });
-
     }
 
     private void fetchProjectMembersData() {
@@ -231,7 +270,6 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         );
     }
 
-
     private void navigateToProjectActivity() {
         if (!isNavigating) return; // Double check
         Log.d(TAG, ">>> Navigating to ProjectActivity");
@@ -252,5 +290,14 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         Log.d(TAG, "Destroying view");
         binding = null;
         isNavigating = false; // Reset flag when view is destroyed
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "Fragment resumed");
+        if (viewModel != null) {
+            viewModel.refresh();
+        }
     }
 }
