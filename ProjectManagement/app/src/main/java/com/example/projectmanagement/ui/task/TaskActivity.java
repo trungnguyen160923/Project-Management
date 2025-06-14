@@ -15,8 +15,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
+import android.text.Editable;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Log;
@@ -64,6 +67,7 @@ import java.util.concurrent.Executors;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -746,7 +750,7 @@ public class TaskActivity extends AppCompatActivity {
                                             addImageAsUri(filepath);
 
                                             // Add image reference to comment
-                                            appendToComment("[Image] " + fileName, true);
+                                            appendFileToComment("[Image] " + fileName);
 
                                             // Show image section
                                             viewModel.toggleImagesExpanded();
@@ -798,7 +802,7 @@ public class TaskActivity extends AppCompatActivity {
                                             addDocument(file);
 
                                             // Add file reference to comment
-                                            appendToComment("[File] " + fileName, true);
+                                            appendFileToComment("[File] " + fileName);
 
                                             // Show file section
                                             viewModel.toggleFilesExpanded();
@@ -1424,13 +1428,36 @@ public class TaskActivity extends AppCompatActivity {
         // Handle comment input focus
         binding.etComment.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
-                imm.showSoftInput(binding.etComment, InputMethodManager.SHOW_IMPLICIT);
+                fullComment = binding.etComment.getText().toString();
+                imm.showSoftInput(getEtComment(), InputMethodManager.SHOW_IMPLICIT);
             }
         });
 
+        binding.etComment.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Trước khi thay đổi (thường không cần xử lý)
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Giống như onChange trong React: lắng nghe nội dung đang thay đổi
+                String currentText = s.toString();
+//                Log.d(TAG, ">>> new comment: " + currentText);
+                fullComment = currentText;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Sau khi thay đổi xong (nếu muốn xử lý cuối cùng)
+            }
+        });
+
+
         // Handle send button
         binding.btnSend.setOnClickListener(v -> {
-            String commentText = binding.etComment.getText().toString().trim();
+            Log.d(TAG, ">>> full comment: " + fullComment);
+            String commentText = fullComment.trim();
             if (!commentText.isEmpty()) {
                 CommentService.createComment(this, savedTask.getTaskID(), commentText, false, res -> {
                     try {
@@ -1470,32 +1497,22 @@ public class TaskActivity extends AppCompatActivity {
         });
     }
 
-    private void appendToComment(String text, boolean isFile) {
-        String currentText = binding.etComment.getText().toString();
+    @NonNull
+    private EditText getEtComment() {
+        return binding.etComment;
+    }
 
-        if (isFile) { // Nếu là file, kiểm tra xem đã có file trong comment chưa
-            String fileName = text.substring(text.indexOf("]") + 2);
-            String truncatedName = truncateFileName(fileName, 20);
-            text = "[File]" + truncatedName + "[/File]";
-            currentText = currentText.isEmpty() ? text : currentText + text;
+    private void appendFileToComment(String text) {
+        String currentComment = binding.etComment.getText().toString();
 
-            // Tạo SpannableString với style cho tên file
-            SpannableString spannableString = new SpannableString(text);
-            int fileStart = text.indexOf("[File]");
-            int nameStart = fileStart + 6; // Sau "[File]"
-            int nameEnd = text.indexOf("[/File]", nameStart);
-            if (nameEnd == -1) nameEnd = text.length();
+        String fileName = text.substring(text.indexOf("]") + 2);
+        String truncatedName = truncateFileName(fileName, 20);
+        text = "[File]" + truncatedName + "[/File]";
+        String updatedComment = currentComment.isEmpty() ? text : currentComment + text;
 
-            // Thêm style cho tên file
-            spannableString.setSpan(new UnderlineSpan(), nameStart, nameEnd, 0);
-            spannableString.setSpan(
-                    new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                    nameStart, nameEnd, 0
-            );
+        fullComment = updatedComment;
+        binding.etComment.setText(styleFileTagsInText(updatedComment, this));
 
-            fullComment += spannableString;
-            binding.etComment.setText(currentText);
-        }
 //        else { // Nếu là text thông thường
 //            if (currentText.contains("[File]")) {
 //                // Nếu đã có file, thêm text vào sau file
@@ -1514,6 +1531,45 @@ public class TaskActivity extends AppCompatActivity {
         // Move cursor to end
         binding.etComment.setSelection(binding.etComment.getText().length());
     }
+
+    public static SpannableString styleFileTagsInText(String rawText, Context context) {
+        SpannableString spannableString = new SpannableString(rawText);
+
+        String startTag = "[File]";
+        String endTag = "[/File]";
+        int searchStart = 0;
+
+        while (true) {
+            int startIdx = rawText.indexOf(startTag, searchStart);
+            int endIdx = rawText.indexOf(endTag, startIdx);
+
+            if (startIdx == -1 || endIdx == -1) break;
+
+            int fileNameStart = startIdx + startTag.length();
+            int fileNameEnd = endIdx;
+
+            // Gạch chân + tô màu cho tên file
+            spannableString.setSpan(
+                    new UnderlineSpan(),
+                    fileNameStart,
+                    fileNameEnd,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            spannableString.setSpan(
+                    new ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorAccent)),
+                    fileNameStart,
+                    fileNameEnd,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            // Cập nhật vị trí tìm kiếm tiếp theo
+            searchStart = endIdx + endTag.length();
+        }
+
+        return spannableString;
+    }
+
 
     private void showImageDetailDialog(String imageName) {
         List<Uri> imageUris = viewModel.getImageUris().getValue();
