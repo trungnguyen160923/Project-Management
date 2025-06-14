@@ -8,7 +8,7 @@ import com.android.volley.toolbox.Volley;
 
 public class ApiConfig {
     private static final String TAG = "ApiConfig";
-    public static final String BASE_URL = "http://192.168.2.3:8080/api"; // Android emulator localhost
+    public static final String BASE_URL = "http://192.168.100.226:8080/api"; // Android emulator localhost
     private static ApiConfig instance;
     private final RequestQueue requestQueue;
 

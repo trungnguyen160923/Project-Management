@@ -11,7 +11,7 @@ public class ProjectMemberHolder {
     private ProjectMemberHolder() {
         members = new ArrayList<>();
         // Add test data
-        addTestData();
+//        addTestData();
     }
 
     private void addTestData() {

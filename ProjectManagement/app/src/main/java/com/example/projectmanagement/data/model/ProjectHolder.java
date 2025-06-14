@@ -9,14 +9,14 @@ public class ProjectHolder {
 
     // Đặt project hiện tại
     public static void set(Project p) {
-        Log.d(TAG, "Setting project: id=" + (p != null ? p.getProjectID() : "null") + 
+        Log.d(TAG, ">>> Setting project to holder: id=" + (p != null ? p.getProjectID() : "null") +
             ", name=" + (p != null ? p.getProjectName() : "null"));
         project = p;
     }
 
     // Lấy project hiện tại
     public static Project get() {
-        Log.d(TAG, ">>> Getting project: id=" + (project != null ? project.getProjectID() : "null") +
+        Log.d(TAG, ">>> Getting project from holder: id=" + (project != null ? project.getProjectID() : "null") +
             ", name=" + (project != null ? project.getProjectName() : "null"));
         return project;
     }

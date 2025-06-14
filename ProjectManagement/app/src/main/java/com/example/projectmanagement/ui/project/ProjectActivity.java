@@ -53,6 +53,7 @@ import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.ui.helper.PhaseDragListener;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import androidx.lifecycle.ViewModelProvider;
 
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ public class ProjectActivity extends AppCompatActivity implements
         PhaseAdapter.OnTaskActionListener,
         PhaseAdapter.OnCardDropListener {
 
+    private String TAG = "ProjectActivity";
     private RecyclerView rvBoard;
     private ImageView ivBackground;
     private CoordinatorLayout coordinatorLayout;
@@ -99,11 +101,11 @@ public class ProjectActivity extends AppCompatActivity implements
         }
 
         // Debug log project data
-        Log.d("ProjectActivity", "Project data: " + 
-            "id=" + project.getProjectID() + 
-            ", name=" + project.getProjectName() + 
-            ", description=" + project.getProjectDescription() +
-            ", phases=" + (project.getPhases() != null ? project.getPhases().size() : 0));
+        Log.d(TAG, ">>> Project data on create activity: " +
+                "id=" + project.getProjectID() +
+                ", name=" + project.getProjectName() +
+                ", description=" + project.getProjectDescription() +
+                ", phases=" + (project.getPhases() != null ? project.getPhases().size() : 0));
 
         // Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
@@ -154,10 +156,10 @@ public class ProjectActivity extends AppCompatActivity implements
     }
 
     private void bindViews() {
-        ivBackground     = findViewById(R.id.ivProjectBackground);
-        coordinatorLayout= findViewById(R.id.coordinatorLayout);
-        toolbar          = findViewById(R.id.toolbar_project);
-        rvBoard          = findViewById(R.id.rvPhase);
+        ivBackground = findViewById(R.id.ivProjectBackground);
+        coordinatorLayout = findViewById(R.id.coordinatorLayout);
+        toolbar = findViewById(R.id.toolbar_project);
+        rvBoard = findViewById(R.id.rvPhase);
 //        fabZoom          = findViewById(R.id.fabZoom);
     }
 
@@ -168,7 +170,8 @@ public class ProjectActivity extends AppCompatActivity implements
         getSupportActionBar().setTitle(project.getProjectName());
         toolbar.setNavigationIcon(R.drawable.ic_back);
         toolbar.setNavigationOnClickListener(v -> {
-            if (inInputMode) exitInputMode(); else finish();
+            if (inInputMode) exitInputMode();
+            else finish();
         });
         toolbar.setOnMenuItemClickListener(this::handleToolbarItem);
         toolbar.inflateMenu(R.menu.menu_project_toolbar);
@@ -185,7 +188,7 @@ public class ProjectActivity extends AppCompatActivity implements
         } else if (id == R.id.action_more) {
             startActivity(new Intent(this, MenuProjectActivity.class));
             return true;
-        }else if (id == R.id.action_confirm_add) {
+        } else if (id == R.id.action_confirm_add) {
             String name = phaseAdapter.getNewTaskName();
             if (name == null || name.trim().isEmpty()) {
                 Toast.makeText(this, "Tên thẻ không được để trống!", Toast.LENGTH_SHORT).show();
@@ -239,7 +242,8 @@ public class ProjectActivity extends AppCompatActivity implements
 
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -355,7 +359,7 @@ public class ProjectActivity extends AppCompatActivity implements
             ivBackground.setVisibility(View.VISIBLE);
             coordinatorLayout.setBackgroundColor(Color.TRANSPARENT);
             toolbar.setBackgroundColor(Color.TRANSPARENT);
-            
+
             try {
                 String source = bgImg.substring(bgImg.indexOf(';') + 1);
                 Object model = bgImg.startsWith("URI;") ? Uri.parse(source) : Integer.parseInt(source);
@@ -416,7 +420,7 @@ public class ProjectActivity extends AppCompatActivity implements
         toolbar.setTitle(project.getProjectName());
     }
 
-    @Override 
+    @Override
     public void onAddPhase() {
         // Prevent multiple clicks
         long currentTime = System.currentTimeMillis();
@@ -429,13 +433,13 @@ public class ProjectActivity extends AppCompatActivity implements
         isAddingPhase = true;
 
         // Debug log project data before creating phase
-        Log.d("ProjectActivity", "Creating phase with project: " + 
-            "id=" + project.getProjectID() + 
-            ", name=" + project.getProjectName());
+        Log.d("ProjectActivity", "Creating phase with project: " +
+                "id=" + project.getProjectID() +
+                ", name=" + project.getProjectName());
 
         // Call ViewModel to add phase
         viewModel.addPhase(phases.size());
-        
+
         // Observe message for feedback
         viewModel.getMessage().observe(this, message -> {
             if (message != null) {
@@ -445,10 +449,13 @@ public class ProjectActivity extends AppCompatActivity implements
             }
         });
     }
-    @Override public void onAddTask(int pos) { 
-        onAddTaskGeneric(pos); 
+
+    @Override
+    public void onAddTask(int pos) {
+        onAddTaskGeneric(pos);
         phaseAdapter.notifyItemChanged(pos);
     }
+
     @SuppressLint("NotifyDataSetChanged")
     private void onAddTaskGeneric(int pos) {
         // Lấy tên task từ adapter
@@ -460,7 +467,7 @@ public class ProjectActivity extends AppCompatActivity implements
 
         // Call ViewModel to add task với tên đã nhập
         viewModel.addTask(pos, taskName);
-        
+
         // Observe message for feedback
         viewModel.getMessage().observe(this, message -> {
             if (message != null) {
@@ -473,29 +480,47 @@ public class ProjectActivity extends AppCompatActivity implements
         if (currentProject != null) {
             // Cập nhật ProjectHolder
             ProjectHolder.set(currentProject);
-            
+
             // Cập nhật UI thông qua ViewModel
             viewModel.setProject(currentProject);
-            
+
             // Force refresh adapter
             phaseAdapter.notifyDataSetChanged();
         }
     }
 
-    @Override public void onTaskAddRequested(int pos) { pendingPhase=pos; phaseAdapter.startEditing(pos); enterInputMode(); }
-    @Override public void onTaskAddConfirmed(int pos,String name) { onAddTaskGeneric(pos); exitInputMode(); }
-    @Override public void onTaskAddCanceled() { exitInputMode(); }
-    @Override public void onTaskNameChanged(int pos,String name) {
-        if (pos==pendingPhase) {
-            MenuItem item=toolbar.getMenu().findItem(R.id.action_confirm_add);
+    @Override
+    public void onTaskAddRequested(int pos) {
+        pendingPhase = pos;
+        phaseAdapter.startEditing(pos);
+        enterInputMode();
+    }
+
+    @Override
+    public void onTaskAddConfirmed(int pos, String name) {
+        onAddTaskGeneric(pos);
+        exitInputMode();
+    }
+
+    @Override
+    public void onTaskAddCanceled() {
+        exitInputMode();
+    }
+
+    @Override
+    public void onTaskNameChanged(int pos, String name) {
+        if (pos == pendingPhase) {
+            MenuItem item = toolbar.getMenu().findItem(R.id.action_confirm_add);
             item.setEnabled(!name.trim().isEmpty());
         }
     }
-    @Override public void onCardDropped(Phase target, int idx, DraggedTaskInfo info) {
-        Log.d("ProjectActivity", "onCardDropped called - Task: " + info.getTask().getTaskName() + 
-            ", From Phase: " + info.getPhase().getPhaseName() + 
-            ", To Phase: " + target.getPhaseName() + 
-            ", Position: " + idx);
+
+    @Override
+    public void onCardDropped(Phase target, int idx, DraggedTaskInfo info) {
+        Log.d("ProjectActivity", "onCardDropped called - Task: " + info.getTask().getTaskName() +
+                ", From Phase: " + info.getPhase().getPhaseName() +
+                ", To Phase: " + target.getPhaseName() +
+                ", Position: " + idx);
 
         List<Task> src = info.getPhase().getTasks();
         List<Task> dst = target.getTasks();
@@ -511,31 +536,31 @@ public class ProjectActivity extends AppCompatActivity implements
         // Make index final for lambda
         final int finalIdx = idx;
 
-        Log.d("ProjectActivity", "Calling moveTask API - TaskId: " + task.getTaskID() + 
-            ", PhaseId: " + target.getPhaseID() + 
-            ", Position: " + finalIdx + 
-            ", ProjectId: " + project.getProjectID());
+        Log.d("ProjectActivity", "Calling moveTask API - TaskId: " + task.getTaskID() +
+                ", PhaseId: " + target.getPhaseID() +
+                ", Position: " + finalIdx +
+                ", ProjectId: " + project.getProjectID());
 
         // Call API to update task position
         TaskService.moveTask(
-            this,
-            task.getTaskID(),
-            target.getPhaseID(),
-            finalIdx,
-            project.getProjectID(),
-            response -> {
-                Log.d("ProjectActivity", "Task moved successfully - Response: " + response.toString());
-                // Update project in holder
-                ProjectHolder.set(project);
-            },
-            error -> {
-                Log.e("ProjectActivity", "Error moving task: " + error.getMessage());
-                // Revert changes if API call fails
-                dst.remove(finalIdx);
-                src.add(orig, task);
-                phaseAdapter.notifyDataSetChanged();
-                Toast.makeText(this, "Failed to move task. Please try again.", Toast.LENGTH_SHORT).show();
-            }
+                this,
+                task.getTaskID(),
+                target.getPhaseID(),
+                finalIdx,
+                project.getProjectID(),
+                response -> {
+                    Log.d("ProjectActivity", "Task moved successfully - Response: " + response.toString());
+                    // Update project in holder
+                    ProjectHolder.set(project);
+                },
+                error -> {
+                    Log.e("ProjectActivity", "Error moving task: " + error.getMessage());
+                    // Revert changes if API call fails
+                    dst.remove(finalIdx);
+                    src.add(orig, task);
+                    phaseAdapter.notifyDataSetChanged();
+                    Toast.makeText(this, "Failed to move task. Please try again.", Toast.LENGTH_SHORT).show();
+                }
         );
     }
 
