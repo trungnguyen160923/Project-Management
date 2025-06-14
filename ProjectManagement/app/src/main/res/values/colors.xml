@@ -66,4 +66,10 @@
     <color name="md_theme_errorContainer">#FFDAD6</color>
     <color name="md_theme_onErrorContainer">#410002</color>
     <color name="completed_green">#4CAF50</color>
+    <color name="avatar_bg_1">#F44336</color>
+    <color name="avatar_bg_2">#E91E63</color>
+    <color name="avatar_bg_3">#9C27B0</color>
+    <color name="avatar_bg_4">#3F51B5</color>
+    <color name="avatar_bg_5">#03A9F4</color>
+    <color name="avatar_bg_6">#009688</color>
 </resources>

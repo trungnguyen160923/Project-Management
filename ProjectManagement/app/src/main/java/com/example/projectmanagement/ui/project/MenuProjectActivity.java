@@ -39,6 +39,8 @@ public class MenuProjectActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         viewModel = new ViewModelProvider(this).get(MenuProjectViewModel.class);
+        viewModel.init(this);
+        
         project = ProjectHolder.get();
         if (project == null) {
             Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
@@ -78,8 +80,8 @@ public class MenuProjectActivity extends AppCompatActivity {
                 // Hiển thị thời hạn
                 if (project.getDeadline() != null) {
                     String deadlineText = String.format("Từ %s đến %s",
-                            ParseDateUtil.formatDate(new Date()),
-                            ParseDateUtil.formatDate(project.getDeadline()));
+                            ParseDateUtil.toCustomDateTime((project.getStartDate())),
+                            ParseDateUtil.toCustomDateTime(project.getDeadline()));
                     Log.d("MenuProjectActivity", "Setting deadline: " + deadlineText);
                     binding.tvDeadline.setText(deadlineText);
                 } else {
@@ -92,14 +94,12 @@ public class MenuProjectActivity extends AppCompatActivity {
 
         viewModel.getMemberListLive().observe(this, memberList -> {
             if (memberList != null) {
-                // Xóa các avatar cũ
-//                binding.layoutAvatarList.removeAllViews();
-
                 // Tìm và hiển thị thông tin admin
                 for (ProjectMember member : memberList) {
                     if (member.getRole() == ProjectMember.Role.Admin) {
                         // Set avatar
-                        if (member.getUser() != null && member.getUser().getAvatar() != null) {
+                        if (member.getUser() != null && member.getUser().getAvatar() != null
+                        && !member.getUser().getAvatar().equals("img/avatar/default.png")) {
                             binding.avatarView.setImage(Uri.parse(member.getUser().getAvatar()));
                         } else {
                             binding.avatarView.setName(member.getUser().getFullname());

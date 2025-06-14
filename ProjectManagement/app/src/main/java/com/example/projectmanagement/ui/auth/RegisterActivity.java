@@ -135,8 +135,11 @@ public class RegisterActivity extends AppCompatActivity {
                 loadingDialog.dismiss();
                 if (user != null) {
                     // Đăng ký thành công
-                    Toast.makeText(getApplicationContext(), "Đăng ký thành công", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(RegisterActivity.this, HomeActivity.class));
+                    Toast.makeText(getApplicationContext(), "Đăng ký thành công, vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+                    // Chuyển về màn hình đăng nhập
+                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
                     finish();
                 } else {
                     // Đăng ký thất bại

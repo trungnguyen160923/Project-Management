@@ -30,6 +30,7 @@ import com.example.projectmanagement.ui.auth.RegisterActivity;
 import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.ui.project.ProjectActivity;
 import com.example.projectmanagement.ui.task.TaskActivity;
+import com.example.projectmanagement.utils.UserPreferences;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACTION_SIGN_UP = "SIGN_UP";
     private static final String ACTION_SIGN_IN = "SIGN_IN";
 
+    private UserPreferences userPreferences;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Cài đặt Splash Screen ngay trước super.onCreate()
@@ -55,7 +58,8 @@ public class MainActivity extends AppCompatActivity {
         btn_signIn = findViewById(R.id.sign_in_btn);
         btn_signUp = findViewById(R.id.sign_up_btn);
 
-
+        userPreferences = new UserPreferences(this);
+        checkLoginStatus();
 
         // Giữ splash screen hiển thị cho đến khi dữ liệu được tải xong
         splashScreen.setKeepOnScreenCondition(() -> !isDataReady.get());
@@ -71,6 +75,23 @@ public class MainActivity extends AppCompatActivity {
         dialog_signUp_Option();
         dialog_signIn_Option();
 //        startActivity(new Intent(MainActivity.this, HomeActivity.class));
+    }
+
+    private void checkLoginStatus() {
+        String token = userPreferences.getJwtToken();
+        Log.d(TAG, "Checking login status, token exists: " + (token != null && !token.isEmpty()));
+
+        if (token != null && !token.isEmpty()) {
+            // User is logged in, go to HomeActivity
+            Log.d(TAG, "User is logged in, navigating to HomeActivity");
+            Intent intent = new Intent(this, HomeActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        } else {
+            // User is not logged in, stay on MainActivity
+            Log.d(TAG, "User is not logged in, staying on MainActivity");
+        }
     }
 
     /**

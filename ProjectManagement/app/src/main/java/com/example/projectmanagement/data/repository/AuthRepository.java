@@ -141,7 +141,7 @@ public class AuthRepository {
                     JSONObject data = response.optJSONObject("data");
                     if (data != null) {
                         // Parse user data
-                        JSONObject userData = data.optJSONObject("user");
+                        JSONObject userData = data;
                         if (userData != null) {
                             User user = new User();
                             user.setId(userData.optInt("id", -1));
@@ -153,19 +153,6 @@ public class AuthRepository {
                             user.setAvatar(userData.optString("avatar", ""));
                             user.setBio(userData.optString("bio", ""));
                             user.setEmail_verified(userData.optBoolean("emailVerified", false));
-
-                            // Lưu JWT token
-                            String jwtToken = data.optString("jwt", null);
-                            if (jwtToken != null && !jwtToken.isEmpty()) {
-                                userPreferences.saveJwtToken(jwtToken);
-                                Log.d(TAG, "JWT token saved: " + jwtToken);
-                            } else {
-                                Log.w(TAG, "No JWT token in response");
-                            }
-
-                            // Lưu thông tin user và trạng thái đăng nhập
-                            userPreferences.saveUser(user);
-                            userPreferences.setLoggedIn(true);
 
                             callback.onSuccess(user);
                         } else {

@@ -1,60 +1,94 @@
 package com.example.projectmanagement.ui.project.vm;
 
+import android.content.Context;
+import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.android.volley.VolleyError;
+import com.example.projectmanagement.data.convertor.ProjectMemberConverter;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectMember;
-import com.example.projectmanagement.data.model.User;
+import com.example.projectmanagement.data.repository.MemberRepository;
+import com.example.projectmanagement.utils.CustomCallback;
+import com.example.projectmanagement.utils.Helpers;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class MenuProjectViewModel extends ViewModel {
-    // LiveData cho project hiện tại
+    private String TAG = "MenuProjectViewModel";
     private final MutableLiveData<Project> projectLive = new MutableLiveData<>();
-
-    // LiveData cho danh sách thành viên project
     private final MutableLiveData<List<ProjectMember>> memberListLive = new MutableLiveData<>();
+    private MemberRepository memberRepository;
+    private Context context;
 
     public MenuProjectViewModel() {
-        // Tạo mock user trước
-        User admin = new User();
-        admin.setId(101);
-        admin.setFullname("Nguyễn Văn A");
-        admin.setEmail("admin@gmail.com");
-        admin.setAvatar(null);
+    }
 
-        User leader = new User();
-        leader.setId(102);
-        leader.setFullname("Trần Thị B");
-        leader.setEmail("leader@gmail.com");
-        leader.setAvatar(null);
+    public void init(Context context) {
+        this.context = context.getApplicationContext();
+        memberRepository = new MemberRepository(context);
+        fetchMembers();
+    }
 
-        User member = new User();
-        member.setId(103);
-        member.setFullname("Lê Văn C");
-        member.setEmail("member@gmail.com");
-        member.setAvatar(null);
+    private void fetchMembers() {
+        Project project = projectLive.getValue();
+        if (project == null) {
+            Log.e(TAG, "Project is null, cannot fetch members");
+            return;
+        }
 
-        // Tạo mock ProjectMember và gán user
-        List<ProjectMember> mockMembers = new ArrayList<>();
+        memberRepository.fetchMembers(project.getProjectID(), new CustomCallback<JSONObject, VolleyError>() {
+            @Override
+            public void onSuccess(JSONObject result) {
+                Log.d(TAG, ">>> onSuccess fetchMembers: " + result.toString());
+                List<ProjectMember> members = new ArrayList<>();
+                JSONArray jsonArray = result.optJSONArray("data");
+                Log.d(TAG, ">>> json arr: " + jsonArray.toString());
+                try {
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject memberJson = jsonArray.getJSONObject(i);
+                        Log.d(TAG,">>> memberJson: " + memberJson.toString());
+                        ProjectMemberConverter.fromJsonWithCallback(context, memberJson, new CustomCallback<ProjectMember, VolleyError>() {
+                            @Override
+                            public void onSuccess(ProjectMember result) {
+                                members.add(result);
+                                memberListLive.setValue(members);
+                            }
 
-        ProjectMember pmAdmin = new ProjectMember(1, 1, 101, new Date(), ProjectMember.Role.Admin);
-        pmAdmin.setUser(admin);
-        mockMembers.add(pmAdmin);
+                            @Override
+                            public void onError(VolleyError volleyError) {
+                                String errMsg = "Không thể lấy dữ liệu thành viên";
+                                try {
+                                    errMsg = Helpers.parseError(volleyError);
+                                } catch (Exception e) {
+                                }
+                                Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
 
-        ProjectMember pmLeader = new ProjectMember(1, 2, 102, new Date(), ProjectMember.Role.Leader);
-        pmLeader.setUser(leader);
-        mockMembers.add(pmLeader);
-
-        ProjectMember pmMember = new ProjectMember(1, 3, 103, new Date(), ProjectMember.Role.Member);
-        pmMember.setUser(member);
-        mockMembers.add(pmMember);
-
-        memberListLive.setValue(mockMembers);
+            @Override
+            public void onError(VolleyError volleyError) {
+                String errMsg = "Lỗi không thể lấy danh sách các thành viên";
+                try {
+                    errMsg = Helpers.parseError(volleyError);
+                } catch (Exception e) {
+                }
+                Log.d(TAG, ">>> onError fetchMembers: " + errMsg);
+            }
+        });
     }
 
     public LiveData<Project> getProjectLive() {
@@ -65,16 +99,11 @@ public class MenuProjectViewModel extends ViewModel {
         return memberListLive;
     }
 
-    // Cập nhật project (khi mở màn, hoặc khi thay đổi)
     public void setProject(Project project) {
         projectLive.setValue(project);
+        if (context != null) {
+            fetchMembers();
+        }
     }
-
-    // Cập nhật danh sách thành viên
-    public void setMemberList(List<ProjectMember> list) {
-        memberListLive.setValue(list);
-    }
-
-    // Có thể bổ sung các logic fetch data từ API ở đây, sau đó setValue/updateValue vào LiveData!
 }
 
