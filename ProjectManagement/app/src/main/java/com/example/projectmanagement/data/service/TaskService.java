@@ -268,11 +268,12 @@ public class TaskService {
         ApiConfig.getInstance(context).addToRequestQueue(request);
     }
 
-    public static void updateTaskDescription(
+    public static void updateTask(
             Context context,
             long taskId,
             long projectId,
             String newDescription,
+            String newTaskTitle,
             Response.Listener<JSONObject> listener,
             Response.ErrorListener errorListener
     ) {
@@ -282,7 +283,12 @@ public class TaskService {
         JSONObject requestBody = new JSONObject();
         JSONObject taskObject = new JSONObject();
         try {
-            taskObject.put("description", newDescription);
+            if (newDescription != null) {
+                taskObject.put("description", newDescription);
+            }
+            if (newTaskTitle != null) {
+                taskObject.put("taskName", newTaskTitle);
+            }
             requestBody.put("projectId", projectId);
             requestBody.put("task", taskObject);
         } catch (JSONException e) {
