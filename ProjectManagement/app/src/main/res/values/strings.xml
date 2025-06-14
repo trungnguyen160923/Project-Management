@@ -47,7 +47,7 @@
     <string name="action_settings">Settings</string>
 
     <string name="menu_project">Dự án</string>
-    <string name="menu_task">Các thẻ của tôi</string>
+    <string name="menu_statistics">Thống kê</string>
     <string name="menu_setting">Cài đặt</string>
     <string name="logout_description">Log out</string>
     <string name="home_text_donot_have_project">Không có dự án</string>

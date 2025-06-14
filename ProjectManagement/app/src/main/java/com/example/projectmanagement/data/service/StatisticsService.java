@@ -76,11 +76,13 @@ public class StatisticsService {
         statistics.setTotalTasksCount(data.optInt("totalTasksCount", 0));
         statistics.setCompletedTasksCount(data.optInt("completedTasksCount", 0));
         statistics.setPendingTasksCount(data.optInt("pendingTasksCount", 0));
+        statistics.setAssignedTasksCount(data.optInt("assignedTasksCount", 0));
+        statistics.setCompletedAssignedTasksCount(data.optInt("completedAssignedTasksCount", 0));
 
         // Parse project member stats
+        List<Statistics.ProjectMemberStat> memberStats = new ArrayList<>();
         if (!data.isNull("projectMemberStats")) {
             JSONArray memberStatsArray = data.getJSONArray("projectMemberStats");
-            List<Statistics.ProjectMemberStat> memberStats = new ArrayList<>();
             for (int i = 0; i < memberStatsArray.length(); i++) {
                 JSONObject statJson = memberStatsArray.getJSONObject(i);
                 Statistics.ProjectMemberStat stat = new Statistics.ProjectMemberStat();
@@ -89,13 +91,13 @@ public class StatisticsService {
                 stat.setMemberCount(statJson.optInt("memberCount"));
                 memberStats.add(stat);
             }
-            statistics.setProjectMemberStats(memberStats);
         }
+        statistics.setProjectMemberStats(memberStats);
 
         // Parse phase stats
+        List<Statistics.PhaseStat> phaseStats = new ArrayList<>();
         if (!data.isNull("phaseStats")) {
             JSONArray phaseStatsArray = data.getJSONArray("phaseStats");
-            List<Statistics.PhaseStat> phaseStats = new ArrayList<>();
             for (int i = 0; i < phaseStatsArray.length(); i++) {
                 JSONObject statJson = phaseStatsArray.getJSONObject(i);
                 Statistics.PhaseStat stat = new Statistics.PhaseStat();
@@ -104,8 +106,24 @@ public class StatisticsService {
                 stat.setPhaseCount(statJson.optInt("phaseCount"));
                 phaseStats.add(stat);
             }
-            statistics.setPhaseStats(phaseStats);
         }
+        statistics.setPhaseStats(phaseStats);
+
+        // Parse project task stats
+        List<Statistics.ProjectTaskStat> taskStats = new ArrayList<>();
+        if (!data.isNull("projectTaskStats")) {
+            JSONArray taskStatsArray = data.getJSONArray("projectTaskStats");
+            for (int i = 0; i < taskStatsArray.length(); i++) {
+                JSONObject statJson = taskStatsArray.getJSONObject(i);
+                Statistics.ProjectTaskStat stat = new Statistics.ProjectTaskStat();
+                stat.setProjectId(statJson.optInt("projectId"));
+                stat.setProjectName(statJson.optString("projectName"));
+                stat.setTotalAssignedTasks(statJson.optInt("totalAssignedTasks"));
+                stat.setCompletedAssignedTasks(statJson.optInt("completedAssignedTasks"));
+                taskStats.add(stat);
+            }
+        }
+        statistics.setProjectTaskStats(taskStats);
 
         return statistics;
     }
