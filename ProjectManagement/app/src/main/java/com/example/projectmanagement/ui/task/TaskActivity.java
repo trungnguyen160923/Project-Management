@@ -441,11 +441,13 @@ public class TaskActivity extends AppCompatActivity {
 
                 if (commentUser != null) {
                     tvName.setText(commentUser.getFullname());
-                    avatar.setName(commentUser.getFullname());
-
-                    if (commentUser.getAvatar() != null && !commentUser.getAvatar().isEmpty()) {
-                        // TODO: Load avatar using your image loading library
-                        // Glide.with(avatar).load(commentUser.getAvatar()).into(avatar);
+                    String avatarUrl = commentUser.getAvatar();
+                    if (avatarUrl != null && !avatarUrl.isEmpty() && !avatarUrl.equals("img/avatar/default.png")) {
+                        try {
+                            avatar.setImage(android.net.Uri.parse(avatarUrl));
+                        } catch (Exception e) {
+                            avatar.setName(commentUser.getFullname());
+                        }
                     } else {
                         avatar.setName(commentUser.getFullname());
                     }
@@ -1521,6 +1523,21 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     private void setupCommentBar() {
+        // Set current user's avatar
+        User currentUser = userPreferences.getUser();
+        if (currentUser != null) {
+            String avatarUrl = currentUser.getAvatar();
+            if (avatarUrl != null && !avatarUrl.isEmpty() && !avatarUrl.equals("img/avatar/default.png")) {
+                try {
+                    binding.imgAvatar.setImage(android.net.Uri.parse(avatarUrl));
+                } catch (Exception e) {
+                    binding.imgAvatar.setName(currentUser.getFullname());
+                }
+            } else {
+                binding.imgAvatar.setName(currentUser.getFullname());
+            }
+        }
+
         // Handle keyboard visibility
         binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             Rect r = new Rect();
