@@ -8,9 +8,11 @@
         />
 
     <item
-        android:id="@+id/action_copy"
+        android:id="@+id/action_update_title"
         android:title="Chỉnh sửa tiêu đề"
-        android:icon="@drawable/ic_copy"/>
+        android:icon="@drawable/ic_edit"
+        android:iconTint="@color/colorAccent"
+        app:itemTextColor="#66093AEB"/>
 
     <item
         android:id="@+id/action_delete"

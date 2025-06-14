@@ -123,4 +123,19 @@ public class File implements Parcelable {
 
     public Date getUpdateAt() { return updateAt; }
     public void setUpdateAt(Date updateAt) { this.updateAt = updateAt; }
+
+    @Override
+    public String toString() {
+        return "File{" +
+                "id=" + id +
+                ", fileName='" + fileName + '\'' +
+                ", filePath='" + filePath + '\'' +
+                ", fileSize=" + fileSize +
+                ", fileType='" + fileType + '\'' +
+                ", taskID=" + taskID +
+                ", userID=" + userID +
+                ", createdAt=" + createdAt +
+                ", updateAt=" + updateAt +
+                '}';
+    }
 }

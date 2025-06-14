@@ -19,16 +19,22 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.projectmanagement.R;
+import com.example.projectmanagement.data.convertor.FileConvertor;
 import com.example.projectmanagement.data.model.DraggedTaskInfo;
+import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.ProjectMember;
 import com.example.projectmanagement.data.model.ProjectMemberHolder;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.data.service.FileService;
 import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.ui.task.TaskActivity;
 import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.google.android.material.card.MaterialCardView;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -151,9 +157,11 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView tvTaskTitle, tvDateRange, tvAvatar, tvCommentCount, tvFileCnt, tvTaskDes;
         LinearLayout layoutInfoRow, layoutInfoRow1, layoutInfoRow2;
         ImageView imgComment, imgfile;
+        Context context;
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
+            context = itemView.getContext();
             cardTask = itemView.findViewById(R.id.cardTask);
             checkBoxTask = itemView.findViewById(R.id.checkBoxTask);
             tvTaskTitle = itemView.findViewById(R.id.tvTaskTitle);
@@ -200,13 +208,32 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             // Click -> TaskActivity
             itemView.setOnClickListener(v -> {
-
                 Context ctx = v.getContext();
                 Intent intent = new Intent(ctx, TaskActivity.class);
                 Bundle bundle = new Bundle();
-                bundle.putParcelable("task", t);
-                intent.putExtras(bundle);
-                ctx.startActivity(intent);
+                FileService.fetchFilesByTask(context, t.getTaskID(), res -> {
+                    JSONArray data = res.optJSONArray("data");
+                    List<File> files = new ArrayList<>();
+                    if (data != null) {
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject jsonObject = data.optJSONObject(i);
+                            File file = FileConvertor.fromJson(jsonObject);
+                            files.add(file);
+                        }
+                    }
+                    Log.d(TAG, ">>> files at task adapter bind click: " + files);
+                    t.setFiles(files);
+                    bundle.putParcelable("task", t);
+                    intent.putExtras(bundle);
+                    ctx.startActivity(intent);
+                }, err -> {
+                    String errMsg = "Không thể lấy danhs sách các file";
+                    try {
+                        errMsg = Helpers.parseError(err);
+                    } catch (Exception e) {
+                    }
+                    Toast.makeText(ctx, errMsg, Toast.LENGTH_SHORT).show();
+                });
             });
 
             // Long-click -> drag

@@ -87,6 +87,7 @@ import com.example.projectmanagement.data.model.User;
 import com.example.projectmanagement.data.service.CommentService;
 import com.example.projectmanagement.data.service.ProjectMemberService;
 import com.example.projectmanagement.data.service.FileService;
+import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.databinding.ActivityTaskBinding;
 import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
@@ -133,8 +134,17 @@ public class TaskActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
+            Toast.makeText(this, "task id: " + task.getTaskID(), Toast.LENGTH_SHORT).show();
             savedTask = task;
             if (task != null) {
+                // images and files
+                List<File> files = task.getFiles();
+                Log.d(TAG, ">>> view files list on create task activity: " + files);
+                for (File file : files) {
+                    Log.d(TAG, ">>> file details on create task activity: " + file);
+                    addImageAsUri(file.getFilePath());
+                }
+
                 // Fetch task details from API
                 viewModel.fetchTaskDetail(task.getTaskID());
 
@@ -212,9 +222,45 @@ public class TaskActivity extends AppCompatActivity {
 
         binding.btnCancelDes.setOnClickListener(hideAndReset);
         binding.btnConfirmDes.setOnClickListener(v -> {
+            Log.d(TAG, "Confirm button clicked");
             String text = binding.etDescription.getText().toString().trim();
-            viewModel.updateTaskDescription(text);
-            hideAndReset.onClick(v);
+            Task currentTask = viewModel.getTask().getValue();
+            if (currentTask != null) {
+                showToast("Đang cập nhật mô tả...");
+                // Gọi API cập nhật mô tả
+                TaskService.updateTask(
+                    this,
+                    currentTask.getTaskID(),
+                    ProjectHolder.get().getProjectID(),
+                    text,
+                    null, // Giữ nguyên tiêu đề
+                    response -> {
+                        try {
+                            if ("success".equals(response.optString("status"))) {
+                                // Cập nhật UI ngay lập tức
+                                currentTask.setTaskDescription(text);
+                                viewModel.updateTask(currentTask);
+                                showToast("Đã cập nhật mô tả");
+                                hideAndReset.onClick(v);
+                            } else {
+                                String error = response.optString("error");
+                                showToast("Lỗi: " + error);
+                            }
+                        } catch (Exception e) {
+                            showToast("Lỗi xử lý dữ liệu");
+                            Log.e(TAG, "Error updating task description", e);
+                        }
+                    },
+                    error -> {
+                        String errMsg = "Không thể cập nhật mô tả";
+                        try {
+                            errMsg = Helpers.parseError(error);
+                        } catch (Exception ignored) {}
+                        showToast(errMsg);
+                        Log.e(TAG, "Error updating task description", error);
+                    }
+                );
+            }
         });
 
         binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -293,6 +339,27 @@ public class TaskActivity extends AppCompatActivity {
         // Observe both task and project members
         viewModel.getTask().observe(this, task -> {
             if (task != null) {
+                // Set task name in toolbar
+                binding.toolbarTask.setTitle(task.getTaskName());
+
+                // Set due date
+                if (task.getDueDate() != null) {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+                    binding.tvDueDate.setText(dateFormat.format(task.getDueDate()));
+                } else {
+                    binding.tvDueDate.setText("Chưa có ngày hết hạn");
+                }
+
+                // Set status
+                if (task.getStatus() != null && !task.getStatus().isEmpty()) {
+                    binding.checkboxCompleted.setChecked(task.getStatus().equals("completed"));
+                }
+
+                // Set priority
+                if (task.getPriority() != null && !task.getPriority().isEmpty()) {
+                    // TODO: Add priority UI element and set it here
+                }
+
                 // Check if project members are loaded
                 List<User> members = viewModel.getProjectMembers().getValue();
                 if (members != null && !members.isEmpty()) {
@@ -325,6 +392,14 @@ public class TaskActivity extends AppCompatActivity {
             if (focused instanceof EditText) {
                 Rect outRect = new Rect();
                 focused.getGlobalVisibleRect(outRect);
+                
+                // Kiểm tra xem click có nằm trong vùng của confirm bar không
+                Rect confirmBarRect = new Rect();
+                binding.confirmBar.getGlobalVisibleRect(confirmBarRect);
+                if (confirmBarRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
+                    return super.dispatchTouchEvent(ev);
+                }
+                
                 if (!outRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
                     focused.clearFocus();
                     imm.hideSoftInputFromWindow(focused.getWindowToken(), 0);
@@ -749,24 +824,17 @@ public class TaskActivity extends AppCompatActivity {
 //                                            }catch (Exception e){
 //                                                Log.d(TAG,">>> "+ e.getMessage());
 //                                            }
-                                            Executor executor = Executors.newSingleThreadExecutor();
-                                            executor.execute(() -> {
+                                            Log.d(TAG, ">>> status: " + status);
+                                            Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
+                                            Log.d(TAG, ">>> error: " + error);
 
-
-                                                Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(filepath));
-
-                                                viewModel.addImageUri(imgURI);
-
-                                                Log.d(TAG, ">>> status: " + status);
-                                                Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
-                                                Log.d(TAG, ">>> error: " + error);
-                                            });
+                                            addImageAsUri(filepath);
                                         } catch (Exception e) {
                                             Log.e(TAG, ">>> JSON parse error", e);
                                         }
                                         ;
                                     }, err -> {
-                                        Log.d(TAG, ">>> err: " + err.toString());
+                                        Log.d(TAG, ">>> fail to upload image: " + err);
                                     });
                                 } catch (FileNotFoundException e) {
                                     throw new RuntimeException(e);
@@ -823,6 +891,14 @@ public class TaskActivity extends AppCompatActivity {
                     }
                 }
         );
+    }
+
+    private void addImageAsUri(String filepathFromApiData) {
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(filepathFromApiData));
+            viewModel.addImageUri(imgURI);
+        });
     }
 
     private String getFileName(Uri uri) {
@@ -903,16 +979,25 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         new MenuInflater(this).inflate(R.menu.menu_task, menu);
+        
+        // Set color for delete item
         MenuItem delete = menu.findItem(R.id.action_delete);
-        SpannableString s = new SpannableString(delete.getTitle());
-        s.setSpan(new ForegroundColorSpan(
+        SpannableString deleteText = new SpannableString(delete.getTitle());
+        deleteText.setSpan(new ForegroundColorSpan(
                 ContextCompat.getColor(this, R.color.red)
-        ), 0, s.length(), 0);
-        delete.setTitle(s);
+        ), 0, deleteText.length(), 0);
+        delete.setTitle(deleteText);
+
+        // Set color for update item
+        MenuItem edit = menu.findItem(R.id.action_update_title);
+        SpannableString editText = new SpannableString(edit.getTitle());
+        editText.setSpan(new ForegroundColorSpan(
+                ContextCompat.getColor(this, R.color.colorAccent)
+        ), 0, editText.length(), 0);
+        edit.setTitle(editText);
+
         return true;
     }
-
-
 
     @Override
     public boolean onMenuOpened(int featureId, Menu menu) {
@@ -931,19 +1016,20 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
-        if (id == R.id.action_move) {
+        if (id == android.R.id.home) {
+            finish();
+            return true;
+        } else if (id == R.id.action_move) {
             showMoveTaskDialog();
             return true;
-        } else if (id == R.id.action_copy) {
+        } else if (id == R.id.action_update_title) {
             showEditTaskTitleDialog();
             return true;
         } else if (id == R.id.action_delete) {
-            confirmDeleteTask();
+            showDeleteTaskDialog();
             return true;
-        } else {
-            return super.onOptionsItemSelected(item);
         }
+        return super.onOptionsItemSelected(item);
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -1348,7 +1434,7 @@ public class TaskActivity extends AppCompatActivity {
                 // TODO: Load avatar using your image loading library
                 // Glide.with(binding.avThanhVien).load(member.getAvatar()).into(binding.avThanhVien);
             } else {
-                binding.avThanhvien.setName(member.getFullname()!=null?member.getFullname():"lam dat");
+                binding.avThanhvien.setName(member.getFullname() != null ? member.getFullname() : "lam dat");
             }
         } else {
             binding.tvThanhvien.setVisibility(View.VISIBLE);
@@ -1471,7 +1557,7 @@ public class TaskActivity extends AppCompatActivity {
                     } catch (Exception e) {
                     }
                 }, err -> {
-                    Log.d(TAG,">>> createCommentErr: "+err.getMessage());
+                    Log.d(TAG, ">>> createCommentErr: " + err.getMessage());
                     String errMsg = "Không thể tạo bình luận";
                     try {
                         errMsg = Helpers.parseError(err);
@@ -1666,23 +1752,80 @@ public class TaskActivity extends AppCompatActivity {
                 .setPositiveButton("Lưu", (dialog, which) -> {
                     String newTitle = input.getText().toString().trim();
                     if (!newTitle.isEmpty()) {
-                        currentTask.setTaskName(newTitle);
-                        viewModel.updateTask(currentTask);
-                        showToast("Đã cập nhật tiêu đề");
+                        // Gọi API cập nhật tiêu đề
+                        TaskService.updateTask(
+                            this,
+                            currentTask.getTaskID(),
+                            ProjectHolder.get().getProjectID(),
+                            null, // Giữ nguyên mô tả
+                            newTitle,
+                            response -> {
+                                try {
+                                    if ("success".equals(response.optString("status"))) {
+                                        // Cập nhật UI ngay lập tức
+                                        currentTask.setTaskName(newTitle);
+                                        binding.toolbarTask.setTitle(newTitle);
+                                        viewModel.updateTask(currentTask);
+                                        showToast("Đã cập nhật tiêu đề");
+                                    } else {
+                                        String error = response.optString("error");
+                                        showToast("Lỗi: " + error);
+                                    }
+                                } catch (Exception e) {
+                                    showToast("Lỗi xử lý dữ liệu");
+                                    Log.e(TAG, "Error updating task title", e);
+                                }
+                            },
+                            error -> {
+                                String errMsg = "Không thể cập nhật tiêu đề";
+                                try {
+                                    errMsg = Helpers.parseError(error);
+                                } catch (Exception ignored) {}
+                                showToast(errMsg);
+                                Log.e(TAG, "Error updating task title", error);
+                            }
+                        );
                     }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
-    private void confirmDeleteTask() {
+    private void showDeleteTaskDialog() {
+        Task currentTask = viewModel.getTask().getValue();
+        if (currentTask == null) return;
+
         new AlertDialog.Builder(this)
-                .setTitle("Xác nhận xóa")
-                .setMessage("Bạn có chắc chắn muốn xóa thẻ này?")
+                .setTitle("Xóa task")
+                .setMessage("Bạn có chắc chắn muốn xóa task này không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-//                    viewModel.deleteTask(savedTask.getTaskID(), () -> {
-//                        showToast("Đã xóa thẻ");
-//                        finish();
-//                    });
+                    // Gọi API xóa task
+                    TaskService.deleteTask(
+                        this,
+                        currentTask.getTaskID(),
+                            ProjectHolder.get().getProjectID(),
+                        response -> {
+                            try {
+                                if ("success".equals(response.optString("status"))) {
+                                    showToast("Đã xóa task thành công");
+                                    finish(); // Đóng màn hình task
+                                } else {
+                                    String error = response.optString("error");
+                                    showToast("Lỗi: " + error);
+                                }
+                            } catch (Exception e) {
+                                showToast("Lỗi xử lý dữ liệu");
+                                Log.e(TAG, "Error deleting task", e);
+                            }
+                        },
+                        error -> {
+                            String errMsg = "Không thể xóa task";
+                            try {
+                                errMsg = Helpers.parseError(error);
+                            } catch (Exception ignored) {}
+                            showToast(errMsg);
+                            Log.e(TAG, "Error deleting task", error);
+                        }
+                    );
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

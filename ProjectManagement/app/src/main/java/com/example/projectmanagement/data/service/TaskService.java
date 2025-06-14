@@ -28,18 +28,18 @@ import java.util.TimeZone;
 import java.util.Map;
 import java.util.HashMap;
 
-public class TaskService {
+public class    TaskService {
     private static final String TAG = "TaskService";
     private static final String BASE_URL = ApiConfig.BASE_URL;
     private static final String TASKS_URL = BASE_URL + "/tasks";
 
     public static void createTask(Context context, Task task,
-                                Response.Listener<JSONObject> listener,
-                                Response.ErrorListener errorListener) {
+                                  Response.Listener<JSONObject> listener,
+                                  Response.ErrorListener errorListener) {
         try {
             JSONObject requestBody = new JSONObject();
             JSONObject taskObject = new JSONObject();
-            
+
             // Set task properties
             taskObject.put("taskName", task.getTaskName());
             taskObject.put("description", task.getTaskDescription());
@@ -47,13 +47,13 @@ public class TaskService {
             taskObject.put("priority", task.getPriority());
             taskObject.put("allowSelfAssign", true);
             taskObject.put("orderIndex", task.getOrderIndex());
-            
+
             // Format date to ISO-8601 format
             SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
             outputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             String formattedDate = outputFormat.format(task.getDueDate());
             taskObject.put("dueDate", formattedDate);
-            
+
             // Set phase information
             JSONObject phaseObject = new JSONObject();
             phaseObject.put("id", task.getPhase().getPhaseID());
@@ -61,12 +61,12 @@ public class TaskService {
             phaseObject.put("description", task.getPhase().getDescription());
             phaseObject.put("status", task.getPhase().getStatus());
             phaseObject.put("orderIndex", task.getPhase().getOrderIndex());
-            
+
             // Set project in phase
             JSONObject projectObject = new JSONObject();
             projectObject.put("id", ProjectHolder.get().getProjectID());
             phaseObject.put("project", projectObject);
-            
+
             taskObject.put("phase", phaseObject);
             requestBody.put("task", taskObject);
             requestBody.put("projectId", ProjectHolder.get().getProjectID());
@@ -74,17 +74,17 @@ public class TaskService {
             Log.d(TAG, "Creating task with request body: " + requestBody.toString());
 
             JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.POST,
-                TASKS_URL,
-                requestBody,
-                response -> {
-                    Log.d(TAG, "Response received: " + response.toString());
-                    listener.onResponse(response);
-                },
-                error -> {
-                    Log.e(TAG, "Error creating task", error);
-                    errorListener.onErrorResponse(error);
-                }
+                    Request.Method.POST,
+                    TASKS_URL,
+                    requestBody,
+                    response -> {
+                        Log.d(TAG, "Response received: " + response.toString());
+                        listener.onResponse(response);
+                    },
+                    error -> {
+                        Log.e(TAG, "Error creating task", error);
+                        errorListener.onErrorResponse(error);
+                    }
             ) {
                 @Override
                 public java.util.Map<String, String> getHeaders() {
@@ -107,23 +107,23 @@ public class TaskService {
     }
 
     public static void getTaskDetail(Context context, int taskId,
-                                  Response.Listener<JSONObject> listener,
-                                  Response.ErrorListener errorListener) {
+                                     Response.Listener<JSONObject> listener,
+                                     Response.ErrorListener errorListener) {
         String url = TASKS_URL + "/" + taskId;
         Log.d(TAG, "Fetching task details from: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(
-            Request.Method.GET,
-            url,
-            null,
-            response -> {
-                Log.d(TAG, "Task detail response: " + response.toString());
-                listener.onResponse(response);
-            },
-            error -> {
-                Log.e(TAG, "Error fetching task details", error);
-                errorListener.onErrorResponse(error);
-            }
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    Log.d(TAG, "Task detail response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Error fetching task details", error);
+                    errorListener.onErrorResponse(error);
+                }
         ) {
             @Override
             public java.util.Map<String, String> getHeaders() {
@@ -140,9 +140,9 @@ public class TaskService {
         queue.add(request);
     }
 
-    public static void markTaskAsComplette(Context context, int taskId, String status,Response.Listener<JSONObject> listener,
-                                           Response.ErrorListener errorListener){
-        String url = TASKS_URL + "/"+taskId+"/mark-as-complete?status="+status;
+    public static void markTaskAsComplette(Context context, int taskId, String status, Response.Listener<JSONObject> listener,
+                                           Response.ErrorListener errorListener) {
+        String url = TASKS_URL + "/" + taskId + "/mark-as-complete?status=" + status;
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.PUT,
                 url,
@@ -175,17 +175,17 @@ public class TaskService {
         Log.d(TAG, "Fetching project members from: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(
-            Request.Method.GET,
-            url,
-            null,
-            response -> {
-                Log.d(TAG, "Project members response: " + response.toString());
-                listener.onResponse(response);
-            },
-            error -> {
-                Log.e(TAG, "Error fetching project members", error);
-                errorListener.onErrorResponse(error);
-            }
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    Log.d(TAG, "Project members response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Error fetching project members", error);
+                    errorListener.onErrorResponse(error);
+                }
         ) {
             @Override
             public java.util.Map<String, String> getHeaders() {
@@ -203,23 +203,23 @@ public class TaskService {
     }
 
     public static void getUserInfo(Context context, int userId,
-                                 Response.Listener<JSONObject> listener,
-                                 Response.ErrorListener errorListener) {
+                                   Response.Listener<JSONObject> listener,
+                                   Response.ErrorListener errorListener) {
         String url = BASE_URL + "/users/" + userId;
         Log.d(TAG, "Fetching user info from: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(
-            Request.Method.GET,
-            url,
-            null,
-            response -> {
-                Log.d(TAG, "User info response: " + response.toString());
-                listener.onResponse(response);
-            },
-            error -> {
-                Log.e(TAG, "Error fetching user info", error);
-                errorListener.onErrorResponse(error);
-            }
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    Log.d(TAG, "User info response: " + response.toString());
+                    listener.onResponse(response);
+                },
+                error -> {
+                    Log.e(TAG, "Error fetching user info", error);
+                    errorListener.onErrorResponse(error);
+                }
         ) {
             @Override
             public java.util.Map<String, String> getHeaders() {
@@ -237,12 +237,12 @@ public class TaskService {
     }
 
     public static void moveTask(Context context, int taskId, int phaseId, int position, int projectId,
-            Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
-        String url = BASE_URL + "/tasks/" + taskId + "/move?phaseId=" + phaseId + 
-            "&position=" + position + "&projectId=" + projectId;
-        
+                                Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        String url = BASE_URL + "/tasks/" + taskId + "/move?phaseId=" + phaseId +
+                "&position=" + position + "&projectId=" + projectId;
+
         Log.d(TAG, "Moving task - URL: " + url);
-        
+
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.PUT, url, null,
                 response -> {
                     Log.d(TAG, "Task move response: " + response.toString());
@@ -263,8 +263,89 @@ public class TaskService {
                 return headers;
             }
         };
-        
+
         Log.d(TAG, "Adding move task request to queue");
         ApiConfig.getInstance(context).addToRequestQueue(request);
+    }
+
+    public static void updateTask(
+            Context context,
+            long taskId,
+            long projectId,
+            String newDescription,
+            String newTaskTitle,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = ApiConfig.BASE_URL + "/tasks/" + taskId; // Thay bằng URL đúng
+
+        // Body JSON
+        JSONObject requestBody = new JSONObject();
+        JSONObject taskObject = new JSONObject();
+        try {
+            if (newDescription != null) {
+                taskObject.put("description", newDescription);
+            }
+            if (newTaskTitle != null) {
+                taskObject.put("taskName", newTaskTitle);
+            }
+            requestBody.put("projectId", projectId);
+            requestBody.put("task", taskObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                requestBody,
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void deleteTask(
+            Context context,
+            long taskId,
+            long projectId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = ApiConfig.BASE_URL + "/tasks/" + taskId + "?projectId=" + projectId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null, // body = null vì không gửi gì trong DELETE này
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
     }
 }
