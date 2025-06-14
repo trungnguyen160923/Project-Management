@@ -317,4 +317,35 @@ public class TaskService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
+
+    public static void deleteTask(
+            Context context,
+            long taskId,
+            long projectId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = ApiConfig.BASE_URL + "/task/" + taskId + "?projectId=" + projectId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null, // body = null vì không gửi gì trong DELETE này
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
 }
