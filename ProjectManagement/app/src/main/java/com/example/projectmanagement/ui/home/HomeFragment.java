@@ -295,7 +295,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
     @Override
     public void onResume() {
         super.onResume();
-        Log.d(TAG, "Fragment resumed");
+        // Refresh project list when returning from MenuProjectActivity
         if (viewModel != null) {
             viewModel.refresh();
         }

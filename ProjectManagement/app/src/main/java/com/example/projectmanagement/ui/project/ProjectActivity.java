@@ -150,6 +150,11 @@ public class ProjectActivity extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
         // Không cần cập nhật từ ProjectHolder nữa vì dữ liệu đã được quản lý bởi ViewModel
+        // Refresh project data when returning from MenuProjectActivity
+        Project currentProject = ProjectHolder.get();
+        if (currentProject != null) {
+            viewModel.setProject(currentProject);
+        }
     }
 
     @Override

@@ -63,6 +63,16 @@ public class MenuProjectActivity extends AppCompatActivity {
         setupClickListeners();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh project data when returning from UpdateProjectActivity
+        Project currentProject = ProjectHolder.get();
+        if (currentProject != null) {
+            viewModel.setProject(currentProject);
+        }
+    }
+
     private void observeData() {
         viewModel.getProjectLive().observe(this, project -> {
             if (project != null) {

@@ -165,12 +165,12 @@
                 </LinearLayout>
 
                 <!-- Nút chọn background (gradient/ảnh) -->
-<!--                <include-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="match_parent"-->
-<!--                    android:layout_marginTop="10dp"-->
-<!--                    android:id="@+id/button_image_custom"-->
-<!--                    layout="@layout/button_image_custom" />-->
+                <include
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="10dp"
+                    android:id="@+id/button_image_custom"
+                    layout="@layout/button_image_custom" />
 
                 <!-- Nút Tạo bảng -->
                 <androidx.appcompat.widget.AppCompatButton

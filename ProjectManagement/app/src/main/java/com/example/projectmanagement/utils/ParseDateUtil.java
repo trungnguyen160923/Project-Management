@@ -6,6 +6,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import android.util.Log;
 
 /**
  * Utility class for parsing and formatting date strings into java.util.Date and back.
@@ -145,8 +146,14 @@ public final class ParseDateUtil {
         }
     }
     public static Date parseFlexibleIsoDate(String input) {
-        if (input == null || input.trim().isEmpty()) return null;
+        if (input == null || input.trim().isEmpty()) {
+            Log.d("ParseDateUtil", "Input is null or empty");
+            return null;
+        }
         String trimmed = input.trim();
+        Log.d("ParseDateUtil", "Parsing date: " + trimmed);
+        
+        // Try parsing with milliseconds first
         if (trimmed.contains(".")) {
             int dotIndex = trimmed.indexOf(".");
             if (trimmed.length() >= dotIndex + 4) {
@@ -154,12 +161,28 @@ public final class ParseDateUtil {
             } else {
                 trimmed = trimmed.substring(0, dotIndex);
             }
-        }
+            Log.d("ParseDateUtil", "After trimming milliseconds: " + trimmed);
+            
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
-            sdf.setTimeZone(TimeZone.getTimeZone("UTC")); // hoặc setDefault()
-            return sdf.parse(trimmed);
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                Date result = sdf.parse(trimmed);
+                Log.d("ParseDateUtil", "Successfully parsed date with milliseconds: " + result);
+                return result;
+            } catch (ParseException e) {
+                Log.e("ParseDateUtil", "Error parsing date with milliseconds: " + e.getMessage());
+            }
+        }
+        
+        // Try parsing without milliseconds
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date result = sdf.parse(trimmed);
+            Log.d("ParseDateUtil", "Successfully parsed date without milliseconds: " + result);
+            return result;
         } catch (ParseException e) {
+            Log.e("ParseDateUtil", "Error parsing date without milliseconds: " + e.getMessage());
             return null;
         }
     }

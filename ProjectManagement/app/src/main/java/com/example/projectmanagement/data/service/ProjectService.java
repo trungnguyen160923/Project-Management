@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 public class ProjectService {
     private static final String TAG = "ProjectService";
@@ -297,8 +298,19 @@ public class ProjectService {
                 project.setProjectName(projectJson.optString("projectName", ""));
                 project.setProjectDescription(projectJson.optString("description", ""));
                 project.setStatus(projectJson.optString("status", ""));
-                project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("startDate", "")));
-                project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("endDate", "")));
+                
+                // Log raw date strings
+                String startDateStr = projectJson.optString("startDate", "");
+                String endDateStr = projectJson.optString("endDate", "");
+                Log.d(TAG, "Project " + project.getProjectName() + " - Raw dates: startDate=" + startDateStr + ", endDate=" + endDateStr);
+                
+                // Parse dates
+                Date startDate = ParseDateUtil.parseFlexibleIsoDate(startDateStr);
+                Date endDate = ParseDateUtil.parseFlexibleIsoDate(endDateStr);
+                Log.d(TAG, "Project " + project.getProjectName() + " - Parsed dates: startDate=" + startDate + ", endDate=" + endDate);
+                
+                project.setStartDate(startDate);
+                project.setDeadline(endDate);
                 project.setCreateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("createdAt", "")));
                 project.setUpdateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("updatedAt", "")));
                 project.setBackgroundImg(projectJson.optString("backgroundImg", ""));
