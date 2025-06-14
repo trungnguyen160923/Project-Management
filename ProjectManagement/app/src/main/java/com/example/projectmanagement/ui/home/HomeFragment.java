@@ -23,6 +23,7 @@ import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.ui.adapter.ProjectAdapter;
 import com.example.projectmanagement.ui.project.ProjectActivity;
 import com.example.projectmanagement.data.repository.ProjectRepository;
+import com.example.projectmanagement.ui.project.vm.ProjectViewModel;
 import com.example.projectmanagement.utils.LoadingDialog;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Task;
@@ -115,9 +116,9 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
             projectRepository.getProject(project.getProjectID()).observe(getViewLifecycleOwner(), projectDetail -> {
                 Log.d(TAG, ">>> fetched project successfully!");
                 if (projectDetail != null) {
-                    Log.d(TAG, ">>> this is project details: " + projectDetail.getProjectName());
+                    Log.d(TAG, ">>> this is project name: " + projectDetail.getProjectName());
                     ProjectHolder.set(projectDetail);
-                    navigateToProjectActivity();
+                    fetchPhasesData();
                 } else {
                     Log.e(TAG, ">>> Failed to load project details");
                     handleError(loadingDialog, "Failed to load project details");
@@ -125,6 +126,111 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
             });
         }
     }
+
+
+    private void fetchPhasesData() {
+        Log.d(TAG, ">>> fetching phases");
+        // Get project phases
+        ProjectService.getProjectPhases(requireContext(),
+                String.valueOf(ProjectHolder.get().getProjectID()),
+                response -> {
+                    Log.d(TAG, ">>> fetched phases successfully!");
+                    try {
+                        List<Phase> phases = ProjectService.parsePhasesList(response);
+                        Log.d(TAG, ">>> Loaded: " + phases.size() + " phases");
+
+                        // If no phases, just navigate to ProjectActivity
+                        if (phases == null || phases.isEmpty()) {
+                            Log.d(TAG, "No phases found, navigating to ProjectActivity");
+                            fetchProjectMembersData();
+                            return;
+                        }
+
+                        // Load tasks for each phase
+                        int[] loadedPhases = {0};
+                        for (Phase phase : phases) {
+                            ProjectService.getPhaseTasks(requireContext(),
+                                    String.valueOf(phase.getPhaseID()),
+                                    taskResponse -> {
+                                        try {
+                                            List<Task> tasks = ProjectService.parseTasksList(taskResponse);
+                                            phase.setTasks(tasks);
+                                            Log.d(TAG, "Loaded " + tasks.size() +
+                                                    " tasks for phase " + phase.getPhaseName());
+                                        } catch (Exception e) {
+                                            Log.e(TAG, "Error parsing tasks", e);
+                                        }
+                                    },
+                                    error -> {
+                                        Log.e(TAG, "Error loading tasks", error);
+                                    });
+                        }
+                        ProjectHolder.get().setPhases(phases);
+                        fetchProjectMembersData();
+                    } catch (Exception e) {
+                        Log.e(TAG, ">>> Error parsing phases", e);
+                    }
+                },
+                error -> {
+                    Log.e(TAG, ">>> Error fetching phases", error);
+                });
+
+    }
+
+    private void fetchProjectMembersData() {
+        // Get project members
+        TaskService.getProjectMembers(requireContext(), ProjectHolder.get().getProjectID(),
+                taskResponse -> {
+                    try {
+                        if ("success".equals(taskResponse.optString("status"))) {
+                            List<ProjectMember> members = new ArrayList<>();
+                            for (int i = 0; i < taskResponse.getJSONArray("data").length(); i++) {
+                                JSONObject obj = taskResponse.getJSONArray("data").getJSONObject(i);
+                                int userId = obj.optInt("userId");
+
+                                // Get user details
+                                TaskService.getUserInfo(requireContext(), userId,
+                                        userResponse -> {
+                                            try {
+                                                if ("success".equals(userResponse.optString("status"))) {
+                                                    JSONObject userData = userResponse.getJSONObject("data");
+                                                    User user = new User();
+                                                    user.setId(userData.optInt("id"));
+                                                    user.setUsername(userData.optString("username"));
+                                                    user.setEmail(userData.optString("email"));
+                                                    user.setFullname(userData.optString("fullname"));
+                                                    user.setAvatar(userData.optString("avatar"));
+
+                                                    ProjectMember member = new ProjectMember(
+                                                            ProjectHolder.get().getProjectID(),
+                                                            obj.optInt("memberId"),
+                                                            userId,
+                                                            new Date(),
+                                                            ProjectMember.Role.valueOf(obj.optString("role"))
+                                                    );
+                                                    member.setUser(user);
+                                                    members.add(member);
+                                                    // Store members in ProjectMemberHolder
+                                                    ProjectMemberHolder.get().setMembers(members);
+
+                                                    navigateToProjectActivity();
+                                                }
+                                            } catch (Exception e) {
+                                                Log.e(TAG, "Error parsing user data", e);
+                                            }
+                                        },
+                                        error -> Log.e(TAG, "Error fetching user info", error)
+                                );
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing project members", e);
+                    }
+                },
+                error -> Log.e(TAG, "Error fetching project members", error)
+        );
+    }
+
 
     private void navigateToProjectActivity() {
         if (!isNavigating) return; // Double check

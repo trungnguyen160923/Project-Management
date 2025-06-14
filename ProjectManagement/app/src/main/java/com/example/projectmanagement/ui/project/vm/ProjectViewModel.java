@@ -281,7 +281,6 @@ public class ProjectViewModel extends ViewModel {
                 }
             } else {
                 Log.e("ProjectViewModel", "No phases loaded from API");
-                message.setValue("No phases found");
             }
         });
     }

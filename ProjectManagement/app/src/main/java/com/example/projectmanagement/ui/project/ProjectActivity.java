@@ -43,7 +43,11 @@ import com.example.projectmanagement.data.model.File;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.data.model.ProjectHolder;
+import com.example.projectmanagement.data.model.ProjectMember;
+import com.example.projectmanagement.data.model.ProjectMemberHolder;
 import com.example.projectmanagement.data.model.Task;
+import com.example.projectmanagement.data.model.User;
+import com.example.projectmanagement.data.service.ProjectService;
 import com.example.projectmanagement.data.service.TaskService;
 import com.example.projectmanagement.ui.adapter.PhaseAdapter;
 import com.example.projectmanagement.ui.helper.PhaseOrderTouchCallback;
@@ -55,6 +59,8 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.lifecycle.ViewModelProvider;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -74,7 +80,6 @@ public class ProjectActivity extends AppCompatActivity implements
     private MaterialToolbar toolbar;
     private FloatingActionButton fabZoom;
 
-    private Project project;
     private List<Phase> phases = new ArrayList<>();
     private PhaseAdapter phaseAdapter;
 
@@ -93,7 +98,7 @@ public class ProjectActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_project);
 
         // Lấy project từ ProjectHolder
-        project = ProjectHolder.get();
+        Project project = ProjectHolder.get();
         if (project == null) {
 //            Toast.makeText(this, "Không nhận được Project", Toast.LENGTH_SHORT).show();
             finish();
@@ -107,22 +112,24 @@ public class ProjectActivity extends AppCompatActivity implements
                 ", description=" + project.getProjectDescription() +
                 ", phases=" + (project.getPhases() != null ? project.getPhases().size() : 0));
 
+
+
         // Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(ProjectViewModel.class);
         viewModel.init(this);
-        viewModel.setProject(project);
+        viewModel.setProject(ProjectHolder.get());
 
         bindViews();
         setupInitialToolbar();
         setupBoard();
-        applyProjectBackground(project.getBackgroundImg());
+        applyProjectBackground(ProjectHolder.get().getBackgroundImg());
 
         // Observe project data changes
         viewModel.getProject().observe(this, updatedProject -> {
             if (updatedProject != null) {
-                project = updatedProject;
-                toolbar.setTitle(project.getProjectName());
-                Log.d("ProjectActivity", "Project updated: " + project.getProjectName());
+                ProjectHolder.set(updatedProject);
+                toolbar.setTitle(ProjectHolder.get().getProjectName());
+                Log.d(TAG, "Project updated: " + ProjectHolder.get().getProjectName());
             }
         });
 
@@ -130,7 +137,7 @@ public class ProjectActivity extends AppCompatActivity implements
         viewModel.getPhases().observe(this, updatedPhases -> {
             if (updatedPhases != null) {
                 phases = updatedPhases;
-                Log.d("ProjectActivity", "Phases updated: " + phases.size() + " phases");
+                Log.d(TAG, "Phases updated: " + phases.size() + " phases");
                 phaseAdapter.updatePhases(phases);
                 // Force refresh UI
                 phaseAdapter.notifyDataSetChanged();
@@ -167,7 +174,7 @@ public class ProjectActivity extends AppCompatActivity implements
         setSupportActionBar(toolbar);
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-        getSupportActionBar().setTitle(project.getProjectName());
+        getSupportActionBar().setTitle(ProjectHolder.get().getProjectName());
         toolbar.setNavigationIcon(R.drawable.ic_back);
         toolbar.setNavigationOnClickListener(v -> {
             if (inInputMode) exitInputMode();
@@ -254,7 +261,6 @@ public class ProjectActivity extends AppCompatActivity implements
             public void afterTextChanged(Editable s) {
 
             }
-
         });
 
         // Xử lý khi đóng
@@ -275,11 +281,11 @@ public class ProjectActivity extends AppCompatActivity implements
         rvBoard.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
         // Debug log
-        Log.d("ProjectActivity", "setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
+        Log.d(TAG, ">>> setupBoard: phases size = " + (phases != null ? phases.size() : "null"));
 
         // Ensure phases are loaded from project
-        if (project != null && project.getPhases() != null) {
-            phases = new ArrayList<>(project.getPhases());
+        if (ProjectHolder.get() != null && ProjectHolder.get().getPhases() != null) {
+            phases = new ArrayList<>(ProjectHolder.get().getPhases());
             Log.d("ProjectActivity", "Loaded " + phases.size() + " phases from project");
         }
 
@@ -417,7 +423,7 @@ public class ProjectActivity extends AppCompatActivity implements
         toolbar.getMenu().clear();
         toolbar.inflateMenu(R.menu.menu_project_toolbar);
         toolbar.setNavigationIcon(R.drawable.ic_back);
-        toolbar.setTitle(project.getProjectName());
+        toolbar.setTitle(ProjectHolder.get().getProjectName());
     }
 
     @Override
@@ -434,8 +440,8 @@ public class ProjectActivity extends AppCompatActivity implements
 
         // Debug log project data before creating phase
         Log.d("ProjectActivity", "Creating phase with project: " +
-                "id=" + project.getProjectID() +
-                ", name=" + project.getProjectName());
+                "id=" + ProjectHolder.get().getProjectID() +
+                ", name=" + ProjectHolder.get().getProjectName());
 
         // Call ViewModel to add phase
         viewModel.addPhase(phases.size());
@@ -539,7 +545,7 @@ public class ProjectActivity extends AppCompatActivity implements
         Log.d("ProjectActivity", "Calling moveTask API - TaskId: " + task.getTaskID() +
                 ", PhaseId: " + target.getPhaseID() +
                 ", Position: " + finalIdx +
-                ", ProjectId: " + project.getProjectID());
+                ", ProjectId: " + ProjectHolder.get().getProjectID());
 
         // Call API to update task position
         TaskService.moveTask(
@@ -547,11 +553,11 @@ public class ProjectActivity extends AppCompatActivity implements
                 task.getTaskID(),
                 target.getPhaseID(),
                 finalIdx,
-                project.getProjectID(),
+                ProjectHolder.get().getProjectID(),
                 response -> {
                     Log.d("ProjectActivity", "Task moved successfully - Response: " + response.toString());
                     // Update project in holder
-                    ProjectHolder.set(project);
+                    ProjectHolder.set(ProjectHolder.get());
                 },
                 error -> {
                     Log.e("ProjectActivity", "Error moving task: " + error.getMessage());
