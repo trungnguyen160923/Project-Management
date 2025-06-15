@@ -220,7 +220,25 @@
                             android:maxLines="2"
                             android:scrollbars="vertical"
                             android:textSize="15sp" />
+
+                        <!-- Nút "Thống kê" -->
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/btn_project_stats"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="10dp"
+                            android:layout_gravity="end"
+                            android:background="@drawable/shape_button_rounded"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:gravity="center"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="8dp"
+                            android:text="XEM THỐNG KÊ DỰ ÁN"
+                            android:textColor="@color/white"
+                            android:textSize="18sp" />
+
                     </LinearLayout>
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

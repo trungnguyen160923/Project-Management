@@ -193,6 +193,13 @@ public class MenuProjectActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        binding.btnProjectStats.setOnClickListener(v -> {
+            // Mở ProjectStatisticActivity và truyền project ID
+            Intent intent = new Intent(this, ProjectStatisticActivity.class);
+            intent.putExtra("project_id", project.getProjectID());
+            startActivity(intent);
+        });
+
         binding.btnDeleteProject.setOnClickListener(v -> {
             ConfirmDialogUtil.show(
                     this,

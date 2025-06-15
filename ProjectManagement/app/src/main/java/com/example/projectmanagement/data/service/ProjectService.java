@@ -415,19 +415,34 @@ public class ProjectService {
 
     // Parse một project từ JSON
     public static Project parseProject(JSONObject response) throws JSONException {
+        Log.d(TAG, "Parsing project from response: " + response.toString());
+        
         JSONObject data = response.getJSONObject("data");
+        Log.d(TAG, "Project data object: " + data.toString());
+        
         Project project = new Project();
 
         project.setProjectID(data.getInt("id"));
         project.setProjectName(data.getString("projectName"));
         project.setProjectDescription(data.getString("description"));
         project.setStatus(data.getString("status"));
-        project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(data.getString("startDate")));
-        project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(data.getString("endDate")));
+        
+        // Parse dates with error handling
+        try {
+            String startDateStr = data.getString("startDate");
+            String endDateStr = data.getString("endDate");
+            Log.d(TAG, "Raw dates - startDate: " + startDateStr + ", endDate: " + endDateStr);
+            
+            project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(startDateStr));
+            project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(endDateStr));
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing dates", e);
+        }
 
         // Parse owner
         if (data.has("owner")) {
             JSONObject owner = data.getJSONObject("owner");
+            Log.d(TAG, "Owner data: " + owner.toString());
             project.getUser().setId(owner.getInt("id"));
             project.getUser().setUsername(owner.getString("fullname"));
         }
@@ -435,6 +450,7 @@ public class ProjectService {
         // Parse phases
         if (data.has("phases")) {
             JSONArray phasesArray = data.getJSONArray("phases");
+            Log.d(TAG, "Found " + phasesArray.length() + " phases");
             List<Phase> phases = new ArrayList<>();
             for (int i = 0; i < phasesArray.length(); i++) {
                 JSONObject phaseObj = phasesArray.getJSONObject(i);
@@ -444,6 +460,7 @@ public class ProjectService {
             project.setPhases(phases);
         }
 
+        Log.d(TAG, "Successfully parsed project: " + project.toString());
         return project;
     }
 
