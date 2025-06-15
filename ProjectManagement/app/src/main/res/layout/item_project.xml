@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <!-- Ảnh nền nhỏ bên trái -->
+        <!-- Ảnh nền (nếu cần) -->
         <ImageView
             android:id="@+id/ivItemBackground"
             android:layout_width="64dp"
@@ -29,40 +29,60 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
-        <!-- 1) Title: bắt đầu chain -->
+        <!-- 1) Tiêu đề bên trái, Task count bên phải cùng dòng -->
         <TextView
             android:id="@+id/tvProjectName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="Test tiêu đề"
-            android:textSize="24dp"
+            android:text="Tiêu đề"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
             android:textStyle="bold"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
             app:layout_constraintStart_toEndOf="@id/ivItemBackground"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/tvDescription"
-            app:layout_constraintVertical_chainStyle="packed" />
+            app:layout_constraintBottom_toTopOf="@id/tvCreatedBy"
+            app:layout_constraintEnd_toStartOf="@id/tvTaskCount" />
 
-        <!-- 2) Description: nối chain -->
+        <TextView
+            android:id="@+id/tvTaskCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Task: 19/20"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+            android:textColor="@color/black"
+            app:layout_constraintBaseline_toBaselineOf="@id/tvProjectName"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- 2) Được tạo bởi -->
+        <TextView
+            android:id="@+id/tvCreatedBy"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Được tạo bởi: Nguyễn Văn A"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+            android:textColor="@color/black"
+            app:layout_constraintStart_toStartOf="@id/tvProjectName"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvProjectName" />
+
+        <!-- 3) Mô tả -->
         <TextView
             android:id="@+id/tvDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Test description"
-            android:ellipsize="end"
-            android:maxLines="1"
+            android:text="Đây là mô tả"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+            android:ellipsize="end"
+            android:maxLines="2"
             app:layout_constraintStart_toStartOf="@id/tvProjectName"
-            app:layout_constraintEnd_toEndOf="@id/tvProjectName"
-            app:layout_constraintTop_toBottomOf="@id/tvProjectName"
-            app:layout_constraintBottom_toTopOf="@id/llDeadline" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvCreatedBy" />
 
-        <!-- 3) Deadline group: kết thúc chain -->
+        <!-- 4) Ngày tạo -->
         <LinearLayout
             android:id="@+id/llDeadline"
             android:layout_width="0dp"
@@ -94,6 +114,3 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
-
-
-
