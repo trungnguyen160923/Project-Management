@@ -1,12 +1,19 @@
 // File: FileLogger.java
 package com.example.projectmanagement.utils;
 
+import android.content.Context;
+import android.os.Environment;
+
 import com.android.volley.VolleyError;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class Helpers {
     public static String parseError(VolleyError error) throws JSONException, UnsupportedEncodingException {
@@ -23,6 +30,10 @@ public class Helpers {
 
     public static String createImageUrlEndpoint(String filename) {
         return ApiConfig.BASE_URL + "/files/images/" + filename;
+    }
+
+    public static String createFileDownloadUrlEndpoint(int fileId) {
+        return ApiConfig.BASE_URL + "/files/download/" + fileId;
     }
 
     public static String getFileExtensionFromMimeType(String mimeType) {
@@ -68,5 +79,19 @@ public class Helpers {
         }
 
         return EnumFileType.OTHER;
+    }
+
+    public static File createDefaultDownloadFormat(Context context, String filename) {
+        File directory = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (directory != null && !directory.exists()) {
+            directory.mkdirs();
+        }
+        File targetFile = new File(directory, filename);
+        return targetFile;
+    }
+
+    public static String formatToISOStr(Date date) {
+        SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+        return isoFormat.format(date);
     }
 }

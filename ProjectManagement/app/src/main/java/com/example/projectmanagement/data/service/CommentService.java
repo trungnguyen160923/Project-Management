@@ -94,4 +94,113 @@ public class CommentService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
+
+    public static void updateComment(Context context, long commentId, boolean isTaskResult, String content,
+                                     Response.Listener<JSONObject> listener,
+                                     Response.ErrorListener errorListener) {
+
+        String url = ApiConfig.BASE_URL + "/comments/" + commentId;
+
+        JSONObject body = new JSONObject();
+        try {
+            body.put("isTaskResult", isTaskResult);
+            body.put("content", content);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            errorListener.onErrorResponse(new VolleyError("Lỗi tạo JSON request"));
+            return;
+        }
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                body,
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void deleteComment(Context context, long commentId,
+                                     Response.Listener<JSONObject> listener,
+                                     Response.ErrorListener errorListener) {
+
+        String url = ApiConfig.BASE_URL + "/comments/" + commentId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null,  // DELETE không cần body
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void markCommentAsTaskResult(
+            Context context,
+            long commentId,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = ApiConfig.BASE_URL + "/comments/" + commentId + "/mark-as-task-result";
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                null, // Không có body
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
 }

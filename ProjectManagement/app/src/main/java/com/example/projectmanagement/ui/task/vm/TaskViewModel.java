@@ -115,6 +115,7 @@ public class TaskViewModel extends AndroidViewModel {
         if (currentTask != null) {
             List<Comment> taskComments = currentTask.getComments();
             if (taskComments != null) {
+                Log.d(TAG, ">>> task comments: " + taskComments);
                 comments.setValue(taskComments);
             }
         }
@@ -128,7 +129,7 @@ public class TaskViewModel extends AndroidViewModel {
             for (File file : files) {
                 if (Helpers.getFileCategoryFromMimeType(file.getFileType()).equals(EnumFileType.IMAGE)) {
                     Log.d(TAG, ">>> add image as uri: " + file.getFileType());
-                    addImageAsUri(file.getFilePath());
+                    addImageAsUri(file);
                 } else if (Helpers.getFileCategoryFromMimeType(file.getFileType()).equals(EnumFileType.DOCUMENT)) {
                     Log.d(TAG, ">>> add document: " + file.getFileType());
                     addDocument(file);
@@ -245,7 +246,8 @@ public class TaskViewModel extends AndroidViewModel {
                     comment.getContent(),
                     currentTask.getTaskID(),
                     userId,
-                    new Date()
+                    new Date(),
+                    comment.isTaskResult()
             );
             currentComments.add(0, newComment);
             updateComments(currentComments);
@@ -383,7 +385,6 @@ public class TaskViewModel extends AndroidViewModel {
     public void fetchTaskDetail(Task task) {
         if (task != null) {
             setTask(task);
-            loadComments();
             isImagesExpanded.setValue(false);
             isFilesExpanded.setValue(false);
             isCommentsExpanded.setValue(false);

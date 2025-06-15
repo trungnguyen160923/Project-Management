@@ -10,6 +10,8 @@
     <color name="primary_text_color">#212121</color>
     <color name="avatar_background">#2196F3</color>
     <color name="light_gray">#DDDDDD</color>
+    <color name="green">#4CAF50</color> <!-- Màu xanh lá cây -->
+
 
     <color name="unread_bg">#FFFDE7</color>       <!-- nền nhạt cho item chưa đọc -->
     <color name="text_primary">#212121</color>   <!-- chữ đậm -->
@@ -26,27 +28,27 @@
 
     <!-- gradients row 1 -->
     <color name="g11_start">#E2EAFD</color>
-    <color name="g11_end">  #1E84D8</color>
+    <color name="g11_end">#1E84D8</color>
     <color name="g12_start">#1E84D8</color>
-    <color name="g12_end">  #0A50B0</color>
+    <color name="g12_end">#0A50B0</color>
     <color name="g13_start">#0A50B0</color>
-    <color name="g13_end">  #084190</color>
+    <color name="g13_end">#084190</color>
 
     <!-- gradients row 2 -->
     <color name="g21_start">#2E3875</color>
-    <color name="g21_end">  #654083</color>
+    <color name="g21_end">#654083</color>
     <color name="g22_start">#654083</color>
-    <color name="g22_end">  #AD69C0</color>
+    <color name="g22_end">#AD69C0</color>
     <color name="g23_start">#AD69C0</color>
-    <color name="g23_end">  #EF7C39</color>
+    <color name="g23_end">#EF7C39</color>
 
     <!-- gradients row 3 -->
     <color name="g31_start">#F2748A</color>
-    <color name="g31_end">  #EF738F</color>
+    <color name="g31_end">#EF738F</color>
     <color name="g32_start">#EF738F</color>
-    <color name="g32_end">  #349E88</color>
+    <color name="g32_end">#349E88</color>
     <color name="g33_start">#349E88</color>
-    <color name="g33_end">  #384967</color>
+    <color name="g33_end">#384967</color>
 
     <!-- solids row 4 -->
     <color name="s41">#572912</color>

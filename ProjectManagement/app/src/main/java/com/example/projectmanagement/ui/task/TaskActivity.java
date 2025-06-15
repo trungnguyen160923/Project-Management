@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
@@ -60,6 +61,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -102,6 +104,9 @@ import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
+import com.example.projectmanagement.utils.CommentDetailDialogUtil;
+import com.example.projectmanagement.utils.CustomCallback;
+import com.example.projectmanagement.utils.DetailPhaseDialogUtil;
 import com.example.projectmanagement.utils.EnumFileType;
 import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.UserPreferences;
@@ -112,6 +117,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.card.MaterialCardView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -272,6 +278,7 @@ public class TaskActivity extends AppCompatActivity {
         CommentService.fetchCommentsByTaskId(this, savedTask.getTaskID(), res -> {
             JSONArray data = res.optJSONArray("data");
             if (data != null) {
+                Log.d(TAG, ">>> res data 281: " + data);
                 try {
                     for (int i = 0; i < data.length(); i++) {
                         JSONObject jsonObject = data.getJSONObject(i);
@@ -444,6 +451,21 @@ public class TaskActivity extends AppCompatActivity {
             TextView tvText = item.findViewById(R.id.tvCommentText);
             ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
 
+            Log.d(TAG, ">>> show all comments: " + c);
+
+            if (c.isTaskResult()) {
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.WHITE);
+                gd.setStroke(3, Color.GREEN);
+                gd.setCornerRadius(8f);
+                item.setBackground(gd);
+            }
+
+            tvText.setText(styleTagsOnShowComment(c.getContent(), this, tvText));
+            tvText.setMovementMethod(LinkMovementMethod.getInstance());
+            tvText.setHighlightColor(Color.TRANSPARENT);
+
+
             tvTime.setText(fmt.format(c.getCreateAt()));
 
             // Get user info from project members
@@ -475,8 +497,84 @@ public class TaskActivity extends AppCompatActivity {
             tvText.setMovementMethod(LinkMovementMethod.getInstance());
             tvText.setHighlightColor(Color.TRANSPARENT); // Xóa highlight khi click
 
-            btnOpt.setOnClickListener(v -> showCommentOptions(v, c));
+            btnOpt.setOnClickListener(v -> showCommentOptions(item, v, c));
+            btnOpt.setTag(c);
             binding.commentContainer.addView(item);
+        }
+    }
+
+    private void updateCommentInView(long commentId, String newContent) {
+        List<Comment> commentList = viewModel.getComments().getValue();
+        if (commentList == null) return;
+
+        // 1. Cập nhật dữ liệu trong danh sách
+        for (Comment c : commentList) {
+            if (c.getId() == commentId) {
+                c.setContent(newContent);
+                break;
+            }
+        }
+
+        // 2. Cập nhật View hiển thị
+        int childCount = binding.commentContainer.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View item = binding.commentContainer.getChildAt(i);
+            ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
+
+            // Lấy comment gắn với item này qua tag hoặc listener
+            Object tag = btnOpt.getTag();
+            if (tag instanceof Comment) {
+                Comment currentComment = (Comment) tag;
+                if (currentComment.getId() == commentId) {
+                    // Cập nhật nội dung hiển thị
+                    TextView tvText = item.findViewById(R.id.tvCommentText);
+                    currentComment.setContent(newContent); // update trong memory
+                    tvText.setText(styleTagsOnShowComment(newContent, this, tvText));
+                    break;
+                }
+            }
+        }
+    }
+
+    private void deleteCommentInView(long commentId) {
+        Log.d(TAG, ">>> delete comment in view 1");
+        List<Comment> commentList = viewModel.getComments().getValue();
+        if (commentList == null) return;
+        Log.d(TAG, ">>> delete comment in view 2");
+
+        // 1. Xóa comment khỏi danh sách
+        Iterator<Comment> iterator = commentList.iterator();
+        while (iterator.hasNext()) {
+            Comment c = iterator.next();
+            if (c.getId() == commentId) {
+                iterator.remove();
+                break;
+            }
+        }
+        Log.d(TAG, ">>> delete comment in view 3");
+
+        // 2. Xóa View tương ứng trong commentContainer
+        int childCount = binding.commentContainer.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View item = binding.commentContainer.getChildAt(i);
+            ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
+            Log.d(TAG, ">>> delete comment in view 4");
+
+            Object tag = btnOpt.getTag();
+            if (tag instanceof Comment) {
+                Log.d(TAG, ">>> delete comment in view 5");
+                Comment currentComment = (Comment) tag;
+                if (currentComment.getId() == commentId) {
+                    Log.d(TAG, ">>> delete comment in view 6");
+                    binding.commentContainer.removeViewAt(i);
+                    break;
+                }
+            }
+        }
+
+        // 3. Nếu không còn comment nào thì ẩn container
+        if (commentList.isEmpty()) {
+            binding.commentContainer.setVisibility(View.GONE);
         }
     }
 
@@ -516,11 +614,10 @@ public class TaskActivity extends AppCompatActivity {
         List<File> files = viewModel.getFiles().getValue();
         if (files == null) return;
 
-        // Tìm file dựa trên file id (không phân biệt hoa thường)
+        // Tìm file dựa trên file id
         File targetFile = files.stream().filter(f -> f.getId() == fileId).findFirst().orElse(null);
-
         if (targetFile == null) {
-            showToast(">>> File not found: " + targetFile.getFileName());
+            showToast("Không tìm thấy file");
             return;
         }
 
@@ -553,41 +650,169 @@ public class TaskActivity extends AppCompatActivity {
 
         // Handle download button
         btnDownload.setOnClickListener(v -> {
-            showToast("Đang tải xuống file...");
+            FileService.downloadFileManually(this, Helpers.createFileDownloadUrlEndpoint(targetFile.getId()),
+                    Helpers.createDefaultDownloadFormat(this, targetFile.getFileName()),
+                    new CustomCallback<String, String>() {
+                        @Override
+                        public void onSuccess(String message) {
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                        }
+                    });
         });
 
         // Handle delete button
         btnDelete.setOnClickListener(v -> {
-            // Xóa file
-            viewModel.deleteFile(targetFile);
+            FileService.deleteFile(this, targetFile.getId(), res -> {
+                // Xóa file
+                viewModel.deleteFile(targetFile);
 
-            String fileName = targetFile.getFileName();
+                String fileName = targetFile.getFileName();
 
-            // Cập nhật comment chứa file này
-            List<Comment> comments = viewModel.getComments().getValue();
-            if (comments != null) {
-                for (Comment comment : comments) {
-                    String content = comment.getContent();
-                    if (content.contains("[File]" + fileName + "[/File]")) {
-                        // Xóa phần [File] và tên file khỏi comment
-                        String newContent = content.replace("[File]" + fileName + "[/File]", "").trim();
-                        if (newContent.isEmpty()) {
-                            // Nếu comment trống sau khi xóa file, xóa luôn comment
-                            viewModel.deleteComment(comment);
-                        } else {
-                            // Cập nhật nội dung comment
-                            viewModel.editComment(comment, newContent);
+                // Cập nhật comment chứa file này
+                List<Comment> comments = viewModel.getComments().getValue();
+                if (comments != null) {
+                    for (Comment comment : comments) {
+                        String content = comment.getContent();
+                        if (content.contains("[File]" + fileName + "[/File]")) {
+                            // Xóa phần [File] và tên file khỏi comment
+                            String newContent = content.replace("[File]" + fileName + "[/File]", "").trim();
+                            if (newContent.isEmpty()) {
+                                // Nếu comment trống sau khi xóa file, xóa luôn comment
+                                viewModel.deleteComment(comment);
+                            } else {
+                                // Cập nhật nội dung comment
+                                viewModel.editComment(comment, newContent);
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
+                Toast.makeText(this, "Đã xóa file", Toast.LENGTH_SHORT).show();
 
-            dialog.dismiss();
+                dialog.dismiss();
+            }, err -> {
+                String errMsg = "Không thể xóa file";
+                try {
+                    errMsg = Helpers.parseError(err);
+                } catch (Exception e) {
+                }
+                showToast(errMsg);
+            });
         });
 
         dialog.show();
     }
+
+    private void showImageDetailDialog(int fileId) {
+        List<File> images = savedTask.getFiles();
+        if (images == null) return;
+
+        // Tìm ảnh dựa trên file id
+        File image = images.stream().filter(file -> file.getId() == fileId).findFirst().orElse(null);
+
+        if (image == null) {
+            showToast("Không tìm thấy ảnh");
+            return;
+        }
+        String imageName = image.getFileName();
+
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(image.getFilePath()));
+
+            // Trở về Main Thread để thao tác với UI
+            runOnUiThread(() -> {
+                // Create and show dialog
+                Dialog dialog = new Dialog(this);
+                dialog.setContentView(R.layout.dialog_image_detail);
+                dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+                // Set file information
+                ImageView imgPreview = dialog.findViewById(R.id.imgPreview);
+                TextView tvFileName = dialog.findViewById(R.id.tvFileName);
+                TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
+                TextView tvFileType = dialog.findViewById(R.id.tvFileType);
+                TextView tvCreatedAt = dialog.findViewById(R.id.tvCreatedAt);
+                Button btnDownload = dialog.findViewById(R.id.btnDownload);
+                Button btnDelete = dialog.findViewById(R.id.btnDelete);
+                ImageButton btnClose = dialog.findViewById(R.id.btnClose);
+
+                // Set image preview
+                imgPreview.setImageURI(imgURI);
+
+                // Set file details
+                String fileName = getFileName(imgURI);
+                tvFileName.setText(fileName);
+                tvFileSize.setText("Kích thước: " + formatFileSize(getFileSize(imgURI)));
+                tvFileType.setText("Loại file: IMAGE");
+                tvCreatedAt.setText("Ngày tạo: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        .format(new Date()));
+
+                // Handle close button
+                btnClose.setOnClickListener(v -> dialog.dismiss());
+
+                // Handle download button
+                btnDownload.setOnClickListener(v -> {
+                    FileService.downloadImageManually(Helpers.createImageUrlEndpoint(image.getFilePath()),
+                            Helpers.createDefaultDownloadFormat(this, image.getFileName()), new CustomCallback<String, String>() {
+                                @Override
+                                public void onSuccess(String result) {
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                }
+                            });
+                });
+
+                // Handle delete button
+                btnDelete.setOnClickListener(v -> {
+                    FileService.deleteFile(this, image.getId(), res -> {
+                        List<Uri> imageUris = viewModel.getImageUris().getValue();
+                        int index = imageUris.indexOf(imgURI);
+                        if (index != -1) {
+                            viewModel.removeImageUri(index);
+                        }
+
+                        savedTask.getFiles().remove(image);
+
+                        List<Comment> comments = viewModel.getComments().getValue();
+                        if (comments != null) {
+                            for (Comment comment : comments) {
+                                String content = comment.getContent();
+                                if (content.contains("[Image]" + imageName + "[/Image]")) {
+                                    String newContent = content.replace("[Image]" + imageName + "[/Image]", "").trim();
+                                    if (newContent.isEmpty()) {
+                                        viewModel.deleteComment(comment);
+                                    } else {
+                                        viewModel.editComment(comment, newContent);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        Toast.makeText(this, "Đã xóa ảnh", Toast.LENGTH_SHORT).show();
+
+                        dialog.dismiss();
+                    }, err -> {
+                        String errMsg = "Không thể xóa file";
+                        try {
+                            errMsg = Helpers.parseError(err);
+                        } catch (Exception ignored) {
+                        }
+                        Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+                    });
+                });
+
+                dialog.show();
+            });
+        });
+    }
+
 
     private int getFileIconResource(String fileType) {
         switch (fileType.toLowerCase()) {
@@ -630,15 +855,51 @@ public class TaskActivity extends AppCompatActivity {
         }
     }
 
-    private void showCommentOptions(View anchor, Comment c) {
+    private void markCommentAsTskResult(Comment comment, View view, MenuItem myItem) {
+        CommentService.markCommentAsTaskResult(this, comment.getId(), res -> {
+            comment.setIsTaskResult(!comment.isTaskResult());
+            if (comment.isTaskResult()) {
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.WHITE);
+                gd.setStroke(3, Color.GREEN);
+                gd.setCornerRadius(8f);
+                view.setBackground(gd);
+            } else {
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.WHITE);
+                gd.setStroke(3, Color.WHITE);
+                gd.setCornerRadius(8f);
+                view.setBackground(gd);
+            }
+            Toast.makeText(this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
+        }, err -> {
+            String errMsg = "Không thể cập nhật trạng thái";
+            try {
+                errMsg = Helpers.parseError(err);
+            } catch (Exception e) {
+            }
+            Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void showCommentOptions(View itemParent, View anchor, Comment c) {
         PopupMenu popup = new PopupMenu(this, anchor);
         popup.getMenuInflater().inflate(R.menu.menu_comment_item, popup.getMenu());
+        MenuItem markItem = popup.getMenu().findItem(R.id.action_mark_comment_as_result);
+        if (c.isTaskResult()) {
+            markItem.setTitle("Hủy đánh dấu kết quả");
+        } else {
+            markItem.setTitle("Đánh dấu là kết quả");
+        }
         popup.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_edit_comment) {
-                editComment(c);
+                editComment(anchor, c);
                 return true;
             } else if (item.getItemId() == R.id.action_delete_comment) {
-                deleteComment(c);
+                deleteComment(anchor, c);
+                return true;
+            } else if (item.getItemId() == R.id.action_mark_comment_as_result) {
+                markCommentAsTskResult(c, itemParent, item);
                 return true;
             }
             return false;
@@ -646,12 +907,45 @@ public class TaskActivity extends AppCompatActivity {
         popup.show();
     }
 
-    private void editComment(Comment c) {
-        // TODO: Implement edit comment dialog
+    private void editComment(View anchor, Comment c) {
+        CommentDetailDialogUtil.showCommentDetailDialog(anchor.getContext(), c, new CommentDetailDialogUtil.CommentDialogListener() {
+            @Override
+            public void onCommentUpdated(Comment updatedComment) {
+                Log.d(TAG, ">>> updated Comment: " + updatedComment);
+                CommentService.updateComment(anchor.getContext(), updatedComment.getId(), false, updatedComment.getContent(),
+                        res -> {
+                            updateCommentInView(updatedComment.getId(), updatedComment.getContent());
+
+                            Toast.makeText(anchor.getContext(), "Đã cập nhật bình luận", Toast.LENGTH_SHORT).show();
+                        }, err -> {
+                            String errMsg = "Không thể cập nhật bình luận";
+                            try {
+                                errMsg = Helpers.parseError(err);
+                            } catch (Exception ignored) {
+                            }
+                            Toast.makeText(anchor.getContext(), errMsg, Toast.LENGTH_SHORT).show();
+                        });
+            }
+
+            @Override
+            public void onCommentDeleted(Comment commentToDelete) {
+            }
+        });
     }
 
-    private void deleteComment(Comment c) {
-        viewModel.deleteComment(c);
+    private void deleteComment(View anchor, Comment c) {
+        CommentService.deleteComment(anchor.getContext(), c.getId(), res -> {
+            viewModel.deleteComment(c);
+
+            Toast.makeText(anchor.getContext(), "Đã xóa bình luận", Toast.LENGTH_SHORT).show();
+        }, err -> {
+            String errMsg = "Không thể xóa bình luận";
+            try {
+                errMsg = Helpers.parseError(err);
+            } catch (Exception ignored) {
+            }
+            Toast.makeText(anchor.getContext(), errMsg, Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void initEdgeToEdge() {
@@ -753,7 +1047,7 @@ public class TaskActivity extends AppCompatActivity {
                                             addImageAsUri(FileConvertor.fromJson(data));
 
                                             // Add image reference to comment
-                                            appendFileToComment("[Image] " + fileName, data.optInt("id"));
+                                            appendFileToComment("[Image] " + fileName, data.optInt("id"), true);
 
                                             // Show image section
                                             viewModel.toggleImagesExpanded();
@@ -805,7 +1099,7 @@ public class TaskActivity extends AppCompatActivity {
                                             addDocument(file);
 
                                             // Add file reference to comment
-                                            appendFileToComment("[File] " + fileName, data.optInt("id"));
+                                            appendFileToComment("[File] " + fileName, data.optInt("id"), false);
 
                                             // Show file section
                                             viewModel.toggleFilesExpanded();
@@ -1427,9 +1721,22 @@ public class TaskActivity extends AppCompatActivity {
                                 String dateStr = dateFormat.format(calendar.getTime());
                                 String timeStr = timeFormat.format(calendar.getTime());
 
-                                // Update UI and ViewModel
-                                binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
-                                viewModel.updateTaskDueDate(calendar.getTime());
+                                String dueDate = Helpers.formatToISOStr(calendar.getTime());
+
+                                TaskService.updateDueDate(this, savedTask.getTaskID(), ProjectHolder.get().getProjectID(), dueDate,
+                                        res -> {
+                                            // Update UI and ViewModel
+                                            binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
+                                            viewModel.updateTaskDueDate(calendar.getTime());
+                                        }, err -> {
+                                            String errMsg = "Không thể cập nhật thời gian hết hạn";
+                                            try {
+                                                errMsg = Helpers.parseError(err);
+                                            } catch (Exception e) {
+                                            }
+                                            Log.d(TAG, ">>> update dute date err: " + errMsg);
+                                            Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+                                        });
                             },
                             calendar.get(Calendar.HOUR_OF_DAY),
                             calendar.get(Calendar.MINUTE),
@@ -1555,12 +1862,16 @@ public class TaskActivity extends AppCompatActivity {
         return binding.etComment;
     }
 
-    private void appendFileToComment(String text, int fileId) {
+    private void appendFileToComment(String text, int fileId, boolean isImage) {
         String currentComment = binding.etComment.getText().toString();
 
         String fileName = text.substring(text.indexOf("]") + 2);
         String truncatedFileName = truncateFileName(fileName, 20);
-        text = "[File:id=" + fileId + "]" + truncatedFileName + "[/File]";
+        if (isImage) {
+            text = "[Image:id=" + fileId + "]" + truncatedFileName + "[/Image]";
+        } else {
+            text = "[File:id=" + fileId + "]" + truncatedFileName + "[/File]";
+        }
         String updatedComment = currentComment.isEmpty() ? text : currentComment + text;
 
         fullComment = updatedComment;
@@ -1612,7 +1923,7 @@ public class TaskActivity extends AppCompatActivity {
         SpannableStringBuilder resultBuilder = new SpannableStringBuilder();
 
         // Regex hỗ trợ cả [File] / [File:id=123] / [Image] / [Image:id=456]
-        Pattern pattern = Pattern.compile("\\[(File|Image)(?::id=(\\d+))?](.+?)\\[/\\1]");
+        Pattern pattern = Pattern.compile("\\[(File|Image)(?::id=(\\d+))?](.+?)\\[/(File|Image)]");
         Matcher matcher = pattern.matcher(rawText);
 
         int lastEnd = 0;
@@ -1633,8 +1944,7 @@ public class TaskActivity extends AppCompatActivity {
                 @Override
                 public void onClick(@NonNull View widget) {
                     if (tagId != null) {
-                        Log.d("ClickableSpan", ">>> hello click with id=" + tagId);
-
+                        Log.d("ClickableSpan", ">>> hello click with id: " + tagId + ", file type: " + tagType);
                         if ("File".equals(tagType)) {
                             showFileDetailDialog(Integer.parseInt(tagId));
                         } else if ("Image".equals(tagType)) {
@@ -1642,6 +1952,7 @@ public class TaskActivity extends AppCompatActivity {
                         }
                     } else {
                         Log.d("ClickableSpan", ">>> hello click");
+                        Toast.makeText(context, "Không tìm thấy file", Toast.LENGTH_SHORT).show();
                     }
                 }
 
@@ -1665,99 +1976,6 @@ public class TaskActivity extends AppCompatActivity {
         textView.setMovementMethod(LinkMovementMethod.getInstance());
 
         return SpannableString.valueOf(resultBuilder);
-    }
-
-    private void showImageDetailDialog(int fileId) {
-        List<Uri> imageUris = viewModel.getImageUris().getValue();
-        if (imageUris == null) return;
-
-        // Tìm ảnh dựa trên tên file (không phân biệt hoa thường)
-        String imageName = "daddy";
-        final Uri targetImage = imageUris.stream()
-                .filter(uri -> {
-                    // Lấy tên file gốc
-                    String originalName = getFileName(uri);
-                    // Thu gọn tên file để so sánh
-                    String truncatedName = truncateFileName(originalName, 20);
-                    // So sánh với tên file đã thu gọn
-                    return truncatedName.equalsIgnoreCase(imageName);
-                })
-                .findFirst()
-                .orElse(null);
-
-        if (targetImage == null) {
-            showToast("Không tìm thấy ảnh: " + imageName);
-            return;
-        }
-
-        // Create and show dialog
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_image_detail);
-        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-
-        // Set file information
-        ImageView imgPreview = dialog.findViewById(R.id.imgPreview);
-        TextView tvFileName = dialog.findViewById(R.id.tvFileName);
-        TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
-        TextView tvFileType = dialog.findViewById(R.id.tvFileType);
-        TextView tvCreatedAt = dialog.findViewById(R.id.tvCreatedAt);
-        Button btnDownload = dialog.findViewById(R.id.btnDownload);
-        Button btnDelete = dialog.findViewById(R.id.btnDelete);
-        ImageButton btnClose = dialog.findViewById(R.id.btnClose);
-
-        // Set image preview
-        imgPreview.setImageURI(targetImage);
-
-        // Set file details
-        String fileName = getFileName(targetImage);
-        tvFileName.setText(fileName);
-        tvFileSize.setText("Kích thước: " + formatFileSize(getFileSize(targetImage)));
-        tvFileType.setText("Loại file: IMAGE");
-        tvCreatedAt.setText("Ngày tạo: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                .format(new Date()));
-
-        // Handle close button
-        btnClose.setOnClickListener(v -> dialog.dismiss());
-
-        // Handle download button
-        btnDownload.setOnClickListener(v -> {
-            showToast("Đang tải xuống ảnh...");
-            dialog.dismiss();
-        });
-
-        // Handle delete button
-        btnDelete.setOnClickListener(v -> {
-            // Xóa ảnh
-            int index = imageUris.indexOf(targetImage);
-            if (index != -1) {
-                viewModel.removeImageUri(index);
-            }
-
-            // Cập nhật comment chứa ảnh này
-            List<Comment> comments = viewModel.getComments().getValue();
-            if (comments != null) {
-                for (Comment comment : comments) {
-                    String content = comment.getContent();
-                    if (content.contains("[Image]" + imageName + "[/Image]")) {
-                        // Xóa phần [Image] và tên ảnh khỏi comment
-                        String newContent = content.replace("[Image]" + imageName + "[/Image]", "").trim();
-                        if (newContent.isEmpty()) {
-                            // Nếu comment trống sau khi xóa ảnh, xóa luôn comment
-                            viewModel.deleteComment(comment);
-                        } else {
-                            // Cập nhật nội dung comment
-                            viewModel.editComment(comment, newContent);
-                        }
-                        break;
-                    }
-                }
-            }
-
-            dialog.dismiss();
-        });
-
-        dialog.show();
     }
 
     private void showEditTaskTitleDialog() {
