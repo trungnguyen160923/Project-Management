@@ -141,10 +141,11 @@ public class TaskViewModel extends AndroidViewModel {
         addFile(file);
     }
 
-    public void addImageAsUri(String filepathFromApiData) {
+    public void addImageAsUri(File file) {
+        addFile(file);
         Executor executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
-            Uri imgURI = FileService.downloadImageAndGetUri(context, Helpers.createImageUrlEndpoint(filepathFromApiData));
+            Uri imgURI = FileService.downloadImageAndGetUri(context, Helpers.createImageUrlEndpoint(file.getFilePath()));
             addImageUri(imgURI);
         });
     }

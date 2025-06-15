@@ -19,6 +19,8 @@ import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.UnderlineSpan;
@@ -63,6 +65,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -215,36 +219,37 @@ public class TaskActivity extends AppCompatActivity {
                 showToast("Đang cập nhật mô tả...");
                 // Gọi API cập nhật mô tả
                 TaskService.updateTask(
-                    this,
-                    currentTask.getTaskID(),
-                    ProjectHolder.get().getProjectID(),
-                    text,
-                    null, // Giữ nguyên tiêu đề
-                    response -> {
-                        try {
-                            if ("success".equals(response.optString("status"))) {
-                                // Cập nhật UI ngay lập tức
-                                currentTask.setTaskDescription(text);
-                                viewModel.updateTask(currentTask);
-                                showToast("Đã cập nhật mô tả");
-                                hideAndReset.onClick(v);
-                            } else {
-                                String error = response.optString("error");
-                                showToast("Lỗi: " + error);
+                        this,
+                        currentTask.getTaskID(),
+                        ProjectHolder.get().getProjectID(),
+                        text,
+                        null, // Giữ nguyên tiêu đề
+                        response -> {
+                            try {
+                                if ("success".equals(response.optString("status"))) {
+                                    // Cập nhật UI ngay lập tức
+                                    currentTask.setTaskDescription(text);
+                                    viewModel.updateTask(currentTask);
+                                    showToast("Đã cập nhật mô tả");
+                                    hideAndReset.onClick(v);
+                                } else {
+                                    String error = response.optString("error");
+                                    showToast("Lỗi: " + error);
+                                }
+                            } catch (Exception e) {
+                                showToast("Lỗi xử lý dữ liệu");
+                                Log.e(TAG, "Error updating task description", e);
                             }
-                        } catch (Exception e) {
-                            showToast("Lỗi xử lý dữ liệu");
-                            Log.e(TAG, "Error updating task description", e);
+                        },
+                        error -> {
+                            String errMsg = "Không thể cập nhật mô tả";
+                            try {
+                                errMsg = Helpers.parseError(error);
+                            } catch (Exception ignored) {
+                            }
+                            showToast(errMsg);
+                            Log.e(TAG, "Error updating task description", error);
                         }
-                    },
-                    error -> {
-                        String errMsg = "Không thể cập nhật mô tả";
-                        try {
-                            errMsg = Helpers.parseError(error);
-                        } catch (Exception ignored) {}
-                        showToast(errMsg);
-                        Log.e(TAG, "Error updating task description", error);
-                    }
                 );
             }
         });
@@ -401,14 +406,14 @@ public class TaskActivity extends AppCompatActivity {
             if (focused instanceof EditText) {
                 Rect outRect = new Rect();
                 focused.getGlobalVisibleRect(outRect);
-                
+
                 // Kiểm tra xem click có nằm trong vùng của confirm bar không
                 Rect confirmBarRect = new Rect();
                 binding.confirmBar.getGlobalVisibleRect(confirmBarRect);
                 if (confirmBarRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
                     return super.dispatchTouchEvent(ev);
                 }
-                
+
                 if (!outRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
                     focused.clearFocus();
                     imm.hideSoftInputFromWindow(focused.getWindowToken(), 0);
@@ -465,80 +470,7 @@ public class TaskActivity extends AppCompatActivity {
 
             // Handle file/image in comment
             String content = c.getContent();
-            SpannableString spannableString = new SpannableString(content);
-
-            // Xử lý file
-            if (content.contains("[File]")) {
-                int fileStart = content.indexOf("[File]");
-                int nameStart = fileStart + 6; // Sau "[File]"
-                int nameEnd = content.indexOf("[/File]", nameStart);
-                if (nameEnd == -1) nameEnd = content.length();
-
-                // Lấy tên file gốc
-                String fileName = content.substring(nameStart, nameEnd);
-
-                // Thu gọn tên file
-                String truncatedName = truncateFileName(fileName, 20);
-
-                // Cập nhật nội dung với tên đã thu gọn
-                content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
-                spannableString = new SpannableString(content);
-
-                // Thêm style cho tên file
-                spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
-                spannableString.setSpan(
-                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                        nameStart, nameStart + truncatedName.length(), 0
-                );
-
-                // Thêm click listener cho file
-                final String finalFileName = fileName;
-                ClickableSpan fileClickableSpan = new ClickableSpan() {
-                    @Override
-                    public void onClick(View widget) {
-                        showFileDetailDialog(finalFileName);
-                    }
-                };
-                spannableString.setSpan(fileClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
-            }
-
-            // Xử lý ảnh
-            if (content.contains("[Image]")) {
-                int imageStart = content.indexOf("[Image]");
-                int nameStart = imageStart + 7; // Sau "[Image]"
-                int nameEnd = content.indexOf("[/Image]", nameStart);
-                if (nameEnd == -1) nameEnd = content.length();
-
-                // Lấy thông tin ảnh (tên file và URI)
-                String imageInfo = content.substring(nameStart, nameEnd);
-
-                // Thu gọn tên ảnh để hiển thị
-                String fileName = imageInfo.split("\\|")[0];
-                String truncatedName = truncateFileName(fileName, 20);
-
-                // Cập nhật nội dung với tên đã thu gọn
-                content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
-                spannableString = new SpannableString(content);
-
-                // Thêm style cho tên ảnh
-                spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
-                spannableString.setSpan(
-                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                        nameStart, nameStart + truncatedName.length(), 0
-                );
-
-                // Thêm click listener cho ảnh
-                final String finalImageInfo = imageInfo;
-                ClickableSpan imageClickableSpan = new ClickableSpan() {
-                    @Override
-                    public void onClick(View widget) {
-                        showImageDetailDialog(finalImageInfo);
-                    }
-                };
-                spannableString.setSpan(imageClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
-            }
-
-            tvText.setText(spannableString);
+            tvText.setText(styleTagsOnShowComment(content, this, tvText));
             tvText.setMovementMethod(LinkMovementMethod.getInstance());
             tvText.setHighlightColor(Color.TRANSPARENT); // Xóa highlight khi click
 
@@ -579,25 +511,15 @@ public class TaskActivity extends AppCompatActivity {
         return nameWithoutExt.substring(0, maxNameLength) + "..." + extension;
     }
 
-    private void showFileDetailDialog(String fileName) {
+    private void showFileDetailDialog(int fileId) {
         List<File> files = viewModel.getFiles().getValue();
         if (files == null) return;
 
-        // Tìm file dựa trên tên file (không phân biệt hoa thường)
-        final File targetFile = files.stream()
-                .filter(file -> {
-                    // Lấy tên file gốc
-                    String originalName = file.getFileName();
-                    // Thu gọn tên file để so sánh
-                    String truncatedName = truncateFileName(originalName, 20);
-                    // So sánh với tên file đã thu gọn
-                    return truncatedName.equalsIgnoreCase(fileName);
-                })
-                .findFirst()
-                .orElse(null);
+        // Tìm file dựa trên file id (không phân biệt hoa thường)
+        File targetFile = files.stream().filter(f -> f.getId() == fileId).findFirst().orElse(null);
 
         if (targetFile == null) {
-            showToast("Không tìm thấy file: " + fileName);
+            showToast(">>> File not found: " + targetFile.getFileName());
             return;
         }
 
@@ -630,7 +552,6 @@ public class TaskActivity extends AppCompatActivity {
 
         // Handle download button
         btnDownload.setOnClickListener(v -> {
-            // TODO: Implement file download
             showToast("Đang tải xuống file...");
         });
 
@@ -638,6 +559,8 @@ public class TaskActivity extends AppCompatActivity {
         btnDelete.setOnClickListener(v -> {
             // Xóa file
             viewModel.deleteFile(targetFile);
+
+            String fileName = targetFile.getFileName();
 
             // Cập nhật comment chứa file này
             List<Comment> comments = viewModel.getComments().getValue();
@@ -822,27 +745,14 @@ public class TaskActivity extends AppCompatActivity {
                                         try {
                                             String jsonString = new String(res.data, StandardCharsets.UTF_8);
                                             JSONObject jsonObject = new JSONObject(jsonString);
-
-                                            String status = jsonObject.optString("status");
                                             JSONObject data = jsonObject.optJSONObject("data"); // nếu là object
-                                            String error = jsonObject.optString("error");
                                             String filepath = String.valueOf(data.optString("filePath"));
-                                            Log.d(TAG, ">>> img url: " + Helpers.createImageUrlEndpoint(filepath));
-//                                            Uri imgUri = null;
-//                                            try {
-//                                                 imgUri = FileService.downloadImageToMediaStore(this, Helpers.createImageUrlEndpoint(filepath), fileName, mimeType);
-//                                            Log.d(TAG,">>> uri: "+imgUri);
-//                                            }catch (Exception e){
-//                                                Log.d(TAG,">>> "+ e.getMessage());
-//                                            }
-                                            Log.d(TAG, ">>> status: " + status);
                                             Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
-                                            Log.d(TAG, ">>> error: " + error);
 
-                                            addImageAsUri(filepath);
+                                            addImageAsUri(FileConvertor.fromJson(data));
 
                                             // Add image reference to comment
-                                            appendFileToComment("[Image] " + fileName);
+                                            appendFileToComment("[Image] " + fileName, data.optInt("id"));
 
                                             // Show image section
                                             viewModel.toggleImagesExpanded();
@@ -894,7 +804,7 @@ public class TaskActivity extends AppCompatActivity {
                                             addDocument(file);
 
                                             // Add file reference to comment
-                                            appendFileToComment("[File] " + fileName);
+                                            appendFileToComment("[File] " + fileName, data.optInt("id"));
 
                                             // Show file section
                                             viewModel.toggleFilesExpanded();
@@ -913,8 +823,8 @@ public class TaskActivity extends AppCompatActivity {
         viewModel.addDocument(file);
     }
 
-    private void addImageAsUri(String filepathFromApiData) {
-        viewModel.addImageAsUri(filepathFromApiData);
+    private void addImageAsUri(File file) {
+        viewModel.addImageAsUri(file);
     }
 
     private String getFileName(Uri uri) {
@@ -995,7 +905,7 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         new MenuInflater(this).inflate(R.menu.menu_task, menu);
-        
+
         // Set color for delete item
         MenuItem delete = menu.findItem(R.id.action_delete);
         SpannableString deleteText = new SpannableString(delete.getTitle());
@@ -1585,9 +1495,8 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 // Giống như onChange trong React: lắng nghe nội dung đang thay đổi
-                String currentText = s.toString();
 //                Log.d(TAG, ">>> new comment: " + currentText);
-                fullComment = currentText;
+                fullComment = s.toString();
             }
 
             @Override
@@ -1611,7 +1520,7 @@ public class TaskActivity extends AppCompatActivity {
                     } catch (Exception e) {
                     }
                 }, err -> {
-                    Log.d(TAG, ">>> createCommentErr: " + err.getMessage());
+                    Log.d(TAG, ">>> create Comment Err: " + err.getMessage());
                     String errMsg = "Không thể tạo bình luận";
                     try {
                         errMsg = Helpers.parseError(err);
@@ -1645,76 +1554,119 @@ public class TaskActivity extends AppCompatActivity {
         return binding.etComment;
     }
 
-    private void appendFileToComment(String text) {
+    private void appendFileToComment(String text, int fileId) {
         String currentComment = binding.etComment.getText().toString();
 
         String fileName = text.substring(text.indexOf("]") + 2);
-        String truncatedName = truncateFileName(fileName, 20);
-        text = "[File]" + truncatedName + "[/File]";
+        String truncatedFileName = truncateFileName(fileName, 20);
+        text = "[File:id=" + fileId + "]" + truncatedFileName + "[/File]";
         String updatedComment = currentComment.isEmpty() ? text : currentComment + text;
 
         fullComment = updatedComment;
-        binding.etComment.setText(styleFileTagsInText(updatedComment, this));
-
-//        else { // Nếu là text thông thường
-//            if (currentText.contains("[File]")) {
-//                // Nếu đã có file, thêm text vào sau file
-//                int fileEnd = currentText.indexOf("[/File]", currentText.indexOf("[File]")) + 7;
-//                if (fileEnd == -1) fileEnd = currentText.length();
-//
-//                // Thêm text vào sau file
-//                currentText = currentText.substring(0, fileEnd) + text;
-//            } else {
-//                // Nếu chưa có file, thêm text bình thường
-//                currentText = currentText.isEmpty() ? text : currentText + text;
-//            }
-//            binding.etComment.setText(currentText);
-//        }
+        binding.etComment.setText(styleTagsOnWriteComment(updatedComment, this));
 
         // Move cursor to end
         binding.etComment.setSelection(binding.etComment.getText().length());
     }
 
-    public static SpannableString styleFileTagsInText(String rawText, Context context) {
-        SpannableString spannableString = new SpannableString(rawText);
+    private SpannableString styleTagsOnWriteComment(String rawText, Context context) {
+        SpannableStringBuilder builder = new SpannableStringBuilder();
 
-        String startTag = "[File]";
-        String endTag = "[/File]";
-        int searchStart = 0;
+        // Dùng regex để phát hiện các tag [File]...[/File] và [Image]...[/Image]
+        Pattern pattern = Pattern.compile("\\[(File|Image)](.*?)\\[/\\1]");
+        Matcher matcher = pattern.matcher(rawText);
 
-        while (true) {
-            int startIdx = rawText.indexOf(startTag, searchStart);
-            int endIdx = rawText.indexOf(endTag, startIdx);
+        int lastEnd = 0;
 
-            if (startIdx == -1 || endIdx == -1) break;
+        while (matcher.find()) {
+            // Thêm phần text không chứa tag
+            builder.append(rawText, lastEnd, matcher.start());
 
-            int fileNameStart = startIdx + startTag.length();
-            int fileNameEnd = endIdx;
+            String tagType = matcher.group(1);     // "File" hoặc "Image"
+            String innerText = matcher.group(2);   // Nội dung bên trong tag
 
-            // Gạch chân + tô màu cho tên file
-            spannableString.setSpan(
-                    new UnderlineSpan(),
-                    fileNameStart,
-                    fileNameEnd,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
+            int spanStart = builder.length();
+            builder.append(innerText);
+            int spanEnd = builder.length();
 
-            spannableString.setSpan(
+            // Style: Gạch chân + Tô màu
+            builder.setSpan(new UnderlineSpan(), spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(
                     new ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorAccent)),
-                    fileNameStart,
-                    fileNameEnd,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             );
 
-            // Cập nhật vị trí tìm kiếm tiếp theo
-            searchStart = endIdx + endTag.length();
+            lastEnd = matcher.end();
         }
 
-        return spannableString;
+        // Thêm phần còn lại sau thẻ cuối cùng
+        if (lastEnd < rawText.length()) {
+            builder.append(rawText.substring(lastEnd));
+        }
+
+        return SpannableString.valueOf(builder);
     }
 
+    private SpannableString styleTagsOnShowComment(String rawText, Context context, TextView textView) {
+        SpannableStringBuilder resultBuilder = new SpannableStringBuilder();
 
-    private void showImageDetailDialog(String imageName) {
+        // Regex hỗ trợ cả [File] / [File:id=123] / [Image] / [Image:id=456]
+        Pattern pattern = Pattern.compile("\\[(File|Image)(?::id=(\\d+))?](.+?)\\[/\\1]");
+        Matcher matcher = pattern.matcher(rawText);
+
+        int lastEnd = 0;
+
+        while (matcher.find()) {
+            resultBuilder.append(rawText, lastEnd, matcher.start());
+
+            String tagType = matcher.group(1);     // File hoặc Image
+            String tagId = matcher.group(2);       // có thể null
+            String innerText = matcher.group(3);   // nội dung hiển thị
+
+            int spanStart = resultBuilder.length();
+            resultBuilder.append(innerText);
+            int spanEnd = resultBuilder.length();
+
+            // ClickableSpan cho cả File và Image
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    if (tagId != null) {
+                        Log.d("ClickableSpan", ">>> hello click with id=" + tagId);
+
+                        if ("File".equals(tagType)) {
+                            showFileDetailDialog(Integer.parseInt(tagId));
+                        } else if ("Image".equals(tagType)) {
+                            showImageDetailDialog(Integer.parseInt(tagId));
+                        }
+                    } else {
+                        Log.d("ClickableSpan", ">>> hello click");
+                    }
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(true);
+                    ds.setColor(ContextCompat.getColor(context, R.color.colorAccent));
+                }
+            };
+
+            resultBuilder.setSpan(clickableSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            lastEnd = matcher.end();
+        }
+
+        // Thêm phần còn lại sau đoạn tag cuối cùng
+        if (lastEnd < rawText.length()) {
+            resultBuilder.append(rawText.substring(lastEnd));
+        }
+
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+
+        return SpannableString.valueOf(resultBuilder);
+    }
+
+    private void showImageDetailDialog(int fileId) {
         List<Uri> imageUris = viewModel.getImageUris().getValue();
         if (imageUris == null) return;
 
@@ -1805,6 +1757,7 @@ public class TaskActivity extends AppCompatActivity {
 
         dialog.show();
     }
+
     private void showEditTaskTitleDialog() {
         Task currentTask = viewModel.getTask().getValue();
         if (currentTask == null) return;
@@ -1820,48 +1773,50 @@ public class TaskActivity extends AppCompatActivity {
                     if (!newTitle.isEmpty()) {
                         // Gọi API cập nhật tiêu đề
                         TaskService.updateTask(
-                            this,
-                            currentTask.getTaskID(),
-                            ProjectHolder.get().getProjectID(),
-                            null, // Giữ nguyên mô tả
-                            newTitle,
-                            response -> {
-                                try {
-                                    if ("success".equals(response.optString("status"))) {
-                                        // Cập nhật UI ngay lập tức
-                                        currentTask.setTaskName(newTitle);
-                                        binding.toolbarTask.setTitle(newTitle);
-                                        viewModel.updateTask(currentTask);
-                                        showToast("Đã cập nhật tiêu đề");
-                                        // Đánh dấu task đã được sửa đổi
-                                        isTaskModified = true;
-                                        Log.d(TAG, "Task title updated, isTaskModified set to true");
-                                        // Set result ngay sau khi cập nhật thành công
-                                        setResult(RESULT_OK);
-                                        Log.d(TAG, "Setting result to RESULT_OK after title update");
-                                    } else {
-                                        String error = response.optString("error");
-                                        showToast("Lỗi: " + error);
+                                this,
+                                currentTask.getTaskID(),
+                                ProjectHolder.get().getProjectID(),
+                                null, // Giữ nguyên mô tả
+                                newTitle,
+                                response -> {
+                                    try {
+                                        if ("success".equals(response.optString("status"))) {
+                                            // Cập nhật UI ngay lập tức
+                                            currentTask.setTaskName(newTitle);
+                                            binding.toolbarTask.setTitle(newTitle);
+                                            viewModel.updateTask(currentTask);
+                                            showToast("Đã cập nhật tiêu đề");
+                                            // Đánh dấu task đã được sửa đổi
+                                            isTaskModified = true;
+                                            Log.d(TAG, "Task title updated, isTaskModified set to true");
+                                            // Set result ngay sau khi cập nhật thành công
+                                            setResult(RESULT_OK);
+                                            Log.d(TAG, "Setting result to RESULT_OK after title update");
+                                        } else {
+                                            String error = response.optString("error");
+                                            showToast("Lỗi: " + error);
+                                        }
+                                    } catch (Exception e) {
+                                        showToast("Lỗi xử lý dữ liệu");
+                                        Log.e(TAG, "Error updating task title", e);
                                     }
-                                } catch (Exception e) {
-                                    showToast("Lỗi xử lý dữ liệu");
-                                    Log.e(TAG, "Error updating task title", e);
+                                },
+                                error -> {
+                                    String errMsg = "Không thể cập nhật tiêu đề";
+                                    try {
+                                        errMsg = Helpers.parseError(error);
+                                    } catch (Exception ignored) {
+                                    }
+                                    showToast(errMsg);
+                                    Log.e(TAG, "Error updating task title", error);
                                 }
-                            },
-                            error -> {
-                                String errMsg = "Không thể cập nhật tiêu đề";
-                                try {
-                                    errMsg = Helpers.parseError(error);
-                                } catch (Exception ignored) {}
-                                showToast(errMsg);
-                                Log.e(TAG, "Error updating task title", error);
-                            }
                         );
                     }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
+
     private void showDeleteTaskDialog() {
         Task currentTask = viewModel.getTask().getValue();
         if (currentTask == null) return;
@@ -1872,31 +1827,32 @@ public class TaskActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     // Gọi API xóa task
                     TaskService.deleteTask(
-                        this,
-                        currentTask.getTaskID(),
+                            this,
+                            currentTask.getTaskID(),
                             ProjectHolder.get().getProjectID(),
-                        response -> {
-                            try {
-                                if ("success".equals(response.optString("status"))) {
-                                    showToast("Đã xóa task thành công");
-                                    finish(); // Đóng màn hình task
-                                } else {
-                                    String error = response.optString("error");
-                                    showToast("Lỗi: " + error);
+                            response -> {
+                                try {
+                                    if ("success".equals(response.optString("status"))) {
+                                        showToast("Đã xóa task thành công");
+                                        finish(); // Đóng màn hình task
+                                    } else {
+                                        String error = response.optString("error");
+                                        showToast("Lỗi: " + error);
+                                    }
+                                } catch (Exception e) {
+                                    showToast("Lỗi xử lý dữ liệu");
+                                    Log.e(TAG, "Error deleting task", e);
                                 }
-                            } catch (Exception e) {
-                                showToast("Lỗi xử lý dữ liệu");
-                                Log.e(TAG, "Error deleting task", e);
+                            },
+                            error -> {
+                                String errMsg = "Không thể xóa task";
+                                try {
+                                    errMsg = Helpers.parseError(error);
+                                } catch (Exception ignored) {
+                                }
+                                showToast(errMsg);
+                                Log.e(TAG, "Error deleting task", error);
                             }
-                        },
-                        error -> {
-                            String errMsg = "Không thể xóa task";
-                            try {
-                                errMsg = Helpers.parseError(error);
-                            } catch (Exception ignored) {}
-                            showToast(errMsg);
-                            Log.e(TAG, "Error deleting task", error);
-                        }
                     );
                 })
                 .setNegativeButton("Hủy", null)
