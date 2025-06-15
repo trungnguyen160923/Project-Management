@@ -1,6 +1,7 @@
 package com.example.projectmanagement.ui.task;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
@@ -51,9 +52,15 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -74,6 +81,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -968,7 +976,32 @@ public class TaskActivity extends AppCompatActivity {
         }
         binding.toolbarTask.setNavigationOnClickListener(v -> finish());
     }
+    private static final int REQUEST_CODE_CREATE_FILE = 1234;
+    private Uri sourceUriToCopy; // Uri nguồn cần sao chép
+    private String suggestedFileName; // Gợi ý tên file
 
+    public void startFileSave(Uri sourceUri, String fileName) {
+        this.sourceUriToCopy = sourceUri;
+        this.suggestedFileName = fileName;
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, suggestedFileName); // Gợi ý tên file
+        startActivityForResult(intent, REQUEST_CODE_CREATE_FILE);
+    }
+
+
+    private static final int REQUEST_CODE_DOWNLOAD_FILE = 5678;
+    private String downloadUrl;
+    public void startDownloadFile(String urlFromServer, String fileName) {
+        this.downloadUrl = urlFromServer;
+        this.suggestedFileName = fileName;
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, fileName);
+        startActivityForResult(intent, REQUEST_CODE_DOWNLOAD_FILE);
+    }
     private void initAdapters() {
         binding.rvImageAttachments.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -978,10 +1011,10 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onDownloadClicked(int position) {
                 List<Uri> uris = viewModel.getImageUris().getValue();
-                if (uris != null && position < uris.size()) {
-                    Uri uri = uris.get(position);
-                    // TODO: xử lý tải xuống ảnh
-                }
+                Log.d("MYTIKKK",uris.get(position).toString());
+                startFileSave(uris.get(position), getFileName(uris.get(position)));
+                Log.d("MYTIKKK","Save Done");
+
             }
 
             @Override
@@ -999,9 +1032,27 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onDownloadClicked(int position) {
                 List<File> files = viewModel.getFiles().getValue();
-                if (files != null && position < files.size()) {
-                    // TODO: download logic
-                }
+                assert files != null;
+                File currFile = files.get(position);
+                Log.d("MYTIKKK",currFile.toString());
+//                startDownloadFile(currFile.getFilePath(), currFile.getFileName());
+                //TICK123LTHOL
+                startDownloadFile("https://photo.znews.vn/w1200/Uploaded/mdf_eioxrd/2021_07_06/1q.jpg", "OKala.png");
+
+                return;
+//                currFileToSave = currFile;
+//                Log.d("MYTIKKK",currFile.getFileName()+";"+currFile.getFileSize());
+//                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+//                intent.addCategory(Intent.CATEGORY_OPENABLE);
+//                intent.setType("*/*");
+//                intent.putExtra(Intent.EXTRA_TITLE, currFile.getFileName()); // tên file gợi ý
+//
+//                startActivityForResult(intent, CREATE_FILE_REQUEST_CODE);
+
+//                Log.d("MYTIKKK",currFile.getFileName()+";"+currFile.getFileSize());
+//                if (files != null && position < files.size()) {
+//                    // TODO: download logic
+//                }
             }
 
             @Override
@@ -1024,7 +1075,62 @@ public class TaskActivity extends AppCompatActivity {
             fileAdapter.updateFiles(files);
         });
     }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        if (requestCode == REQUEST_CODE_CREATE_FILE && resultCode == RESULT_OK && data != null) {
+            Uri destUri = data.getData();
+
+            try {
+                InputStream in = getContentResolver().openInputStream(sourceUriToCopy);
+                OutputStream out = getContentResolver().openOutputStream(destUri);
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+
+                in.close();
+                out.close();
+
+                Toast.makeText(this, "Đã lưu thành công!", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Lỗi khi lưu file", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            if (requestCode == REQUEST_CODE_DOWNLOAD_FILE && resultCode == RESULT_OK && data != null) {
+                Uri destUri = data.getData();
+                new Thread(() -> {
+                    try {
+                        URL url = new URL(downloadUrl);
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        connection.connect();
+
+                        InputStream input = new BufferedInputStream(connection.getInputStream());
+                        OutputStream output = getContentResolver().openOutputStream(destUri);
+
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = input.read(buffer)) != -1) {
+                            output.write(buffer, 0, bytesRead);
+                        }
+
+                        input.close();
+                        output.close();
+                        connection.disconnect();
+
+                        runOnUiThread(() -> Toast.makeText(this, "Tải file thành công!", Toast.LENGTH_SHORT).show());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        runOnUiThread(() -> Toast.makeText(this, "Lỗi khi tải file", Toast.LENGTH_SHORT).show());
+                    }
+                }).start();
+            }
+        }
+    }
     private void registerPickers() {
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenMultipleDocuments(),

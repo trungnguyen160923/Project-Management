@@ -1,8 +1,11 @@
 package com.example.projectmanagement.ui.adapter;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -75,6 +78,10 @@ public class FileAttachmentAdapter extends RecyclerView.Adapter<FileAttachmentAd
         // Click vào toàn bộ item để hiển thị dialog chi tiết
         holder.itemView.setOnClickListener(v -> showFileDetailDialog(position));
     }
+
+
+    private static final int CREATE_FILE_REQUEST_CODE = 1001;
+    private File currFileToSave;
 
     private void showFileDetailDialog(int position) {
         File file = files.get(position);
