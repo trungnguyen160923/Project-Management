@@ -81,8 +81,7 @@ public class HomeActivity extends AppCompatActivity {
                 } 
                 // Nếu là đường dẫn tương đối, thêm base URL
                 else {
-                    String baseUrl = "https://your-api-domain.com/"; // Thay thế bằng domain thực tế của bạn
-                    avatarView.setImage(Uri.parse(baseUrl + avatarPath));
+                    avatarView.setImage(Uri.parse(currentUser.getAvatar()));
                     Log.d("AvatarDebug", "Using relative path with base URL");
                 }
             }
@@ -101,7 +100,7 @@ public class HomeActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_phase, R.id.nav_statistics, R.id.nav_setting)
+                R.id.nav_phase, R.id.nav_myTasks, R.id.nav_statistics, R.id.nav_setting)
                 .setOpenableLayout(drawer)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_home);

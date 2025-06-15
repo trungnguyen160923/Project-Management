@@ -1,5 +1,6 @@
 package com.example.projectmanagement.ui.adapter;
 
+import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.util.Log;
@@ -22,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import android.graphics.Color;
 import com.example.projectmanagement.ui.home.HomeViewModel;
+import com.example.projectmanagement.utils.UserPreferences;
 import com.google.android.material.card.MaterialCardView;
 
 import java.text.SimpleDateFormat;
@@ -106,6 +108,10 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
             // Get project creator
             viewModel.getProjectCreator(project.getProjectID(), creatorName -> {
                 if (getAdapterPosition() != RecyclerView.NO_POSITION) {
+                    UserPreferences userPreferences = new UserPreferences(itemView.getContext());
+                    if(creatorName.equals(userPreferences.getUser().getFullname())){
+                        creatorName += "(Bạn)";
+                    }
                     tvCreatedBy.setText("Được tạo bởi: " + creatorName);
                 }
             });
