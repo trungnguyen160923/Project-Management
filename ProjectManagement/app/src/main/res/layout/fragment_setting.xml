@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white"
+    android:background="?attr/colorSurface"
     android:padding="16dp"
     tools:context=".ui.setting.SettingFragment">
 
@@ -15,26 +15,24 @@
         android:layout_height="wrap_content"
         android:text="Thông báo"
         android:textStyle="bold"
-        android:textColor="#757575"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp" />
     <LinearLayout
         android:id="@+id/layoutNotificationSetting"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#F5F5F5"
+        android:background="?attr/colorSurface"
         android:padding="12dp"
         android:layout_marginBottom="16dp"
         android:layout_marginTop="0dp"
         android:layout_marginStart="0dp"
-        android:layout_marginEnd="0dp"
-        android:backgroundTint="#F5F5F5"
-        >
+        android:layout_marginEnd="0dp">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Mở thiết lập hệ thống"
-            android:textColor="#212121"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -44,7 +42,7 @@
         android:layout_height="wrap_content"
         android:text="Tổng quan"
         android:textStyle="bold"
-        android:textColor="#757575"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
 
@@ -53,13 +51,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#F5F5F5"
+        android:background="?attr/colorSurface"
         android:padding="12dp"
         android:layout_marginBottom="16dp"
         android:layout_marginTop="0dp"
         android:layout_marginStart="0dp"
         android:layout_marginEnd="0dp"
-        android:backgroundTint="#F5F5F5"
         android:elevation="2dp"
         android:clipToPadding="false">
 
@@ -67,7 +64,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Hồ sơ"
-            android:textColor="#212121"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -77,7 +74,7 @@
         android:layout_height="wrap_content"
         android:text="Giao diện"
         android:textStyle="bold"
-        android:textColor="#757575"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
 
@@ -85,10 +82,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#F5F5F5"
+        android:background="?attr/colorSurface"
         android:padding="12dp"
         android:gravity="center_vertical"
-        android:backgroundTint="#F5F5F5"
         android:elevation="2dp"
         android:clipToPadding="false">
 
@@ -97,7 +93,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Chế độ sáng/tối"
-            android:textColor="#212121"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -106,8 +102,8 @@
             android:layout_height="wrap_content"
             android:checked="false"
             android:text=""
-            android:thumbTint="@color/colorAccent"
-            android:trackTint="@color/colorAccent" />
+            app:thumbTint="?attr/colorPrimary"
+            app:trackTint="?attr/colorPrimary" />
     </LinearLayout>
 
 </LinearLayout>

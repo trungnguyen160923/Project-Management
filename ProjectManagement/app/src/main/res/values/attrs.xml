@@ -3,4 +3,9 @@
     <!-- Định nghĩa các thuộc tính tùy chỉnh cho item_task_detail -->
     <attr name="icon" format="reference"/>
     <attr name="title" format="string"/>
+    <!-- Custom theme attributes -->
+    <attr name="colorBackground" format="color|reference" />
+    <attr name="colorSurface" format="color|reference" />
+    <attr name="colorTextPrimary" format="color|reference" />
+    <attr name="colorTextSecondary" format="color|reference" />
 </resources>

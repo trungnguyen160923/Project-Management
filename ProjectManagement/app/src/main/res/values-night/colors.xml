@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme colors -->
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#B3FFFFFF</color>
+    <color name="dark_background">#121212</color>
+
+    <!-- Status colors -->
+    <color name="status_completed">#4CAF50</color>
+    <color name="status_pending">#FFC107</color>
+    <color name="status_overdue">#F44336</color>
+
+    <!-- Chart colors -->
+    <color name="chart_completed">#4CAF50</color>
+    <color name="chart_pending">#FFC107</color>
+    <color name="chart_overdue">#F44336</color>
+    <color name="chart_text">#FFFFFF</color>
+    <color name="chart_grid">#33FFFFFF</color>
+
+    <!-- Card colors -->
+    <color name="card_background">#1E1E1E</color>
+    <color name="card_text">#FFFFFF</color>
+    <color name="dialog_background">#1E1E1E</color>
+    <color name="primary_text_color">#FFFFFF</color>
+</resources> 
