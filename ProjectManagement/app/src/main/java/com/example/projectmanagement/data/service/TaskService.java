@@ -348,4 +348,11 @@ public class    TaskService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
+
+    // Get tasks by phase ID
+    public static void getTasksByPhaseId(Context context, int phaseId, 
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener) {
+        ProjectService.getPhaseTasks(context, String.valueOf(phaseId), listener, errorListener);
+    }
 }

@@ -75,12 +75,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         viewModel.init(requireContext());
 
         // Khởi tạo Adapter và gán sự kiện click
-        adapter = new ProjectAdapter(this);
-        binding.rvProject.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.rvProject.setAdapter(adapter);
-
-        // Observe dữ liệu dự án
-        viewModel.getProjects().observe(getViewLifecycleOwner(), this::renderProjects);
+        setupRecyclerView();
 
         // Khởi tạo ProjectRepository
         projectRepository = ProjectRepository.getInstance(requireContext());
@@ -100,20 +95,40 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
             android.R.color.holo_orange_light,
             android.R.color.holo_red_light
         );
+
+        // Observe loading state
+        viewModel.getLoadingState().observe(getViewLifecycleOwner(), isLoading -> {
+            Log.d(TAG, "Loading state changed: " + isLoading);
+            binding.swipeRefreshLayout.setRefreshing(isLoading);
+        });
     }
 
-    private void renderProjects(List<Project> projects) {
-        Log.d(TAG, "Rendering " + (projects != null ? projects.size() : 0) + " projects");
-        boolean isEmpty = projects == null || projects.isEmpty();
-        binding.emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-        binding.rvProject.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
-        if (!isEmpty) {
-            adapter.setData(projects);
-        }
-        // Dừng animation refresh nếu đang chạy
-        if (binding.swipeRefreshLayout.isRefreshing()) {
-            binding.swipeRefreshLayout.setRefreshing(false);
-        }
+    private void setupRecyclerView() {
+        Log.d(TAG, "Setting up RecyclerView");
+        binding.rvProjects.setLayoutManager(new LinearLayoutManager(getContext()));
+        adapter = new ProjectAdapter(new ArrayList<>(), viewModel, this::onItemClick);
+        binding.rvProjects.setAdapter(adapter);
+
+        // Observe projects
+        viewModel.getProjects().observe(getViewLifecycleOwner(), projects -> {
+            Log.d(TAG, "Projects updated: " + (projects != null ? projects.size() : 0) + " projects");
+            adapter.updateProjects(projects);
+            
+            // Update visibility on main thread
+            if (getActivity() != null && !getActivity().isFinishing()) {
+                getActivity().runOnUiThread(() -> {
+                    if (projects != null && !projects.isEmpty()) {
+                        Log.d(TAG, "Showing RecyclerView, hiding empty view");
+                        binding.rvProjects.setVisibility(View.VISIBLE);
+                        binding.emptyView.setVisibility(View.GONE);
+                    } else {
+                        Log.d(TAG, "Showing empty view, hiding RecyclerView");
+                        binding.rvProjects.setVisibility(View.GONE);
+                        binding.emptyView.setVisibility(View.VISIBLE);
+                    }
+                });
+            }
+        });
     }
 
     @Override

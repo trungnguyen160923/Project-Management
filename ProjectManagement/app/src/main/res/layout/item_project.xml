@@ -49,9 +49,14 @@
             android:id="@+id/tvTaskCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:text="Task: 19/20"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
-            android:textColor="@color/black"
+            android:textColor="@color/colorAccent"
+            android:background="@drawable/bg_task_count"
             app:layout_constraintBaseline_toBaselineOf="@id/tvProjectName"
             app:layout_constraintEnd_toEndOf="parent" />
 
@@ -64,6 +69,8 @@
             android:text="Được tạo bởi: Nguyễn Văn A"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
             android:textColor="@color/black"
+            android:ellipsize="end"
+            android:maxLines="1"
             app:layout_constraintStart_toStartOf="@id/tvProjectName"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvProjectName" />
@@ -77,7 +84,7 @@
             android:text="Đây là mô tả"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
             android:ellipsize="end"
-            android:maxLines="2"
+            android:maxLines="1"
             app:layout_constraintStart_toStartOf="@id/tvProjectName"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvCreatedBy" />
@@ -90,7 +97,7 @@
             android:orientation="horizontal"
             android:layout_marginTop="8dp"
             app:layout_constraintStart_toStartOf="@id/tvProjectName"
-            app:layout_constraintEnd_toEndOf="@id/tvProjectName"
+            app:layout_constraintEnd_toEndOf="@id/tvTaskCount"
             app:layout_constraintTop_toBottomOf="@id/tvDescription"
             app:layout_constraintBottom_toBottomOf="parent">
 
@@ -104,7 +111,7 @@
 
             <TextView
                 android:id="@+id/tvDeadline"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:text="Đến hạn: 16:00 16/06/2025"

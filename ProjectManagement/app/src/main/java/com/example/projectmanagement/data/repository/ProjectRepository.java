@@ -15,6 +15,7 @@ import com.example.projectmanagement.data.model.Project;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -61,34 +62,111 @@ public class ProjectRepository {
     }
 
     private void loadProjects() {
+        Log.d(TAG, "Loading projects");
+        projectsLiveData.setValue(new ArrayList<>()); // Reset projects list
+        messageLiveData.setValue(null); // Reset error message
+
+        // Log token status
+        String token = new UserPreferences(context).getJwtToken();
+        Log.d(TAG, "Token status: " + (token != null && !token.isEmpty() ? "Valid" : "Invalid"));
+
         ProjectService.getAllProjects(context,
                 response -> {
+                    Log.d(TAG, "Raw response from getAllProjects: " + response.toString());
                     try {
-                        List<Project> projects = ProjectService.parseProjectsList(response);
-                        ProjectService.getJoinedProjects(context, res -> {
-                            try {
-                                projects.addAll(ProjectService.parseProjectsList(res));
-                            } catch (JSONException e) {
-                                Log.e(TAG, ">>> Error parsing joined projects", e);
+                        String status = response.optString("status");
+                        Log.d(TAG, "Response status: " + status);
+                        
+                        if ("success".equals(status)) {
+                            List<Project> projects = ProjectService.parseProjectsList(response);
+                            Log.d(TAG, "Parsed projects count: " + (projects != null ? projects.size() : 0));
+                            
+                            if (projects != null && !projects.isEmpty()) {
+                                Log.d(TAG, "Loaded " + projects.size() + " owned projects");
+                                Log.d(TAG, "Owned projects: " + projects.toString());
+                                
+                                // Get joined projects
+                                ProjectService.getJoinedProjects(context, 
+                                    res -> {
+                                        Log.d(TAG, "Raw response from getJoinedProjects: " + res.toString());
+                                        try {
+                                            String joinedStatus = res.optString("status");
+                                            Log.d(TAG, "Joined projects status: " + joinedStatus);
+                                            
+                                            if ("success".equals(joinedStatus)) {
+                                                List<Project> joinedProjects = ProjectService.parseProjectsList(res);
+                                                Log.d(TAG, "Parsed joined projects count: " + (joinedProjects != null ? joinedProjects.size() : 0));
+                                                
+                                                if (joinedProjects != null && !joinedProjects.isEmpty()) {
+                                                    Log.d(TAG, "Loaded " + joinedProjects.size() + " joined projects");
+                                                    Log.d(TAG, "Joined projects: " + joinedProjects.toString());
+                                                    projects.addAll(joinedProjects);
+                                                }
+                                            }
+                                        } catch (JSONException e) {
+                                            Log.e(TAG, "Error parsing joined projects", e);
+                                            messageLiveData.postValue("Error loading joined projects: " + e.getMessage());
+                                        }
+                                        Log.d(TAG, "Final projects count: " + projects.size());
+                                        Log.d(TAG, "Final projects list: " + projects.toString());
+                                        projectsLiveData.postValue(projects);
+                                    },
+                                    err -> {
+                                        Log.e(TAG, "Error loading joined projects", err);
+                                        if (err.networkResponse != null) {
+                                            try {
+                                                String errorBody = new String(err.networkResponse.data, "UTF-8");
+                                                Log.e(TAG, "Error response body: " + errorBody);
+                                            } catch (Exception e) {
+                                                Log.e(TAG, "Error parsing error response", e);
+                                            }
+                                        }
+                                        String errMsg = null;
+                                        try {
+                                            errMsg = Helpers.parseError(err);
+                                        } catch (JSONException | UnsupportedEncodingException e) {
+                                            Log.e(TAG, "Error parsing error message", e);
+                                            errMsg = "Error parsing error message: " + e.getMessage();
+                                        }
+                                        messageLiveData.postValue("Error loading joined projects: " + errMsg);
+                                        projectsLiveData.postValue(projects); // Still post owned projects
+                                    }
+                                );
+                            } else {
+                                Log.w(TAG, "No owned projects found");
+                                projectsLiveData.postValue(new ArrayList<>());
                             }
-                            projectsLiveData.postValue(projects);
-                            Log.d(TAG, ">>> Projects loaded successfully: " + projects.size());
-                        }, err -> {
-                            String errMsg = "Không thể lấy danh sách các project";
-                            try {
-                                errMsg = Helpers.parseError(err);
-                            } catch (Exception e) {
-                            }
-                            messageLiveData.postValue("Error loading projects: " + errMsg);
-                        });
+                        } else {
+                            String errorMsg = response.optString("message", "Unknown error");
+                            Log.e(TAG, "Failed to get projects: " + errorMsg);
+                            messageLiveData.postValue("Error loading projects: " + errorMsg);
+                            projectsLiveData.postValue(new ArrayList<>());
+                        }
                     } catch (Exception e) {
-                        Log.e(TAG, ">>> Error parsing projects", e);
+                        Log.e(TAG, "Error parsing projects", e);
                         messageLiveData.postValue("Error loading projects: " + e.getMessage());
+                        projectsLiveData.postValue(new ArrayList<>());
                     }
                 },
                 error -> {
-                    Log.e(TAG, ">>> Error loading projects", error);
-                    messageLiveData.postValue("Error loading projects: " + error.getMessage());
+                    Log.e(TAG, "Error loading projects", error);
+                    if (error.networkResponse != null) {
+                        try {
+                            String errorBody = new String(error.networkResponse.data, "UTF-8");
+                            Log.e(TAG, "Error response body: " + errorBody);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing error response", e);
+                        }
+                    }
+                    String errMsg = null;
+                    try {
+                        errMsg = Helpers.parseError(error);
+                    } catch (JSONException | UnsupportedEncodingException e) {
+                        Log.e(TAG, "Error parsing error message", e);
+                        errMsg = "Error parsing error message: " + e.getMessage();
+                    }
+                    messageLiveData.postValue("Error loading projects: " + errMsg);
+                    projectsLiveData.postValue(new ArrayList<>());
                 }
         );
     }
