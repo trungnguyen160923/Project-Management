@@ -18,32 +18,56 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:layout_marginEnd="8dp">
 
         <TextView
             android:id="@+id/tv_name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Tên thành viên"
             android:textStyle="bold"
-            android:textSize="15sp"/>
+            android:textSize="15sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:singleLine="true"/>
+
         <TextView
             android:id="@+id/tv_email"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Email"
             android:textColor="#757575"
-            android:textSize="13sp"/>
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:singleLine="true"/>
     </LinearLayout>
 
     <!-- Role -->
-    <TextView
-        android:id="@+id/tv_role"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Quản trị viên"
-        android:textColor="@color/colorPrimary"
-        android:textStyle="bold"
-        android:textSize="13sp"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tv_role"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Quản trị viên"
+            android:textColor="@color/colorPrimary"
+            android:textStyle="bold"
+            android:textSize="13sp"/>
+
+        <ImageView
+            android:id="@+id/btn_role_menu"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_expand_more"
+            android:visibility="gone"
+            android:layout_marginStart="4dp"
+            android:padding="2dp"/>
+    </LinearLayout>
 
 </LinearLayout>

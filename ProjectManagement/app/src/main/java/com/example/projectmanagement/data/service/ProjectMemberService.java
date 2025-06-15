@@ -199,4 +199,62 @@ public class ProjectMemberService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
+
+    public static void changeRole(Context context, int projectId, int userId, String role,
+                                Response.Listener<JSONObject> listener,
+                                Response.ErrorListener errorListener) {
+        String url = PROJECT_MEMBER_URL + "/change-role";
+        
+        // Add query parameters
+        url += "?projectId=" + projectId + "&userId=" + userId + "&role=" + role;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                null,
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void removeMember(Context context, int projectId, int userId,
+                                Response.Listener<JSONObject> listener,
+                                Response.ErrorListener errorListener) {
+        String url = PROJECT_MEMBER_URL + "/remove-project-member";
+        
+        // Add query parameters
+        url += "?projectId=" + projectId + "&userId=" + userId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null,
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
 }
