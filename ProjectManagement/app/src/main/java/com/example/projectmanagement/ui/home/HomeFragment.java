@@ -25,6 +25,7 @@ import com.example.projectmanagement.ui.adapter.ProjectAdapter;
 import com.example.projectmanagement.ui.project.ProjectActivity;
 import com.example.projectmanagement.data.repository.ProjectRepository;
 import com.example.projectmanagement.ui.project.vm.ProjectViewModel;
+import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.LoadingDialog;
 import com.example.projectmanagement.data.model.Phase;
 import com.example.projectmanagement.data.model.Task;
@@ -120,7 +121,7 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
         Log.d(TAG, ">>> project is clicked: " + project);
         // Check if already navigating
         if (isNavigating) {
-            Log.d(TAG, "Already navigating, ignoring click");
+            Log.d(TAG, ">>> Already navigating, ignoring click");
             return;
         }
 
@@ -266,7 +267,15 @@ public class HomeFragment extends Fragment implements ProjectAdapter.OnItemClick
                         Log.e(TAG, "Error parsing project members", e);
                     }
                 },
-                error -> Log.e(TAG, "Error fetching project members", error)
+                error -> {
+            String errMsg="kkk";
+            try {
+                errMsg= Helpers.parseError(error);
+            }catch (Exception e){
+
+            }
+            Log.d(TAG,">>> err msg at kkkk oooo aaaa: "+errMsg);
+                }
         );
     }
 
