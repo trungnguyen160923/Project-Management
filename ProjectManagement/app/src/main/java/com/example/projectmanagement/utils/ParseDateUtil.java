@@ -2,10 +2,18 @@ package com.example.projectmanagement.utils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.TimeZone;
+
+import android.os.Build;
 import android.util.Log;
 
 /**
@@ -69,7 +77,7 @@ public final class ParseDateUtil {
     public static Date parseDate(String input) {
         if (input == null || input.trim().isEmpty()) return null;
         String s = input.trim();
-        for (SimpleDateFormat sdf : FORMATTERS.get()) {
+        for (SimpleDateFormat sdf : Objects.requireNonNull(FORMATTERS.get())) {
             try {
                 Date d = sdf.parse(s);
                 if (d != null) return d;
@@ -186,4 +194,47 @@ public final class ParseDateUtil {
             return null;
         }
     }
+    /**
+     * Chuyển ISO date-time string (vd. "2025-06-13T00:00:00.000+07:00")
+     * về format "yyyy-MM-dd" (vd. "2025-06-13").
+     */
+    public static String isoToDate(String isoDateTime) {
+        // 1) Parse thành OffsetDateTime
+        OffsetDateTime odt = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            odt = OffsetDateTime.parse(isoDateTime);
+        }
+        // 2) Lấy LocalDate (bỏ giờ, phút, giây, timezone)
+        LocalDate date = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            date = odt.toLocalDate();
+        }
+        // 3) Format về chuỗi "yyyy-MM-dd"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        }
+        return isoDateTime;
+    }
+    /**
+     * Chuyển java.util.Date về chuỗi "yyyy-MM-dd".
+     */
+    public static String dateToIsoDate(Date date) {
+        if (date == null) return null;
+        // 1) Tạo Instant từ Date
+        Instant instant = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            instant = date.toInstant();
+        }
+        // 2) Áp zone mặc định (GMT+07:00 hoặc theo hệ thống)
+        LocalDate localDate = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        // 3) Format
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return localDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        }
+        return "";
+    }
+
 }

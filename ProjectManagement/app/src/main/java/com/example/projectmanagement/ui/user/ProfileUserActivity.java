@@ -3,6 +3,7 @@ package com.example.projectmanagement.ui.user;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -38,14 +39,18 @@ public class ProfileUserActivity extends AppCompatActivity {
 
         // Observe user LiveData để luôn sync UI
         vm.getUser().observe(this, user -> {
-            if (user != null ) {
-                bindAvatar(user);
-                binding.edtFullname.setText(user.getFullname());
+            if (user == null ) {
+                return;
+            }
+            bindAvatar(user);
+            binding.tvFullname.setText(!user.getFullname().equals("null")?user.getFullname():"");
+            binding.tvUsername.setText(!user.getEmail().equals("null")?user.getEmail():"");
+            if (!isEditing) {
+                binding.edtFullname.setText(!user.getFullname().equals("null")?user.getFullname() :"");
                 binding.edtBirthday.setText(ParseDateUtil.formatDate(user.getBirthday()));
-                binding.edtSocialLinks.setText(user.getSocial_links());
-                binding.edtBio.setText(user.getBio());
-                binding.tvFullname.setText(user.getFullname());
-                binding.tvUsername.setText(user.getEmail());
+                binding.edtSocialLinks.setText(!user.getSocial_links().equals("null")?user.getSocial_links():"");
+                binding.edtBio.setText(!user.getBio().equals("null")?user.getBio(): "");
+
                 // Spinner gender
                 ArrayAdapter<CharSequence> adapter = (ArrayAdapter<CharSequence>) binding.spinnerGender.getAdapter();
                 if (adapter != null) {
@@ -184,7 +189,7 @@ public class ProfileUserActivity extends AppCompatActivity {
     // AvatarView custom: avatar là url hay null đều chuẩn
     private void bindAvatar(User user) {
         String avatar = user.getAvatar();
-        if (avatar != null && !avatar.isEmpty()) {
+        if (avatar != null && !avatar.isEmpty() && !avatar.equals("img/avatar/default.png")) {
             binding.avatarView.setImage(Uri.parse(avatar));
         } else {
             binding.avatarView.setName(user.getFullname());
