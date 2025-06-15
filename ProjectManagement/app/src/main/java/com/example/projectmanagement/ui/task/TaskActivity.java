@@ -148,6 +148,7 @@ public class TaskActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
+            Log.d(TAG, ">>> task when changing activity: " + task);
             savedTask = task;
             if (task != null) {
                 // Fetch task details from API
@@ -1671,6 +1672,7 @@ public class TaskActivity extends AppCompatActivity {
         if (imageUris == null) return;
 
         // Tìm ảnh dựa trên tên file (không phân biệt hoa thường)
+        String imageName = "daddy";
         final Uri targetImage = imageUris.stream()
                 .filter(uri -> {
                     // Lấy tên file gốc
