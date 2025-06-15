@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -35,12 +37,15 @@ import com.example.projectmanagement.ui.task.TaskActivity;
 import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.google.android.material.card.MaterialCardView;
+import com.example.projectmanagement.utils.UserPreferences;
+import com.example.projectmanagement.data.model.User;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -131,6 +136,63 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
             TaskViewHolder vh = (TaskViewHolder) holder;
             Task task = tasks.get(actualPos);
+            
+            // Set background color based on task status
+            MaterialCardView cardView = holder.itemView.findViewById(R.id.cardTask);
+            CheckBox checkBoxTask = holder.itemView.findViewById(R.id.checkBoxTask);
+            Log.d("TESTCARDCOLOR", "CardView found: " + (cardView != null));
+            
+            UserPreferences userPreferences = new UserPreferences(holder.itemView.getContext());
+            User currentUser = userPreferences.getUser();
+            Log.d("TESTCARDCOLOR", "Current user ID: " + (currentUser != null ? currentUser.getId() : "null"));
+            Log.d("TESTCARDCOLOR", "Task assigned to: " + task.getAssignedTo());
+            
+            // Hide checkbox if task is not assigned to current user
+            if (task.getAssignedTo() != (currentUser != null ? currentUser.getId() : -1)) {
+                checkBoxTask.setVisibility(View.GONE);
+            } else {
+                checkBoxTask.setVisibility(View.VISIBLE);
+            }
+            
+            // Check if task is overdue
+            boolean isOverdue = false;
+            if (task.getDueDate() != null) {
+                isOverdue = task.getDueDate().before(new Date()) && !task.getStatus().equals("DONE");
+            }
+            
+            // Set background color and border based on task status
+            if (task.getStatus().equals("DONE")) {
+                // Task is completed - light green background
+                int color = ContextCompat.getColor(holder.itemView.getContext(), R.color.completed_green);
+                cardView.setCardBackgroundColor(Color.argb(60, Color.red(color), Color.green(color), Color.blue(color)));
+                cardView.setStrokeColor(color);
+                cardView.setStrokeWidth(1);
+                Log.d("TESTCARDCOLOR", "Task completed - setting light green background");
+            } else if (isOverdue) {
+                // Task is overdue - red border
+                int color = ContextCompat.getColor(holder.itemView.getContext(), R.color.red);
+                cardView.setCardBackgroundColor(Color.argb(80, Color.red(color), Color.green(color), Color.blue(color)));
+                cardView.setStrokeColor(color);
+                cardView.setStrokeWidth(1);
+                Log.d("TESTCARDCOLOR", "Task overdue - setting red border");
+            } else if (task.getAssignedTo() == (currentUser != null ? currentUser.getId() : -1)) {
+                // Task is assigned to current user - light yellow background
+                int color = ContextCompat.getColor(holder.itemView.getContext(), R.color.yellow_light);
+                cardView.setCardBackgroundColor(Color.argb(60, Color.red(color), Color.green(color), Color.blue(color)));
+                cardView.setStrokeColor(color);
+                cardView.setStrokeWidth(1);
+                Log.d("TESTCARDCOLOR", "Task assigned to current user - setting light yellow background");
+            } else {
+                // Default white background
+                cardView.setCardBackgroundColor(Color.WHITE);
+                cardView.setStrokeColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.card_stroke_default));
+                cardView.setStrokeWidth(2);
+                Log.d("TESTCARDCOLOR", "Setting default white background");
+            }
+            
+            cardView.invalidate();
+            holder.itemView.invalidate();
+            
             vh.bind(task, parentPhase, tasks);
         } else {
             ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
