@@ -282,15 +282,17 @@ public class ProjectViewModel extends ViewModel {
 
     private void loadProjectPhases(int projectId) {
         Log.d(TAG, ">>> yyyyyyy aaaaa: " + projectId);
-//        phases.postValue(null);
-//        phases.setValue(null);
+        // Clear existing phases before loading new ones
+        phases.postValue(null);
+        
         phaseRepository.getPhasesByProjectId(projectId, new PhaseRepository.PhaseCallback() {
             @Override
             public void onSuccess(List<Phase> phaseList) {
-                // Cập nhật phases
+                // Update phases
                 phases.postValue(phaseList);
                 Log.d("NCNCNCD",phaseList.size()+"");
-                // Cập nhật project với phases mới
+                
+                // Update project with new phases
                 Project currentProject = project.getValue();
                 Log.d("NCNSNSBC",currentProject.toString());
                 if (currentProject != null) {
@@ -298,7 +300,7 @@ public class ProjectViewModel extends ViewModel {
                     project.postValue(currentProject);
                 }
 
-                // Load tasks cho tất cả phase
+                // Load tasks for all phases
                 int[] loadedPhases = {0};
                 int totalPhases = phaseList.size();
 
@@ -306,18 +308,15 @@ public class ProjectViewModel extends ViewModel {
                     isLoading = false;
                     return;
                 }
+                
                 Log.d("TICKKK1","Den day");
                 Log.d("TICKKK1",phaseList +"");
-                for (Phase phase : phaseList) {
-                    loadPhaseTasks(phase.getPhaseID(), () -> {
-                        Log.d("TICKKK1","Den day 2-"+ phase.getPhaseID());
-                        loadedPhases[0]++;
-                        if (loadedPhases[0] == totalPhases) {
-                            isLoading = false;
-                        }
-                    });
-                }
-                Log.d("TICKKK1","Den day end");
+                
+                // Create a new list to store all tasks
+                List<Task> allTasks = new ArrayList<>();
+                
+                // Load tasks for each phase sequentially
+                loadTasksForPhase(phaseList, 0, allTasks, loadedPhases, totalPhases);
             }
 
             @Override
@@ -328,52 +327,74 @@ public class ProjectViewModel extends ViewModel {
         });
     }
 
-    private void loadPhaseTasks(int phaseId, Runnable onComplete) {
-        Log.d(TAG, "Loading tasks for phase: " + phaseId);
-
-        // Get current phases
-        List<Phase> currentPhases = phases.getValue();
-        if (currentPhases == null) {
-            Log.e(TAG, "No phases available");
-            onComplete.run();
+    private void loadTasksForPhase(List<Phase> phaseList, int currentIndex, List<Task> allTasks,
+                                 int[] loadedPhases, int totalPhases) {
+        if (currentIndex >= phaseList.size()) {
             return;
         }
 
-        // Find target phase
-        Phase targetPhase = currentPhases.stream()
-                .filter(phase -> phase.getPhaseID() == phaseId)
-                .findFirst()
-                .orElse(null);
+        Phase phase = phaseList.get(currentIndex);
+        Log.d(TAG, "Loading tasks for phase: " + phase.getPhaseID());
 
-        if (targetPhase == null) {
-            Log.e(TAG, "Phase not found: " + phaseId);
-            onComplete.run();
-            return;
-        }
+        ProjectService.getPhaseTasks(context, String.valueOf(phase.getPhaseID()),
+            response -> {
+                try {
+                    List<Task> phaseTasks = ProjectService.parseTasksList(response);
+                    Log.d(TAG, "Loaded " + phaseTasks.size() + " tasks for phase " + phase.getPhaseID());
 
-        // Get tasks from API
-        ProjectService.getPhaseTasks(context, String.valueOf(phaseId),
-                response -> {
-                    try {
-                        List<Task> tasks = ProjectService.parseTasksList(response);
-                        Log.d("NATTTT",String.valueOf(phaseId) + tasks.size());
-                        Log.d("NATTTT2",currentPhases.toString());
+                    // Add tasks to phase
+                    phase.setTasks(phaseTasks);
 
-                        targetPhase.setTasks(tasks);
-//                        phases.postValue(currentPhases);
-                        phases.postValue(new ArrayList<>(currentPhases));
-                        Log.d(TAG, "Updated phase " + phaseId + " with " + tasks.size() + " tasks");
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error parsing tasks", e);
-                        message.postValue("Error loading tasks: " + e.getMessage());
+                    // Add tasks to all tasks list
+                    allTasks.addAll(phaseTasks);
+
+                    // Increment loaded phases counter
+                    loadedPhases[0]++;
+
+                    // Check if all phases are loaded
+                    if (loadedPhases[0] == totalPhases) {
+                        // Update phases with loaded tasks
+                        this.phases.postValue(phaseList);
+                        
+                        // Update project with phases containing tasks
+                        Project currentProject = project.getValue();
+                        if (currentProject != null) {
+                            currentProject.setPhases(phaseList);
+                            project.postValue(currentProject);
+                        }
+                        
+                        isLoading = false;
+                    } else {
+                        // Load next phase
+                        loadTasksForPhase(phaseList, currentIndex + 1, allTasks, loadedPhases, totalPhases);
                     }
-                    onComplete.run();
-                },
-                error -> {
-                    Log.e(TAG, "Error loading tasks", error);
-                    message.postValue("Error loading tasks: " + error.getMessage());
-                    onComplete.run();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing tasks for phase " + phase.getPhaseID(), e);
+                    message.postValue("Error loading tasks: " + e.getMessage());
+
+                    // Continue with next phase even if there's an error
+                    loadedPhases[0]++;
+                    if (loadedPhases[0] == totalPhases) {
+                        this.phases.postValue(phaseList);
+                        isLoading = false;
+                    } else {
+                        loadTasksForPhase(phaseList, currentIndex + 1, allTasks, loadedPhases, totalPhases);
+                    }
                 }
+            },
+            error -> {
+                Log.e(TAG, "Error loading tasks for phase " + phase.getPhaseID(), error);
+                message.postValue("Error loading tasks: " + error.getMessage());
+
+                // Continue with next phase even if there's an error
+                loadedPhases[0]++;
+                if (loadedPhases[0] == totalPhases) {
+                    this.phases.postValue(phaseList);
+                    isLoading = false;
+                } else {
+                    loadTasksForPhase(phaseList, currentIndex + 1, allTasks, loadedPhases, totalPhases);
+                }
+            }
         );
     }
 
