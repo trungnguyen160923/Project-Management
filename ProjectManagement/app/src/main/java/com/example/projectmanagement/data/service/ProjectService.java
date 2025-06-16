@@ -385,7 +385,7 @@ public class ProjectService {
                     Log.e(TAG, "Error parsing other dates for project " + project.getProjectName(), e);
                 }
                 
-                project.setBackgroundImg(projectJson.optString("backgroundImg", ""));
+                project.setBackgroundImg(projectJson.optString("backGround", ""));
                 
                 // Parse owner if available
                 if (projectJson.has("owner")) {
@@ -426,6 +426,7 @@ public class ProjectService {
         project.setProjectName(data.getString("projectName"));
         project.setProjectDescription(data.getString("description"));
         project.setStatus(data.getString("status"));
+        project.setBackgroundImg(data.optString("backGround", ""));
         
         // Parse dates with error handling
         try {

@@ -111,9 +111,9 @@ public class CreateProjectActivity extends AppCompatActivity {
                     }
                 }
         );
-//        binding.buttonImageCustom.compositeButton.setOnClickListener(v -> {
-//            bgLauncher.launch(new Intent(this, BackGroundProjectActivity.class));
-//        });
+       binding.buttonImageCustom.compositeButton.setOnClickListener(v -> {
+           bgLauncher.launch(new Intent(this, BackGroundProjectActivity.class));
+       });
 
         // Date & Time pickers
         selectedDateMillis = MaterialDatePicker.todayInUtcMilliseconds();
@@ -353,23 +353,23 @@ public class CreateProjectActivity extends AppCompatActivity {
                 String hex = String.format("#%06X", 0xFFFFFF & c);
                 bgImg = "COLOR;" + hex;
             }
-//            binding.buttonImageCustom.buttonIcon.setImageDrawable(shape);
-//        } else if (TYPE_IMG.equals(type)) {
-//            if (data.hasExtra(EXTRA_IMG_RES)) {
-//                int imgRes = data.getIntExtra(EXTRA_IMG_RES, -1);
-//                if (imgRes != -1) {
-//                    binding.buttonImageCustom.buttonIcon.setImageResource(imgRes);
-//                    bgImg = "RESOURCE;" + imgRes;
-//                    return;
-//                }
-//            }
-//            Uri uri = data.getParcelableExtra(EXTRA_IMG_URI);
-//            if (uri != null) {
-//                com.bumptech.glide.Glide.with(this)
-//                        .load(uri)
-//                        .into(binding.buttonImageCustom.buttonIcon);
-//                bgImg = "URI;" + uri.toString();
-//            }
+            binding.buttonImageCustom.buttonIcon.setImageDrawable(shape);
+        } else if (TYPE_IMG.equals(type)) {
+            if (data.hasExtra(EXTRA_IMG_RES)) {
+                int imgRes = data.getIntExtra(EXTRA_IMG_RES, -1);
+                if (imgRes != -1) {
+                    binding.buttonImageCustom.buttonIcon.setImageResource(imgRes);
+                    bgImg = "RESOURCE;" + imgRes;
+                    return;
+                }
+            }
+            Uri uri = data.getParcelableExtra(EXTRA_IMG_URI);
+            if (uri != null) {
+                com.bumptech.glide.Glide.with(this)
+                        .load(uri)
+                        .into(binding.buttonImageCustom.buttonIcon);
+                bgImg = "URI;" + uri.toString();
+            }
         }
     }
 
