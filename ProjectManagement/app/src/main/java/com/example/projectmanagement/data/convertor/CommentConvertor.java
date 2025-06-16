@@ -1,5 +1,7 @@
 package com.example.projectmanagement.data.convertor;
 
+import android.util.Log;
+
 import com.example.projectmanagement.data.model.Comment;
 
 import org.json.JSONException;
@@ -13,6 +15,7 @@ import java.util.TimeZone;
 
 public class CommentConvertor {
     public static Comment fromJson(JSONObject json) throws JSONException {
+        Log.d("agg",">>> res data 18: "+json.toString());
         int id = json.getInt("id");
         String content = json.getString("content");
         int taskID = json.getInt("taskId");
@@ -22,7 +25,7 @@ public class CommentConvertor {
         String updatedAtStr = json.getString("updatedAt");
         String userRole = json.getString("userRole");
         boolean isTaskResult = json.getBoolean("isTaskResult");
-
+        Log.d("agg",">>> res data 1811: "+isTaskResult);
         // Parse ISO8601 datetime string (e.g., "2025-06-13T13:00:12.123")
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
         formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -35,6 +38,6 @@ public class CommentConvertor {
             e.printStackTrace();
         }
 
-        return new Comment(id, content, taskID, userID, createdAt, updatedAt);
+        return new Comment(id, content, taskID, userID, createdAt, updatedAt, isTaskResult);
     }
 }

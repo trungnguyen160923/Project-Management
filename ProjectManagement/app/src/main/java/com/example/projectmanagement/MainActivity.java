@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -28,8 +29,10 @@ import androidx.core.splashscreen.SplashScreen;
 import com.example.projectmanagement.ui.auth.LoginActivity;
 import com.example.projectmanagement.ui.auth.RegisterActivity;
 import com.example.projectmanagement.ui.main.HomeActivity;
+import com.example.projectmanagement.ui.notification.MyForegroundService;
 import com.example.projectmanagement.ui.project.ProjectActivity;
 import com.example.projectmanagement.ui.task.TaskActivity;
+import com.example.projectmanagement.utils.ServiceUtils;
 import com.example.projectmanagement.utils.UserPreferences;
 
 import java.util.ArrayList;
@@ -74,6 +77,12 @@ public class MainActivity extends AppCompatActivity {
 
         dialog_signUp_Option();
         dialog_signIn_Option();
+        if (!ServiceUtils.isServiceRunning(this, MyForegroundService.class)) {
+            Intent intent = new Intent(this, MyForegroundService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            }
+        }
 //        startActivity(new Intent(MainActivity.this, HomeActivity.class));
     }
 

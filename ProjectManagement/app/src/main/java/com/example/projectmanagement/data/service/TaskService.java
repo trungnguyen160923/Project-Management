@@ -28,7 +28,7 @@ import java.util.TimeZone;
 import java.util.Map;
 import java.util.HashMap;
 
-public class    TaskService {
+public class TaskService {
     private static final String TAG = "TaskService";
     private static final String BASE_URL = ApiConfig.BASE_URL;
     private static final String TASKS_URL = BASE_URL + "/tasks";
@@ -348,11 +348,54 @@ public class    TaskService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
-
     // Get tasks by phase ID
     public static void getTasksByPhaseId(Context context, int phaseId, 
             Response.Listener<JSONObject> listener,
             Response.ErrorListener errorListener) {
         ProjectService.getPhaseTasks(context, String.valueOf(phaseId), listener, errorListener);
+
+    }
+    public static void updateDueDate(
+            Context context,
+            long taskId,
+            int projectId,
+            String dueDate,
+            Response.Listener<JSONObject> listener,
+            Response.ErrorListener errorListener
+    ) {
+        String url = ApiConfig.BASE_URL + "/tasks/" + taskId;
+
+        // Body JSON
+        JSONObject requestBody = new JSONObject();
+        JSONObject taskObject = new JSONObject();
+        try {
+            taskObject.put("dueDate", dueDate);
+            requestBody.put("projectId", projectId);
+            requestBody.put("task", taskObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                requestBody,
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
     }
 }

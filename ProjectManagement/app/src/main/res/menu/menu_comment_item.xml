@@ -7,4 +7,8 @@
         android:id="@+id/action_delete_comment"
         android:title="Xóa"
         android:titleTextColor="@color/red" />
+    <item
+        android:id="@+id/action_mark_comment_as_result"
+        android:title="Đánh dấu là kết quả"
+        android:titleTextColor="@color/red" />
 </menu>

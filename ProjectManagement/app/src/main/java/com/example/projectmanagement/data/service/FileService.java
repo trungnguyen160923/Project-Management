@@ -1,5 +1,6 @@
 package com.example.projectmanagement.data.service;
 
+import android.app.DownloadManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -17,6 +18,7 @@ import com.android.volley.Response;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.projectmanagement.utils.ApiConfig;
+import com.example.projectmanagement.utils.CustomCallback;
 import com.example.projectmanagement.utils.UserPreferences;
 import com.example.projectmanagement.utils.VolleyMultipartRequest;
 
@@ -164,4 +166,108 @@ public class FileService {
         RequestQueue queue = Volley.newRequestQueue(context);
         queue.add(request);
     }
+
+    public static void downloadFileManually(Context context, String fileURL, File targetFile, CustomCallback<String, String> callback) {
+        new Thread(() -> {
+            Log.d("FileService", ">>> file url: " + fileURL);
+            try {
+                URL url = new URL(fileURL);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+                // Gửi cookie chứa token
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                connection.setRequestProperty("Cookie", "user_auth_token=" + token);
+
+                connection.connect();
+
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    Log.e("Download", ">>> Server returned HTTP " + connection.getResponseCode());
+                    callback.onError("Lỗi HTTP: " + connection.getResponseCode());
+                    return;
+                }
+
+                InputStream input = new BufferedInputStream(connection.getInputStream());
+                FileOutputStream output = new FileOutputStream(targetFile);
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, bytesRead);
+                }
+
+                output.flush();
+                output.close();
+                input.close();
+
+                Log.d("Download", ">>> Download file successfully: " + targetFile.getAbsolutePath());
+                callback.onSuccess("Đã tải file xong!");
+            } catch (Exception e) {
+                Log.e("Download", ">>> Error when downloading file: " + e.getMessage());
+                callback.onError("Lỗi tải file!");
+            }
+        }).start();
+    }
+
+    public static void downloadImageManually(String imageUrl, File targetImageFile, CustomCallback<String, String> callback) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(imageUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    Log.e("DownloadImage", ">>> Server trả về HTTP " + connection.getResponseCode());
+                    return;
+                }
+
+                InputStream input = new BufferedInputStream(connection.getInputStream());
+                FileOutputStream output = new FileOutputStream(targetImageFile);
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, bytesRead);
+                }
+
+                output.flush();
+                output.close();
+                input.close();
+
+                Log.d("DownloadImage", ">>> Downloaded image successfully: " + targetImageFile.getAbsolutePath());
+                callback.onSuccess("Đã tải ảnh xong!");
+            } catch (Exception e) {
+                Log.e("DownloadImage", ">>> Error when downloading image: ", e);
+                callback.onSuccess("Lỗi tải ảnh!");
+            }
+        }).start();
+    }
+
+    public static void deleteFile(Context context, long fileId,
+                                  Response.Listener<JSONObject> listener,
+                                  Response.ErrorListener errorListener) {
+        String url = ApiConfig.BASE_URL + "/files/" + fileId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null,  // Không cần gửi body
+                listener,
+                errorListener
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
 }

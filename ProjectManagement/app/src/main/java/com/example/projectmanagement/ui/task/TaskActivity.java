@@ -1,6 +1,7 @@
 package com.example.projectmanagement.ui.task;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
@@ -11,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
@@ -19,6 +21,8 @@ import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.UnderlineSpan;
@@ -48,9 +52,15 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -58,16 +68,20 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -98,6 +112,9 @@ import com.example.projectmanagement.ui.adapter.FileAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.ImageAttachmentAdapter;
 import com.example.projectmanagement.ui.adapter.TaskMemberAdapter;
 import com.example.projectmanagement.ui.task.vm.TaskViewModel;
+import com.example.projectmanagement.utils.CommentDetailDialogUtil;
+import com.example.projectmanagement.utils.CustomCallback;
+import com.example.projectmanagement.utils.DetailPhaseDialogUtil;
 import com.example.projectmanagement.utils.EnumFileType;
 import com.example.projectmanagement.utils.Helpers;
 import com.example.projectmanagement.utils.UserPreferences;
@@ -108,6 +125,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.card.MaterialCardView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -144,6 +162,7 @@ public class TaskActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             Task task = extras.getParcelable("task");
+            Log.d(TAG, ">>> task when changing activity: " + task);
             savedTask = task;
             if (task != null) {
                 // Fetch task details from API
@@ -232,36 +251,37 @@ public class TaskActivity extends AppCompatActivity {
                 showToast("Đang cập nhật mô tả...");
                 // Gọi API cập nhật mô tả
                 TaskService.updateTask(
-                    this,
-                    currentTask.getTaskID(),
-                    ProjectHolder.get().getProjectID(),
-                    text,
-                    null, // Giữ nguyên tiêu đề
-                    response -> {
-                        try {
-                            if ("success".equals(response.optString("status"))) {
-                                // Cập nhật UI ngay lập tức
-                                currentTask.setTaskDescription(text);
-                                viewModel.updateTask(currentTask);
-                                showToast("Đã cập nhật mô tả");
-                                hideAndReset.onClick(v);
-                            } else {
-                                String error = response.optString("error");
-                                showToast("Lỗi: " + error);
+                        this,
+                        currentTask.getTaskID(),
+                        ProjectHolder.get().getProjectID(),
+                        text,
+                        null, // Giữ nguyên tiêu đề
+                        response -> {
+                            try {
+                                if ("success".equals(response.optString("status"))) {
+                                    // Cập nhật UI ngay lập tức
+                                    currentTask.setTaskDescription(text);
+                                    viewModel.updateTask(currentTask);
+                                    showToast("Đã cập nhật mô tả");
+                                    hideAndReset.onClick(v);
+                                } else {
+                                    String error = response.optString("error");
+                                    showToast("Lỗi: " + error);
+                                }
+                            } catch (Exception e) {
+                                showToast("Lỗi xử lý dữ liệu");
+                                Log.e(TAG, "Error updating task description", e);
                             }
-                        } catch (Exception e) {
-                            showToast("Lỗi xử lý dữ liệu");
-                            Log.e(TAG, "Error updating task description", e);
+                        },
+                        error -> {
+                            String errMsg = "Không thể cập nhật mô tả";
+                            try {
+                                errMsg = Helpers.parseError(error);
+                            } catch (Exception ignored) {
+                            }
+                            showToast(errMsg);
+                            Log.e(TAG, "Error updating task description", error);
                         }
-                    },
-                    error -> {
-                        String errMsg = "Không thể cập nhật mô tả";
-                        try {
-                            errMsg = Helpers.parseError(error);
-                        } catch (Exception ignored) {}
-                        showToast(errMsg);
-                        Log.e(TAG, "Error updating task description", error);
-                    }
                 );
             }
         });
@@ -283,6 +303,7 @@ public class TaskActivity extends AppCompatActivity {
         CommentService.fetchCommentsByTaskId(this, savedTask.getTaskID(), res -> {
             JSONArray data = res.optJSONArray("data");
             if (data != null) {
+                Log.d(TAG, ">>> res data 281: " + data);
                 try {
                     for (int i = 0; i < data.length(); i++) {
                         JSONObject jsonObject = data.getJSONObject(i);
@@ -432,14 +453,14 @@ public class TaskActivity extends AppCompatActivity {
             if (focused instanceof EditText) {
                 Rect outRect = new Rect();
                 focused.getGlobalVisibleRect(outRect);
-                
+
                 // Kiểm tra xem click có nằm trong vùng của confirm bar không
                 Rect confirmBarRect = new Rect();
                 binding.confirmBar.getGlobalVisibleRect(confirmBarRect);
                 if (confirmBarRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
                     return super.dispatchTouchEvent(ev);
                 }
-                
+
                 if (!outRect.contains((int) ev.getRawX(), (int) ev.getRawY())) {
                     focused.clearFocus();
                     imm.hideSoftInputFromWindow(focused.getWindowToken(), 0);
@@ -469,6 +490,21 @@ public class TaskActivity extends AppCompatActivity {
             TextView tvText = item.findViewById(R.id.tvCommentText);
             ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
 
+            Log.d(TAG, ">>> show all comments: " + c);
+
+            if (c.isTaskResult()) {
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.WHITE);
+                gd.setStroke(3, Color.GREEN);
+                gd.setCornerRadius(8f);
+                item.setBackground(gd);
+            }
+
+            tvText.setText(styleTagsOnShowComment(c.getContent(), this, tvText));
+            tvText.setMovementMethod(LinkMovementMethod.getInstance());
+            tvText.setHighlightColor(Color.TRANSPARENT);
+
+
             tvTime.setText(fmt.format(c.getCreateAt()));
 
             // Get user info from project members
@@ -496,85 +532,88 @@ public class TaskActivity extends AppCompatActivity {
 
             // Handle file/image in comment
             String content = c.getContent();
-            SpannableString spannableString = new SpannableString(content);
-
-            // Xử lý file
-            if (content.contains("[File]")) {
-                int fileStart = content.indexOf("[File]");
-                int nameStart = fileStart + 6; // Sau "[File]"
-                int nameEnd = content.indexOf("[/File]", nameStart);
-                if (nameEnd == -1) nameEnd = content.length();
-
-                // Lấy tên file gốc
-                String fileName = content.substring(nameStart, nameEnd);
-
-                // Thu gọn tên file
-                String truncatedName = truncateFileName(fileName, 20);
-
-                // Cập nhật nội dung với tên đã thu gọn
-                content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
-                spannableString = new SpannableString(content);
-
-                // Thêm style cho tên file
-                spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
-                spannableString.setSpan(
-                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                        nameStart, nameStart + truncatedName.length(), 0
-                );
-
-                // Thêm click listener cho file
-                final String finalFileName = fileName;
-                ClickableSpan fileClickableSpan = new ClickableSpan() {
-                    @Override
-                    public void onClick(View widget) {
-                        showFileDetailDialog(finalFileName);
-                    }
-                };
-                spannableString.setSpan(fileClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
-            }
-
-            // Xử lý ảnh
-            if (content.contains("[Image]")) {
-                int imageStart = content.indexOf("[Image]");
-                int nameStart = imageStart + 7; // Sau "[Image]"
-                int nameEnd = content.indexOf("[/Image]", nameStart);
-                if (nameEnd == -1) nameEnd = content.length();
-
-                // Lấy thông tin ảnh (tên file và URI)
-                String imageInfo = content.substring(nameStart, nameEnd);
-
-                // Thu gọn tên ảnh để hiển thị
-                String fileName = imageInfo.split("\\|")[0];
-                String truncatedName = truncateFileName(fileName, 20);
-
-                // Cập nhật nội dung với tên đã thu gọn
-                content = content.substring(0, nameStart) + truncatedName + content.substring(nameEnd);
-                spannableString = new SpannableString(content);
-
-                // Thêm style cho tên ảnh
-                spannableString.setSpan(new UnderlineSpan(), nameStart, nameStart + truncatedName.length(), 0);
-                spannableString.setSpan(
-                        new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorAccent)),
-                        nameStart, nameStart + truncatedName.length(), 0
-                );
-
-                // Thêm click listener cho ảnh
-                final String finalImageInfo = imageInfo;
-                ClickableSpan imageClickableSpan = new ClickableSpan() {
-                    @Override
-                    public void onClick(View widget) {
-                        showImageDetailDialog(finalImageInfo);
-                    }
-                };
-                spannableString.setSpan(imageClickableSpan, nameStart, nameStart + truncatedName.length(), 0);
-            }
-
-            tvText.setText(spannableString);
+            tvText.setText(styleTagsOnShowComment(content, this, tvText));
             tvText.setMovementMethod(LinkMovementMethod.getInstance());
             tvText.setHighlightColor(Color.TRANSPARENT); // Xóa highlight khi click
 
-            btnOpt.setOnClickListener(v -> showCommentOptions(v, c));
+            btnOpt.setOnClickListener(v -> showCommentOptions(item, v, c));
+            btnOpt.setTag(c);
             binding.commentContainer.addView(item);
+        }
+    }
+
+    private void updateCommentInView(long commentId, String newContent) {
+        List<Comment> commentList = viewModel.getComments().getValue();
+        if (commentList == null) return;
+
+        // 1. Cập nhật dữ liệu trong danh sách
+        for (Comment c : commentList) {
+            if (c.getId() == commentId) {
+                c.setContent(newContent);
+                break;
+            }
+        }
+
+        // 2. Cập nhật View hiển thị
+        int childCount = binding.commentContainer.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View item = binding.commentContainer.getChildAt(i);
+            ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
+
+            // Lấy comment gắn với item này qua tag hoặc listener
+            Object tag = btnOpt.getTag();
+            if (tag instanceof Comment) {
+                Comment currentComment = (Comment) tag;
+                if (currentComment.getId() == commentId) {
+                    // Cập nhật nội dung hiển thị
+                    TextView tvText = item.findViewById(R.id.tvCommentText);
+                    currentComment.setContent(newContent); // update trong memory
+                    tvText.setText(styleTagsOnShowComment(newContent, this, tvText));
+                    break;
+                }
+            }
+        }
+    }
+
+    private void deleteCommentInView(long commentId) {
+        Log.d(TAG, ">>> delete comment in view 1");
+        List<Comment> commentList = viewModel.getComments().getValue();
+        if (commentList == null) return;
+        Log.d(TAG, ">>> delete comment in view 2");
+
+        // 1. Xóa comment khỏi danh sách
+        Iterator<Comment> iterator = commentList.iterator();
+        while (iterator.hasNext()) {
+            Comment c = iterator.next();
+            if (c.getId() == commentId) {
+                iterator.remove();
+                break;
+            }
+        }
+        Log.d(TAG, ">>> delete comment in view 3");
+
+        // 2. Xóa View tương ứng trong commentContainer
+        int childCount = binding.commentContainer.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View item = binding.commentContainer.getChildAt(i);
+            ImageButton btnOpt = item.findViewById(R.id.btnCommentOptions);
+            Log.d(TAG, ">>> delete comment in view 4");
+
+            Object tag = btnOpt.getTag();
+            if (tag instanceof Comment) {
+                Log.d(TAG, ">>> delete comment in view 5");
+                Comment currentComment = (Comment) tag;
+                if (currentComment.getId() == commentId) {
+                    Log.d(TAG, ">>> delete comment in view 6");
+                    binding.commentContainer.removeViewAt(i);
+                    break;
+                }
+            }
+        }
+
+        // 3. Nếu không còn comment nào thì ẩn container
+        if (commentList.isEmpty()) {
+            binding.commentContainer.setVisibility(View.GONE);
         }
     }
 
@@ -610,25 +649,14 @@ public class TaskActivity extends AppCompatActivity {
         return nameWithoutExt.substring(0, maxNameLength) + "..." + extension;
     }
 
-    private void showFileDetailDialog(String fileName) {
+    private void showFileDetailDialog(int fileId) {
         List<File> files = viewModel.getFiles().getValue();
         if (files == null) return;
 
-        // Tìm file dựa trên tên file (không phân biệt hoa thường)
-        final File targetFile = files.stream()
-                .filter(file -> {
-                    // Lấy tên file gốc
-                    String originalName = file.getFileName();
-                    // Thu gọn tên file để so sánh
-                    String truncatedName = truncateFileName(originalName, 20);
-                    // So sánh với tên file đã thu gọn
-                    return truncatedName.equalsIgnoreCase(fileName);
-                })
-                .findFirst()
-                .orElse(null);
-
+        // Tìm file dựa trên file id
+        File targetFile = files.stream().filter(f -> f.getId() == fileId).findFirst().orElse(null);
         if (targetFile == null) {
-            showToast("Không tìm thấy file: " + fileName);
+            showToast("Không tìm thấy file");
             return;
         }
 
@@ -661,40 +689,169 @@ public class TaskActivity extends AppCompatActivity {
 
         // Handle download button
         btnDownload.setOnClickListener(v -> {
-            // TODO: Implement file download
-            showToast("Đang tải xuống file...");
+            FileService.downloadFileManually(this, Helpers.createFileDownloadUrlEndpoint(targetFile.getId()),
+                    Helpers.createDefaultDownloadFormat(this, targetFile.getFileName()),
+                    new CustomCallback<String, String>() {
+                        @Override
+                        public void onSuccess(String message) {
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                        }
+                    });
         });
 
         // Handle delete button
         btnDelete.setOnClickListener(v -> {
-            // Xóa file
-            viewModel.deleteFile(targetFile);
+            FileService.deleteFile(this, targetFile.getId(), res -> {
+                // Xóa file
+                viewModel.deleteFile(targetFile);
 
-            // Cập nhật comment chứa file này
-            List<Comment> comments = viewModel.getComments().getValue();
-            if (comments != null) {
-                for (Comment comment : comments) {
-                    String content = comment.getContent();
-                    if (content.contains("[File]" + fileName + "[/File]")) {
-                        // Xóa phần [File] và tên file khỏi comment
-                        String newContent = content.replace("[File]" + fileName + "[/File]", "").trim();
-                        if (newContent.isEmpty()) {
-                            // Nếu comment trống sau khi xóa file, xóa luôn comment
-                            viewModel.deleteComment(comment);
-                        } else {
-                            // Cập nhật nội dung comment
-                            viewModel.editComment(comment, newContent);
+                String fileName = targetFile.getFileName();
+
+                // Cập nhật comment chứa file này
+                List<Comment> comments = viewModel.getComments().getValue();
+                if (comments != null) {
+                    for (Comment comment : comments) {
+                        String content = comment.getContent();
+                        if (content.contains("[File]" + fileName + "[/File]")) {
+                            // Xóa phần [File] và tên file khỏi comment
+                            String newContent = content.replace("[File]" + fileName + "[/File]", "").trim();
+                            if (newContent.isEmpty()) {
+                                // Nếu comment trống sau khi xóa file, xóa luôn comment
+                                viewModel.deleteComment(comment);
+                            } else {
+                                // Cập nhật nội dung comment
+                                viewModel.editComment(comment, newContent);
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
+                Toast.makeText(this, "Đã xóa file", Toast.LENGTH_SHORT).show();
 
-            dialog.dismiss();
+                dialog.dismiss();
+            }, err -> {
+                String errMsg = "Không thể xóa file";
+                try {
+                    errMsg = Helpers.parseError(err);
+                } catch (Exception e) {
+                }
+                showToast(errMsg);
+            });
         });
 
         dialog.show();
     }
+
+    private void showImageDetailDialog(int fileId) {
+        List<File> images = savedTask.getFiles();
+        if (images == null) return;
+
+        // Tìm ảnh dựa trên file id
+        File image = images.stream().filter(file -> file.getId() == fileId).findFirst().orElse(null);
+
+        if (image == null) {
+            showToast("Không tìm thấy ảnh");
+            return;
+        }
+        String imageName = image.getFileName();
+
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            Uri imgURI = FileService.downloadImageAndGetUri(this, Helpers.createImageUrlEndpoint(image.getFilePath()));
+
+            // Trở về Main Thread để thao tác với UI
+            runOnUiThread(() -> {
+                // Create and show dialog
+                Dialog dialog = new Dialog(this);
+                dialog.setContentView(R.layout.dialog_image_detail);
+                dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+                // Set file information
+                ImageView imgPreview = dialog.findViewById(R.id.imgPreview);
+                TextView tvFileName = dialog.findViewById(R.id.tvFileName);
+                TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
+                TextView tvFileType = dialog.findViewById(R.id.tvFileType);
+                TextView tvCreatedAt = dialog.findViewById(R.id.tvCreatedAt);
+                Button btnDownload = dialog.findViewById(R.id.btnDownload);
+                Button btnDelete = dialog.findViewById(R.id.btnDelete);
+                ImageButton btnClose = dialog.findViewById(R.id.btnClose);
+
+                // Set image preview
+                imgPreview.setImageURI(imgURI);
+
+                // Set file details
+                String fileName = getFileName(imgURI);
+                tvFileName.setText(fileName);
+                tvFileSize.setText("Kích thước: " + formatFileSize(getFileSize(imgURI)));
+                tvFileType.setText("Loại file: IMAGE");
+                tvCreatedAt.setText("Ngày tạo: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        .format(new Date()));
+
+                // Handle close button
+                btnClose.setOnClickListener(v -> dialog.dismiss());
+
+                // Handle download button
+                btnDownload.setOnClickListener(v -> {
+                    FileService.downloadImageManually(Helpers.createImageUrlEndpoint(image.getFilePath()),
+                            Helpers.createDefaultDownloadFormat(this, image.getFileName()), new CustomCallback<String, String>() {
+                                @Override
+                                public void onSuccess(String result) {
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                }
+                            });
+                });
+
+                // Handle delete button
+                btnDelete.setOnClickListener(v -> {
+                    FileService.deleteFile(this, image.getId(), res -> {
+                        List<Uri> imageUris = viewModel.getImageUris().getValue();
+                        int index = imageUris.indexOf(imgURI);
+                        if (index != -1) {
+                            viewModel.removeImageUri(index);
+                        }
+
+                        savedTask.getFiles().remove(image);
+
+                        List<Comment> comments = viewModel.getComments().getValue();
+                        if (comments != null) {
+                            for (Comment comment : comments) {
+                                String content = comment.getContent();
+                                if (content.contains("[Image]" + imageName + "[/Image]")) {
+                                    String newContent = content.replace("[Image]" + imageName + "[/Image]", "").trim();
+                                    if (newContent.isEmpty()) {
+                                        viewModel.deleteComment(comment);
+                                    } else {
+                                        viewModel.editComment(comment, newContent);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        Toast.makeText(this, "Đã xóa ảnh", Toast.LENGTH_SHORT).show();
+
+                        dialog.dismiss();
+                    }, err -> {
+                        String errMsg = "Không thể xóa file";
+                        try {
+                            errMsg = Helpers.parseError(err);
+                        } catch (Exception ignored) {
+                        }
+                        Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+                    });
+                });
+
+                dialog.show();
+            });
+        });
+    }
+
 
     private int getFileIconResource(String fileType) {
         switch (fileType.toLowerCase()) {
@@ -737,15 +894,51 @@ public class TaskActivity extends AppCompatActivity {
         }
     }
 
-    private void showCommentOptions(View anchor, Comment c) {
+    private void markCommentAsTskResult(Comment comment, View view, MenuItem myItem) {
+        CommentService.markCommentAsTaskResult(this, comment.getId(), res -> {
+            comment.setIsTaskResult(!comment.isTaskResult());
+            if (comment.isTaskResult()) {
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.WHITE);
+                gd.setStroke(3, Color.GREEN);
+                gd.setCornerRadius(8f);
+                view.setBackground(gd);
+            } else {
+                GradientDrawable gd = new GradientDrawable();
+                gd.setColor(Color.WHITE);
+                gd.setStroke(3, Color.WHITE);
+                gd.setCornerRadius(8f);
+                view.setBackground(gd);
+            }
+            Toast.makeText(this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
+        }, err -> {
+            String errMsg = "Không thể cập nhật trạng thái";
+            try {
+                errMsg = Helpers.parseError(err);
+            } catch (Exception e) {
+            }
+            Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void showCommentOptions(View itemParent, View anchor, Comment c) {
         PopupMenu popup = new PopupMenu(this, anchor);
         popup.getMenuInflater().inflate(R.menu.menu_comment_item, popup.getMenu());
+        MenuItem markItem = popup.getMenu().findItem(R.id.action_mark_comment_as_result);
+        if (c.isTaskResult()) {
+            markItem.setTitle("Hủy đánh dấu kết quả");
+        } else {
+            markItem.setTitle("Đánh dấu là kết quả");
+        }
         popup.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_edit_comment) {
-                editComment(c);
+                editComment(anchor, c);
                 return true;
             } else if (item.getItemId() == R.id.action_delete_comment) {
-                deleteComment(c);
+                deleteComment(anchor, c);
+                return true;
+            } else if (item.getItemId() == R.id.action_mark_comment_as_result) {
+                markCommentAsTskResult(c, itemParent, item);
                 return true;
             }
             return false;
@@ -753,12 +946,45 @@ public class TaskActivity extends AppCompatActivity {
         popup.show();
     }
 
-    private void editComment(Comment c) {
-        // TODO: Implement edit comment dialog
+    private void editComment(View anchor, Comment c) {
+        CommentDetailDialogUtil.showCommentDetailDialog(anchor.getContext(), c, new CommentDetailDialogUtil.CommentDialogListener() {
+            @Override
+            public void onCommentUpdated(Comment updatedComment) {
+                Log.d(TAG, ">>> updated Comment: " + updatedComment);
+                CommentService.updateComment(anchor.getContext(), updatedComment.getId(), false, updatedComment.getContent(),
+                        res -> {
+                            updateCommentInView(updatedComment.getId(), updatedComment.getContent());
+
+                            Toast.makeText(anchor.getContext(), "Đã cập nhật bình luận", Toast.LENGTH_SHORT).show();
+                        }, err -> {
+                            String errMsg = "Không thể cập nhật bình luận";
+                            try {
+                                errMsg = Helpers.parseError(err);
+                            } catch (Exception ignored) {
+                            }
+                            Toast.makeText(anchor.getContext(), errMsg, Toast.LENGTH_SHORT).show();
+                        });
+            }
+
+            @Override
+            public void onCommentDeleted(Comment commentToDelete) {
+            }
+        });
     }
 
-    private void deleteComment(Comment c) {
-        viewModel.deleteComment(c);
+    private void deleteComment(View anchor, Comment c) {
+        CommentService.deleteComment(anchor.getContext(), c.getId(), res -> {
+            viewModel.deleteComment(c);
+
+            Toast.makeText(anchor.getContext(), "Đã xóa bình luận", Toast.LENGTH_SHORT).show();
+        }, err -> {
+            String errMsg = "Không thể xóa bình luận";
+            try {
+                errMsg = Helpers.parseError(err);
+            } catch (Exception ignored) {
+            }
+            Toast.makeText(anchor.getContext(), errMsg, Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void initEdgeToEdge() {
@@ -782,6 +1008,34 @@ public class TaskActivity extends AppCompatActivity {
         binding.toolbarTask.setNavigationOnClickListener(v -> finish());
     }
 
+    private static final int REQUEST_CODE_CREATE_FILE = 1234;
+    private Uri sourceUriToCopy; // Uri nguồn cần sao chép
+    private String suggestedFileName; // Gợi ý tên file
+
+    public void startFileSave(Uri sourceUri, String fileName) {
+        this.sourceUriToCopy = sourceUri;
+        this.suggestedFileName = fileName;
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, suggestedFileName); // Gợi ý tên file
+        startActivityForResult(intent, REQUEST_CODE_CREATE_FILE);
+    }
+
+
+    private static final int REQUEST_CODE_DOWNLOAD_FILE = 5678;
+    private String downloadUrl;
+
+    public void startDownloadFile(String urlFromServer, String fileName) {
+        this.downloadUrl = urlFromServer;
+        this.suggestedFileName = fileName;
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, fileName);
+        startActivityForResult(intent, REQUEST_CODE_DOWNLOAD_FILE);
+    }
+
     private void initAdapters() {
         binding.rvImageAttachments.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -791,10 +1045,10 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onDownloadClicked(int position) {
                 List<Uri> uris = viewModel.getImageUris().getValue();
-                if (uris != null && position < uris.size()) {
-                    Uri uri = uris.get(position);
-                    // TODO: xử lý tải xuống ảnh
-                }
+                Log.d("MYTIKKK", uris.get(position).toString());
+                startFileSave(uris.get(position), getFileName(uris.get(position)));
+                Log.d("MYTIKKK", "Save Done");
+
             }
 
             @Override
@@ -812,9 +1066,10 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onDownloadClicked(int position) {
                 List<File> files = viewModel.getFiles().getValue();
-                if (files != null && position < files.size()) {
-                    // TODO: download logic
-                }
+                assert files != null;
+                File currFile = files.get(position);
+                Log.d("MYTIKKK", currFile.toString());
+                startDownloadFile(Helpers.createFileDownloadUrlEndpoint(currFile.getId()), currFile.getFileName());
             }
 
             @Override
@@ -838,6 +1093,68 @@ public class TaskActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_CODE_CREATE_FILE && resultCode == RESULT_OK && data != null) {
+            Uri destUri = data.getData();
+
+            try {
+                InputStream in = getContentResolver().openInputStream(sourceUriToCopy);
+                OutputStream out = getContentResolver().openOutputStream(destUri);
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+
+                in.close();
+                out.close();
+
+                Toast.makeText(this, "Đã lưu thành công!", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Lỗi khi lưu file", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            if (requestCode == REQUEST_CODE_DOWNLOAD_FILE && resultCode == RESULT_OK && data != null) {
+                Uri destUri = data.getData();
+                new Thread(() -> {
+                    try {
+                        URL url = new URL(downloadUrl);
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+                        UserPreferences prefs = new UserPreferences(this);
+                        String token = prefs.getJwtToken();
+
+                        connection.setRequestProperty("Cookie", "user_auth_token=" + token);
+                        connection.connect();
+
+                        InputStream input = new BufferedInputStream(connection.getInputStream());
+                        OutputStream output = getContentResolver().openOutputStream(destUri);
+
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = input.read(buffer)) != -1) {
+                            output.write(buffer, 0, bytesRead);
+                        }
+
+                        input.close();
+                        output.close();
+                        connection.disconnect();
+
+                        runOnUiThread(() -> Toast.makeText(this, "Tải file thành công!", Toast.LENGTH_SHORT).show());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        runOnUiThread(() -> Toast.makeText(this, "Lỗi khi tải file: "+e.getMessage(), Toast.LENGTH_SHORT).show());
+                    }
+                }).start();
+            }
+        }
+    }
+
     private void registerPickers() {
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenMultipleDocuments(),
@@ -853,27 +1170,14 @@ public class TaskActivity extends AppCompatActivity {
                                         try {
                                             String jsonString = new String(res.data, StandardCharsets.UTF_8);
                                             JSONObject jsonObject = new JSONObject(jsonString);
-
-                                            String status = jsonObject.optString("status");
                                             JSONObject data = jsonObject.optJSONObject("data"); // nếu là object
-                                            String error = jsonObject.optString("error");
                                             String filepath = String.valueOf(data.optString("filePath"));
-                                            Log.d(TAG, ">>> img url: " + Helpers.createImageUrlEndpoint(filepath));
-//                                            Uri imgUri = null;
-//                                            try {
-//                                                 imgUri = FileService.downloadImageToMediaStore(this, Helpers.createImageUrlEndpoint(filepath), fileName, mimeType);
-//                                            Log.d(TAG,">>> uri: "+imgUri);
-//                                            }catch (Exception e){
-//                                                Log.d(TAG,">>> "+ e.getMessage());
-//                                            }
-                                            Log.d(TAG, ">>> status: " + status);
                                             Log.d(TAG, ">>> data: " + (data != null ? data.toString() : "null"));
-                                            Log.d(TAG, ">>> error: " + error);
 
-                                            addImageAsUri(filepath);
+                                            addImageAsUri(FileConvertor.fromJson(data));
 
                                             // Add image reference to comment
-                                            appendFileToComment("[Image] " + fileName);
+                                            appendFileToComment("[Image] " + fileName, data.optInt("id"), true);
 
                                             // Show image section
                                             viewModel.toggleImagesExpanded();
@@ -925,7 +1229,7 @@ public class TaskActivity extends AppCompatActivity {
                                             addDocument(file);
 
                                             // Add file reference to comment
-                                            appendFileToComment("[File] " + fileName);
+                                            appendFileToComment("[File] " + fileName, data.optInt("id"), false);
 
                                             // Show file section
                                             viewModel.toggleFilesExpanded();
@@ -944,8 +1248,8 @@ public class TaskActivity extends AppCompatActivity {
         viewModel.addDocument(file);
     }
 
-    private void addImageAsUri(String filepathFromApiData) {
-        viewModel.addImageAsUri(filepathFromApiData);
+    private void addImageAsUri(File file) {
+        viewModel.addImageAsUri(file);
     }
 
     private String getFileName(Uri uri) {
@@ -1026,7 +1330,7 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         new MenuInflater(this).inflate(R.menu.menu_task, menu);
-        
+
         // Set color for delete item
         MenuItem delete = menu.findItem(R.id.action_delete);
         SpannableString deleteText = new SpannableString(delete.getTitle());
@@ -1554,9 +1858,22 @@ public class TaskActivity extends AppCompatActivity {
                                 String dateStr = dateFormat.format(calendar.getTime());
                                 String timeStr = timeFormat.format(calendar.getTime());
 
-                                // Update UI and ViewModel
-                                binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
-                                viewModel.updateTaskDueDate(calendar.getTime());
+                                String dueDate = Helpers.formatToISOStr(calendar.getTime());
+
+                                TaskService.updateDueDate(this, savedTask.getTaskID(), ProjectHolder.get().getProjectID(), dueDate,
+                                        res -> {
+                                            // Update UI and ViewModel
+                                            binding.tvDueDate.setText(String.format("Đến hạn %s lúc %s", dateStr, timeStr));
+                                            viewModel.updateTaskDueDate(calendar.getTime());
+                                        }, err -> {
+                                            String errMsg = "Không thể cập nhật thời gian hết hạn";
+                                            try {
+                                                errMsg = Helpers.parseError(err);
+                                            } catch (Exception e) {
+                                            }
+                                            Log.d(TAG, ">>> update dute date err: " + errMsg);
+                                            Toast.makeText(this, errMsg, Toast.LENGTH_SHORT).show();
+                                        });
                             },
                             calendar.get(Calendar.HOUR_OF_DAY),
                             calendar.get(Calendar.MINUTE),
@@ -1623,9 +1940,8 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 // Giống như onChange trong React: lắng nghe nội dung đang thay đổi
-                String currentText = s.toString();
 //                Log.d(TAG, ">>> new comment: " + currentText);
-                fullComment = currentText;
+                fullComment = s.toString();
             }
 
             @Override
@@ -1649,7 +1965,7 @@ public class TaskActivity extends AppCompatActivity {
                     } catch (Exception e) {
                     }
                 }, err -> {
-                    Log.d(TAG, ">>> createCommentErr: " + err.getMessage());
+                    Log.d(TAG, ">>> create Comment Err: " + err.getMessage());
                     String errMsg = "Không thể tạo bình luận";
                     try {
                         errMsg = Helpers.parseError(err);
@@ -1683,166 +1999,122 @@ public class TaskActivity extends AppCompatActivity {
         return binding.etComment;
     }
 
-    private void appendFileToComment(String text) {
+    private void appendFileToComment(String text, int fileId, boolean isImage) {
         String currentComment = binding.etComment.getText().toString();
 
         String fileName = text.substring(text.indexOf("]") + 2);
-        String truncatedName = truncateFileName(fileName, 20);
-        text = "[File]" + truncatedName + "[/File]";
+        String truncatedFileName = truncateFileName(fileName, 20);
+        if (isImage) {
+            text = "[Image:id=" + fileId + "]" + truncatedFileName + "[/Image]";
+        } else {
+            text = "[File:id=" + fileId + "]" + truncatedFileName + "[/File]";
+        }
         String updatedComment = currentComment.isEmpty() ? text : currentComment + text;
 
         fullComment = updatedComment;
-        binding.etComment.setText(styleFileTagsInText(updatedComment, this));
-
-//        else { // Nếu là text thông thường
-//            if (currentText.contains("[File]")) {
-//                // Nếu đã có file, thêm text vào sau file
-//                int fileEnd = currentText.indexOf("[/File]", currentText.indexOf("[File]")) + 7;
-//                if (fileEnd == -1) fileEnd = currentText.length();
-//
-//                // Thêm text vào sau file
-//                currentText = currentText.substring(0, fileEnd) + text;
-//            } else {
-//                // Nếu chưa có file, thêm text bình thường
-//                currentText = currentText.isEmpty() ? text : currentText + text;
-//            }
-//            binding.etComment.setText(currentText);
-//        }
+        binding.etComment.setText(styleTagsOnWriteComment(updatedComment, this));
 
         // Move cursor to end
         binding.etComment.setSelection(binding.etComment.getText().length());
     }
 
-    public static SpannableString styleFileTagsInText(String rawText, Context context) {
-        SpannableString spannableString = new SpannableString(rawText);
+    private SpannableString styleTagsOnWriteComment(String rawText, Context context) {
+        SpannableStringBuilder builder = new SpannableStringBuilder();
 
-        String startTag = "[File]";
-        String endTag = "[/File]";
-        int searchStart = 0;
+        // Dùng regex để phát hiện các tag [File]...[/File] và [Image]...[/Image]
+        Pattern pattern = Pattern.compile("\\[(File|Image)](.*?)\\[/\\1]");
+        Matcher matcher = pattern.matcher(rawText);
 
-        while (true) {
-            int startIdx = rawText.indexOf(startTag, searchStart);
-            int endIdx = rawText.indexOf(endTag, startIdx);
+        int lastEnd = 0;
 
-            if (startIdx == -1 || endIdx == -1) break;
+        while (matcher.find()) {
+            // Thêm phần text không chứa tag
+            builder.append(rawText, lastEnd, matcher.start());
 
-            int fileNameStart = startIdx + startTag.length();
-            int fileNameEnd = endIdx;
+            String tagType = matcher.group(1);     // "File" hoặc "Image"
+            String innerText = matcher.group(2);   // Nội dung bên trong tag
 
-            // Gạch chân + tô màu cho tên file
-            spannableString.setSpan(
-                    new UnderlineSpan(),
-                    fileNameStart,
-                    fileNameEnd,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
+            int spanStart = builder.length();
+            builder.append(innerText);
+            int spanEnd = builder.length();
 
-            spannableString.setSpan(
+            // Style: Gạch chân + Tô màu
+            builder.setSpan(new UnderlineSpan(), spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(
                     new ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorAccent)),
-                    fileNameStart,
-                    fileNameEnd,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             );
 
-            // Cập nhật vị trí tìm kiếm tiếp theo
-            searchStart = endIdx + endTag.length();
+            lastEnd = matcher.end();
         }
 
-        return spannableString;
+        // Thêm phần còn lại sau thẻ cuối cùng
+        if (lastEnd < rawText.length()) {
+            builder.append(rawText.substring(lastEnd));
+        }
+
+        return SpannableString.valueOf(builder);
     }
 
+    private SpannableString styleTagsOnShowComment(String rawText, Context context, TextView textView) {
+        SpannableStringBuilder resultBuilder = new SpannableStringBuilder();
 
-    private void showImageDetailDialog(String imageName) {
-        List<Uri> imageUris = viewModel.getImageUris().getValue();
-        if (imageUris == null) return;
+        // Regex hỗ trợ cả [File] / [File:id=123] / [Image] / [Image:id=456]
+        Pattern pattern = Pattern.compile("\\[(File|Image)(?::id=(\\d+))?](.+?)\\[/(File|Image)]");
+        Matcher matcher = pattern.matcher(rawText);
 
-        // Tìm ảnh dựa trên tên file (không phân biệt hoa thường)
-        final Uri targetImage = imageUris.stream()
-                .filter(uri -> {
-                    // Lấy tên file gốc
-                    String originalName = getFileName(uri);
-                    // Thu gọn tên file để so sánh
-                    String truncatedName = truncateFileName(originalName, 20);
-                    // So sánh với tên file đã thu gọn
-                    return truncatedName.equalsIgnoreCase(imageName);
-                })
-                .findFirst()
-                .orElse(null);
+        int lastEnd = 0;
 
-        if (targetImage == null) {
-            showToast("Không tìm thấy ảnh: " + imageName);
-            return;
-        }
+        while (matcher.find()) {
+            resultBuilder.append(rawText, lastEnd, matcher.start());
 
-        // Create and show dialog
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_image_detail);
-        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            String tagType = matcher.group(1);     // File hoặc Image
+            String tagId = matcher.group(2);       // có thể null
+            String innerText = matcher.group(3);   // nội dung hiển thị
 
-        // Set file information
-        ImageView imgPreview = dialog.findViewById(R.id.imgPreview);
-        TextView tvFileName = dialog.findViewById(R.id.tvFileName);
-        TextView tvFileSize = dialog.findViewById(R.id.tvFileSize);
-        TextView tvFileType = dialog.findViewById(R.id.tvFileType);
-        TextView tvCreatedAt = dialog.findViewById(R.id.tvCreatedAt);
-        Button btnDownload = dialog.findViewById(R.id.btnDownload);
-        Button btnDelete = dialog.findViewById(R.id.btnDelete);
-        ImageButton btnClose = dialog.findViewById(R.id.btnClose);
+            int spanStart = resultBuilder.length();
+            resultBuilder.append(innerText);
+            int spanEnd = resultBuilder.length();
 
-        // Set image preview
-        imgPreview.setImageURI(targetImage);
-
-        // Set file details
-        String fileName = getFileName(targetImage);
-        tvFileName.setText(fileName);
-        tvFileSize.setText("Kích thước: " + formatFileSize(getFileSize(targetImage)));
-        tvFileType.setText("Loại file: IMAGE");
-        tvCreatedAt.setText("Ngày tạo: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                .format(new Date()));
-
-        // Handle close button
-        btnClose.setOnClickListener(v -> dialog.dismiss());
-
-        // Handle download button
-        btnDownload.setOnClickListener(v -> {
-            showToast("Đang tải xuống ảnh...");
-            dialog.dismiss();
-        });
-
-        // Handle delete button
-        btnDelete.setOnClickListener(v -> {
-            // Xóa ảnh
-            int index = imageUris.indexOf(targetImage);
-            if (index != -1) {
-                viewModel.removeImageUri(index);
-            }
-
-            // Cập nhật comment chứa ảnh này
-            List<Comment> comments = viewModel.getComments().getValue();
-            if (comments != null) {
-                for (Comment comment : comments) {
-                    String content = comment.getContent();
-                    if (content.contains("[Image]" + imageName + "[/Image]")) {
-                        // Xóa phần [Image] và tên ảnh khỏi comment
-                        String newContent = content.replace("[Image]" + imageName + "[/Image]", "").trim();
-                        if (newContent.isEmpty()) {
-                            // Nếu comment trống sau khi xóa ảnh, xóa luôn comment
-                            viewModel.deleteComment(comment);
-                        } else {
-                            // Cập nhật nội dung comment
-                            viewModel.editComment(comment, newContent);
+            // ClickableSpan cho cả File và Image
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    if (tagId != null) {
+                        Log.d("ClickableSpan", ">>> hello click with id: " + tagId + ", file type: " + tagType);
+                        if ("File".equals(tagType)) {
+                            showFileDetailDialog(Integer.parseInt(tagId));
+                        } else if ("Image".equals(tagType)) {
+                            showImageDetailDialog(Integer.parseInt(tagId));
                         }
-                        break;
+                    } else {
+                        Log.d("ClickableSpan", ">>> hello click");
+                        Toast.makeText(context, "Không tìm thấy file", Toast.LENGTH_SHORT).show();
                     }
                 }
-            }
 
-            dialog.dismiss();
-        });
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(true);
+                    ds.setColor(ContextCompat.getColor(context, R.color.colorAccent));
+                }
+            };
 
-        dialog.show();
+            resultBuilder.setSpan(clickableSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            lastEnd = matcher.end();
+        }
+
+        // Thêm phần còn lại sau đoạn tag cuối cùng
+        if (lastEnd < rawText.length()) {
+            resultBuilder.append(rawText.substring(lastEnd));
+        }
+
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+
+        return SpannableString.valueOf(resultBuilder);
     }
+
     private void showEditTaskTitleDialog() {
         Task currentTask = viewModel.getTask().getValue();
         if (currentTask == null) return;
@@ -1858,48 +2130,50 @@ public class TaskActivity extends AppCompatActivity {
                     if (!newTitle.isEmpty()) {
                         // Gọi API cập nhật tiêu đề
                         TaskService.updateTask(
-                            this,
-                            currentTask.getTaskID(),
-                            ProjectHolder.get().getProjectID(),
-                            null, // Giữ nguyên mô tả
-                            newTitle,
-                            response -> {
-                                try {
-                                    if ("success".equals(response.optString("status"))) {
-                                        // Cập nhật UI ngay lập tức
-                                        currentTask.setTaskName(newTitle);
-                                        binding.toolbarTask.setTitle(newTitle);
-                                        viewModel.updateTask(currentTask);
-                                        showToast("Đã cập nhật tiêu đề");
-                                        // Đánh dấu task đã được sửa đổi
-                                        isTaskModified = true;
-                                        Log.d(TAG, "Task title updated, isTaskModified set to true");
-                                        // Set result ngay sau khi cập nhật thành công
-                                        setResult(RESULT_OK);
-                                        Log.d(TAG, "Setting result to RESULT_OK after title update");
-                                    } else {
-                                        String error = response.optString("error");
-                                        showToast("Lỗi: " + error);
+                                this,
+                                currentTask.getTaskID(),
+                                ProjectHolder.get().getProjectID(),
+                                null, // Giữ nguyên mô tả
+                                newTitle,
+                                response -> {
+                                    try {
+                                        if ("success".equals(response.optString("status"))) {
+                                            // Cập nhật UI ngay lập tức
+                                            currentTask.setTaskName(newTitle);
+                                            binding.toolbarTask.setTitle(newTitle);
+                                            viewModel.updateTask(currentTask);
+                                            showToast("Đã cập nhật tiêu đề");
+                                            // Đánh dấu task đã được sửa đổi
+                                            isTaskModified = true;
+                                            Log.d(TAG, "Task title updated, isTaskModified set to true");
+                                            // Set result ngay sau khi cập nhật thành công
+                                            setResult(RESULT_OK);
+                                            Log.d(TAG, "Setting result to RESULT_OK after title update");
+                                        } else {
+                                            String error = response.optString("error");
+                                            showToast("Lỗi: " + error);
+                                        }
+                                    } catch (Exception e) {
+                                        showToast("Lỗi xử lý dữ liệu");
+                                        Log.e(TAG, "Error updating task title", e);
                                     }
-                                } catch (Exception e) {
-                                    showToast("Lỗi xử lý dữ liệu");
-                                    Log.e(TAG, "Error updating task title", e);
+                                },
+                                error -> {
+                                    String errMsg = "Không thể cập nhật tiêu đề";
+                                    try {
+                                        errMsg = Helpers.parseError(error);
+                                    } catch (Exception ignored) {
+                                    }
+                                    showToast(errMsg);
+                                    Log.e(TAG, "Error updating task title", error);
                                 }
-                            },
-                            error -> {
-                                String errMsg = "Không thể cập nhật tiêu đề";
-                                try {
-                                    errMsg = Helpers.parseError(error);
-                                } catch (Exception ignored) {}
-                                showToast(errMsg);
-                                Log.e(TAG, "Error updating task title", error);
-                            }
                         );
                     }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
+
     private void showDeleteTaskDialog() {
         Task currentTask = viewModel.getTask().getValue();
         if (currentTask == null) return;
@@ -1910,31 +2184,32 @@ public class TaskActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     // Gọi API xóa task
                     TaskService.deleteTask(
-                        this,
-                        currentTask.getTaskID(),
+                            this,
+                            currentTask.getTaskID(),
                             ProjectHolder.get().getProjectID(),
-                        response -> {
-                            try {
-                                if ("success".equals(response.optString("status"))) {
-                                    showToast("Đã xóa task thành công");
-                                    finish(); // Đóng màn hình task
-                                } else {
-                                    String error = response.optString("error");
-                                    showToast("Lỗi: " + error);
+                            response -> {
+                                try {
+                                    if ("success".equals(response.optString("status"))) {
+                                        showToast("Đã xóa task thành công");
+                                        finish(); // Đóng màn hình task
+                                    } else {
+                                        String error = response.optString("error");
+                                        showToast("Lỗi: " + error);
+                                    }
+                                } catch (Exception e) {
+                                    showToast("Lỗi xử lý dữ liệu");
+                                    Log.e(TAG, "Error deleting task", e);
                                 }
-                            } catch (Exception e) {
-                                showToast("Lỗi xử lý dữ liệu");
-                                Log.e(TAG, "Error deleting task", e);
+                            },
+                            error -> {
+                                String errMsg = "Không thể xóa task";
+                                try {
+                                    errMsg = Helpers.parseError(error);
+                                } catch (Exception ignored) {
+                                }
+                                showToast(errMsg);
+                                Log.e(TAG, "Error deleting task", error);
                             }
-                        },
-                        error -> {
-                            String errMsg = "Không thể xóa task";
-                            try {
-                                errMsg = Helpers.parseError(error);
-                            } catch (Exception ignored) {}
-                            showToast(errMsg);
-                            Log.e(TAG, "Error deleting task", error);
-                        }
                     );
                 })
                 .setNegativeButton("Hủy", null)
