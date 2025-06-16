@@ -1,43 +1,60 @@
 package com.example.projectmanagement.ui.notification;
 
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+
+import com.example.projectmanagement.utils.ApiConfig;
+import com.example.projectmanagement.utils.UserPreferences;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MyForegroundService extends Service {
 
+    private String TAG = "MyForegroundService";
     private static final String CHANNEL_ID = "BackgroundRequestChannel";
     private ScheduledExecutorService scheduler;
-    private String extractMessageFromJson(String json) {
+    public Context context;
+
+    private List<String> extractMessageFromJson(String json) {
         try {
-            json = json.trim();
-            if (json.startsWith("{") && json.endsWith("}")) {
-                json = json.substring(1, json.length() - 1); // bỏ { }
-                String[] parts = json.split(":");
-                if (parts.length == 2) {
-                    return parts[1].trim().replaceAll("^\"|\"$", ""); // bỏ dấu "
-                }
+            JSONObject jsonObject = new JSONObject(json);
+            JSONArray msgs = jsonObject.optJSONArray("messages");
+            if (msgs.equals("null") || msgs == null) {
+                return null;
             }
+            List<String> convertedMsgs = new ArrayList<>();
+            for (int i = 0; i < msgs.length(); i++) {
+                convertedMsgs.add(msgs.getString(i));
+            }
+            return convertedMsgs;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -61,6 +78,7 @@ public class MyForegroundService extends Service {
             manager.createNotificationChannel(channel);
         }
     }
+
     private void showNotification(String message) {
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("TeamWork")
@@ -74,6 +92,7 @@ public class MyForegroundService extends Service {
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         manager.notify((int) System.currentTimeMillis(), notification);
     }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -90,12 +109,17 @@ public class MyForegroundService extends Service {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleWithFixedDelay(() -> {
             try {
-                URL url = new URL("http://192.168.0.109:3000/a");
+                URL url = new URL(ApiConfig.BASE_URL + "/notifications/background-service");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+                UserPreferences prefs = new UserPreferences(getApplicationContext());
+                String token = prefs.getJwtToken();
+                conn.setRequestProperty("Cookie", "user_auth_token=" + token);
+
                 conn.setRequestMethod("GET");
 
                 int code = conn.getResponseCode();
-                System.out.println("Response code: " + code);
+                Log.d(TAG, ">>> code: " + code);
 
                 if (code == HttpURLConnection.HTTP_OK) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -108,13 +132,13 @@ public class MyForegroundService extends Service {
                     in.close();
 
                     String json = response.toString();
-                    System.out.println("Server response: " + json);
-
+                    Log.d(TAG, ">>> msg2: " + json);
                     // Giả sử response là { "message": "Nội dung..." }
-                    String message = extractMessageFromJson(json);
-
-                    if (message != null && !message.isEmpty()) {
-                        showNotification(message);
+                    List<String> messages = extractMessageFromJson(json);
+                    for (String message : messages) {
+                        if (message != null && !message.isEmpty()) {
+                            showNotification(message);
+                        }
                     }
                 }
 

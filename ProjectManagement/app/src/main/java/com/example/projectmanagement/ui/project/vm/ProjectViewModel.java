@@ -281,6 +281,9 @@ public class ProjectViewModel extends ViewModel {
     }
 
     private void loadProjectPhases(int projectId) {
+        Log.d(TAG,">>> yyyyyyy aaaaa: "+projectId);
+        phases.postValue(null);
+        phases.setValue(null);
         phaseRepository.getPhasesByProjectId(projectId, new PhaseRepository.PhaseCallback() {
             @Override
             public void onSuccess(List<Phase> phaseList) {

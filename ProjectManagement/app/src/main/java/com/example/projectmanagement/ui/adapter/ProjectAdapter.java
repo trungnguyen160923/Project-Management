@@ -9,15 +9,19 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.example.projectmanagement.R;
 import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.utils.ParseDateUtil;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import android.graphics.Color;
 
 public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHolder> {
@@ -38,7 +42,8 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
         notifyDataSetChanged();
     }
 
-    @NonNull @Override
+    @NonNull
+    @Override
     public ViewHolder onCreateViewHolder(
             @NonNull ViewGroup parent, int viewType
     ) {
@@ -46,17 +51,20 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
                 .inflate(R.layout.item_project, parent, false));
     }
 
-    @Override public void onBindViewHolder(
+    @Override
+    public void onBindViewHolder(
             @NonNull ViewHolder holder, int pos
     ) {
         Project p = projects.get(pos);
         holder.bind(p);
         holder.itemView.setOnClickListener(v -> {
+            Log.d("ProjectAdapter", ">>> onItemClick called ihihih: " + pos);
             if (listener != null) listener.onItemClick(p);
         });
     }
 
-    @Override public int getItemCount() {
+    @Override
+    public int getItemCount() {
         return projects.size();
     }
 
@@ -68,10 +76,10 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
 
         ViewHolder(@NonNull View v) {
             super(v);
-            ivBg      = v.findViewById(R.id.ivItemBackground);
-            tvName    = v.findViewById(R.id.tvProjectName);
-            tvDesc    = v.findViewById(R.id.tvDescription);
-            tvDeadline= v.findViewById(R.id.tvDeadline);
+            ivBg = v.findViewById(R.id.ivItemBackground);
+            tvName = v.findViewById(R.id.tvProjectName);
+            tvDesc = v.findViewById(R.id.tvDescription);
+            tvDeadline = v.findViewById(R.id.tvDeadline);
             llDeadline = v.findViewById(R.id.llDeadline);
         }
 
@@ -85,12 +93,12 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
                 tvDesc.setText(p.getProjectDescription());
             }
             // deadline
-            if (p.getDeadline()!=null) {
+            if (p.getDeadline() != null) {
                 llDeadline.setVisibility(View.VISIBLE);
-                tvDeadline.setText("Đến hạn vào: "+ParseDateUtil.toCustomDateTime(p.getDeadline()));
+                tvDeadline.setText("Đến hạn vào: " + ParseDateUtil.toCustomDateTime(p.getDeadline()));
             } else llDeadline.setVisibility(View.GONE);
 
-            String bg = (p.getBackgroundImg() != null && !p.getBackgroundImg().isEmpty())? p.getBackgroundImg(): "COLOR;#0C90F1";
+            String bg = (p.getBackgroundImg() != null && !p.getBackgroundImg().isEmpty()) ? p.getBackgroundImg() : "COLOR;#0C90F1";
             Log.d("CHECK=>>>>>>>", bg);
             int radius = ivBg.getContext()
                     .getResources()
@@ -104,24 +112,24 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
             } else if (bg.startsWith("COLOR;")) {
                 // tạo Drawable có bo góc luôn
                 GradientDrawable gd = new GradientDrawable();
-                gd.setColor(Color.parseColor(bg.split(";",2)[1]));
+                gd.setColor(Color.parseColor(bg.split(";", 2)[1]));
                 gd.setCornerRadius(radius);
                 ivBg.setBackground(gd);
 
             } else if (bg.startsWith("GRADIENT;")) {
-                String[] parts = bg.split(";",3);
-                String[] cols  = parts[1].split(",");
+                String[] parts = bg.split(";", 3);
+                String[] cols = parts[1].split(",");
                 int c1 = Color.parseColor(cols[0]);
                 int c2 = Color.parseColor(cols[1]);
                 int ori = Integer.parseInt(parts[2]);
                 GradientDrawable gd = new GradientDrawable(
                         GradientDrawable.Orientation.values()[ori],
-                        new int[]{c1,c2});
+                        new int[]{c1, c2});
                 gd.setCornerRadius(radius);
                 ivBg.setBackground(gd);
 
             } else if (bg.startsWith("RESOURCE;")) {
-                int resId = Integer.parseInt(bg.split(";",2)[1]);
+                int resId = Integer.parseInt(bg.split(";", 2)[1]);
                 Glide.with(ivBg.getContext())
                         .load(resId)
                         .transform(new RoundedCorners(radius))

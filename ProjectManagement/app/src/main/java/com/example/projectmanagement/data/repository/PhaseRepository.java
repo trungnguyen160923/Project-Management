@@ -2,6 +2,7 @@ package com.example.projectmanagement.data.repository;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -72,13 +73,12 @@ public class PhaseRepository {
                 if ("success".equals(response.optString("status"))) {
                     Phase createdPhase = PhaseService.parsePhase(response);
                     phaseLiveData.setValue(createdPhase);
-                    messageLiveData.setValue("Tạo phase thành công");
                     Log.d(TAG, "Created phase: " + finalPhase.getPhaseName());
                 } else {
                     String err = response.optString("message", "Tạo phase thất bại");
                     Log.e(TAG, err);
                     phaseLiveData.setValue(null);
-                    messageLiveData.setValue(err);
+                    Toast.makeText(context, "Tạo phase thất bại", Toast.LENGTH_SHORT).show();
                 }
             } catch (JSONException e) {
                 Log.e(TAG, "Parsing error", e);

@@ -28,7 +28,7 @@ public class NotificationService {
 
     public static void fetchNotifications(Context context, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
         String url = NOTICATION_URL;
-
+        Log.d(TAG, ">>> fetch notifications");
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
                 url,
@@ -59,10 +59,15 @@ public class NotificationService {
                                                         Response.Listener<JSONObject> listener,
                                                         Response.ErrorListener errorListener) {
         Log.d(TAG, ">>> Starting recursive fetch notifications");
+
+        if (notificationFetchRunnable != null) {
+            stopRecursiveFetchNotifications();
+            startRecursiveFetchNotifications(context, listener, errorListener);
+        }
+
         notificationFetchRunnable = new Runnable() {
             @Override
             public void run() {
-                // Gọi lại errorListener bên ngoài nếu có lỗi
                 fetchNotifications(context, response -> {
                     // Gọi lại listener bên ngoài
                     listener.onResponse(response);
@@ -75,6 +80,70 @@ public class NotificationService {
 
         // Bắt đầu gọi lần đầu tiên
         handler.post(notificationFetchRunnable);
+    }
+
+    public static void stopRecursiveFetchNotifications() {
+        Log.d(TAG, ">>> Stopping recursive fetch notifications");
+        if (notificationFetchRunnable != null) {
+            handler.removeCallbacks(notificationFetchRunnable);
+            notificationFetchRunnable = null;
+        }
+    }
+
+    public static void markAllAsRead(Context context, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        String url = NOTICATION_URL + "/mark-all-as-read";
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                null,
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
+    }
+
+    public static void markAsRead(Context context, Long notificationId, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        String url = NOTICATION_URL + "/" + notificationId + "/read";
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                null,
+                response -> {
+                    listener.onResponse(response);
+                },
+                error -> {
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                UserPreferences prefs = new UserPreferences(context);
+                String token = prefs.getJwtToken();
+                headers.put("Cookie", "user_auth_token=" + token);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(request);
     }
 
 }

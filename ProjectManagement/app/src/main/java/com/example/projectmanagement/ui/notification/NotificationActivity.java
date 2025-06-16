@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.projectmanagement.R;
+import com.example.projectmanagement.data.service.NotificationService;
 import com.example.projectmanagement.ui.adapter.NotificationAdapter;
 import com.google.android.material.appbar.MaterialToolbar;
 
@@ -85,6 +86,9 @@ public class NotificationActivity extends AppCompatActivity {
         });
 
         MaterialToolbar toolbar = findViewById(R.id.tb_notifications);
-        toolbar.setNavigationOnClickListener(v -> finish());
+        toolbar.setNavigationOnClickListener(v -> {
+            NotificationService.stopRecursiveFetchNotifications();
+            finish();
+        });
     }
 }
