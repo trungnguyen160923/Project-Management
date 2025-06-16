@@ -25,6 +25,9 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
         <activity
+            android:name=".ui.project.ProjectStatisticActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.project.UpdateProjectActivity"
             android:exported="false" />
 

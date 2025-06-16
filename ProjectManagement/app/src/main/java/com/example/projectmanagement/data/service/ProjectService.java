@@ -59,11 +59,29 @@ public class ProjectService {
                                          Response.Listener<JSONObject> listener,
                                          Response.ErrorListener errorListener) {
         String url = BASE_URL + endpoint;
+        Log.d(TAG, "Making request to: " + url + " with method: " + method);
+        if (body != null) {
+            Log.d(TAG, "Request body: " + body.toString());
+        }
+
         JsonObjectRequest request = new JsonObjectRequest(method, url, body,
-                listener, error -> {
-            Log.d(TAG, ">>> er" + error.toString());
-            errorListener.onErrorResponse(error);
-        }) {
+                response -> {
+                    Log.d(TAG, "Response from " + url + ": " + response.toString());
+                    listener.onResponse(response);
+                }, 
+                error -> {
+                    Log.e(TAG, "Error from " + url, error);
+                    if (error.networkResponse != null) {
+                        try {
+                            String errorBody = new String(error.networkResponse.data, "UTF-8");
+                            Log.e(TAG, "Error response body: " + errorBody);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing error response", e);
+                        }
+                    }
+                    errorListener.onErrorResponse(error);
+                }
+        ) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> headers = new HashMap<>();
@@ -71,20 +89,29 @@ public class ProjectService {
                 if (body != null) {
                     headers.put("Content-Type", "application/json; charset=utf-8");
                 }
-                // Cookie không có khoảng trắng thừa sau '='
+                
+                // Get and validate token
                 String token = new UserPreferences(context).getJwtToken();
-                if (token != null && !token.isEmpty()) {
-                    headers.put("Cookie", "user_auth_token=" + token);
+                if (token == null || token.isEmpty()) {
+                    Log.e(TAG, "No authentication token found");
+                    throw new AuthFailureError("No authentication token found");
                 }
+                
+                // Add token to headers
+                headers.put("Cookie", "user_auth_token=" + token);
+                Log.d(TAG, "Request headers: " + headers);
+                
                 return headers;
             }
         };
 
+        // Set retry policy
         request.setRetryPolicy(new DefaultRetryPolicy(
-                5000,
+                10000, // 10 seconds timeout
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
         ));
+
         return request;
     }
 
@@ -288,11 +315,42 @@ public class ProjectService {
 
     // Parse danh sách projects từ response
     public static List<Project> parseProjectsList(JSONObject response) throws JSONException {
+        Log.d(TAG, "Parsing projects response: " + response.toString());
+        
         List<Project> projects = new ArrayList<>();
+        
+        // Check response format
+        if (!response.has("status")) {
+            Log.e(TAG, "Response missing status field");
+            throw new JSONException("Response missing status field");
+        }
+        
+        String status = response.optString("status");
+        if (!"success".equals(status)) {
+            String message = response.optString("message", "Unknown error");
+            Log.e(TAG, "Response status not success: " + message);
+            throw new JSONException("Response status not success: " + message);
+        }
+        
+        // Check data field
+        if (!response.has("data")) {
+            Log.e(TAG, "Response missing data field");
+            throw new JSONException("Response missing data field");
+        }
+        
         JSONArray data = response.optJSONArray("data");
-        if (data != null) {
-            for (int i = 0; i < data.length(); i++) {
+        if (data == null) {
+            Log.e(TAG, "Data field is not an array");
+            throw new JSONException("Data field is not an array");
+        }
+        
+        Log.d(TAG, "Found " + data.length() + " projects in response");
+        
+        for (int i = 0; i < data.length(); i++) {
+            try {
                 JSONObject projectJson = data.getJSONObject(i);
+                Log.d(TAG, "Parsing project " + i + ": " + projectJson.toString());
+                
                 Project project = new Project();
                 project.setProjectID(projectJson.optInt("id", -1));
                 project.setProjectName(projectJson.optString("projectName", ""));
@@ -304,37 +362,88 @@ public class ProjectService {
                 String endDateStr = projectJson.optString("endDate", "");
                 Log.d(TAG, "Project " + project.getProjectName() + " - Raw dates: startDate=" + startDateStr + ", endDate=" + endDateStr);
                 
-                // Parse dates
-                Date startDate = ParseDateUtil.parseFlexibleIsoDate(startDateStr);
-                Date endDate = ParseDateUtil.parseFlexibleIsoDate(endDateStr);
-                Log.d(TAG, "Project " + project.getProjectName() + " - Parsed dates: startDate=" + startDate + ", endDate=" + endDate);
+                // Parse dates with error handling
+                try {
+                    Date startDate = ParseDateUtil.parseFlexibleIsoDate(startDateStr);
+                    Date endDate = ParseDateUtil.parseFlexibleIsoDate(endDateStr);
+                    Log.d(TAG, "Project " + project.getProjectName() + " - Parsed dates: startDate=" + startDate + ", endDate=" + endDate);
+                    
+                    project.setStartDate(startDate);
+                    project.setDeadline(endDate);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing dates for project " + project.getProjectName(), e);
+                    // Set default dates if parsing fails
+                    project.setStartDate(new Date());
+                    project.setDeadline(new Date());
+                }
                 
-                project.setStartDate(startDate);
-                project.setDeadline(endDate);
-                project.setCreateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("createdAt", "")));
-                project.setUpdateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("updatedAt", "")));
-                project.setBackgroundImg(projectJson.optString("backgroundImg", ""));
+                // Parse other dates
+                try {
+                    project.setCreateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("createdAt", "")));
+                    project.setUpdateAt(ParseDateUtil.parseFlexibleIsoDate(projectJson.optString("updatedAt", "")));
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing other dates for project " + project.getProjectName(), e);
+                }
+                
+                project.setBackgroundImg(projectJson.optString("backGround", ""));
+                
+                // Parse owner if available
+                if (projectJson.has("owner")) {
+                    try {
+                        JSONObject owner = projectJson.getJSONObject("owner");
+                        User user = new User();
+                        user.setId(owner.optInt("id", -1));
+                        user.setUsername(owner.optString("fullname", ""));
+                        project.setUser(user);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing owner for project " + project.getProjectName(), e);
+                    }
+                }
+                
                 projects.add(project);
+                Log.d(TAG, "Successfully parsed project " + project.getProjectName());
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing project at index " + i, e);
+                // Continue with next project instead of failing completely
             }
         }
+        
+        Log.d(TAG, "Successfully parsed " + projects.size() + " projects");
         return projects;
     }
 
     // Parse một project từ JSON
     public static Project parseProject(JSONObject response) throws JSONException {
+        Log.d(TAG, "Parsing project from response: " + response.toString());
+        
         JSONObject data = response.getJSONObject("data");
+        Log.d(TAG, "Project data object: " + data.toString());
+        
         Project project = new Project();
 
         project.setProjectID(data.getInt("id"));
         project.setProjectName(data.getString("projectName"));
         project.setProjectDescription(data.getString("description"));
         project.setStatus(data.getString("status"));
-        project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(data.getString("startDate")));
-        project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(data.getString("endDate")));
+        project.setBackgroundImg(data.optString("backGround", ""));
+        
+        // Parse dates with error handling
+        try {
+            String startDateStr = data.getString("startDate");
+            String endDateStr = data.getString("endDate");
+            Log.d(TAG, "Raw dates - startDate: " + startDateStr + ", endDate: " + endDateStr);
+            
+            project.setStartDate(ParseDateUtil.parseFlexibleIsoDate(startDateStr));
+            project.setDeadline(ParseDateUtil.parseFlexibleIsoDate(endDateStr));
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing dates", e);
+        }
 
         // Parse owner
         if (data.has("owner")) {
             JSONObject owner = data.getJSONObject("owner");
+            Log.d(TAG, "Owner data: " + owner.toString());
             project.getUser().setId(owner.getInt("id"));
             project.getUser().setUsername(owner.getString("fullname"));
         }
@@ -342,6 +451,7 @@ public class ProjectService {
         // Parse phases
         if (data.has("phases")) {
             JSONArray phasesArray = data.getJSONArray("phases");
+            Log.d(TAG, "Found " + phasesArray.length() + " phases");
             List<Phase> phases = new ArrayList<>();
             for (int i = 0; i < phasesArray.length(); i++) {
                 JSONObject phaseObj = phasesArray.getJSONObject(i);
@@ -351,6 +461,7 @@ public class ProjectService {
             project.setPhases(phases);
         }
 
+        Log.d(TAG, "Successfully parsed project: " + project.toString());
         return project;
     }
 

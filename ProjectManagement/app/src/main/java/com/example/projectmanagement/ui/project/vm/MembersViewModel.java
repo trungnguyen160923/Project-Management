@@ -35,6 +35,11 @@ public class MembersViewModel extends ViewModel {
     public void init(Context context) {
         this.context = context.getApplicationContext();
         memberRepository = new MemberRepository(context);
+        fetchMembers();
+    }
+
+    private void fetchMembers() {
+        Log.d(TAG, "Fetching members for project: " + savedProject.getProjectID());
         memberRepository.fetchMembers(savedProject.getProjectID(), new CustomCallback<JSONObject, VolleyError>() {
             @Override
             public void onSuccess(JSONObject result) {
@@ -49,6 +54,8 @@ public class MembersViewModel extends ViewModel {
                         ProjectMemberConverter.fromJsonWithCallback(context, memberJson, new CustomCallback<ProjectMember, VolleyError>() {
                             @Override
                             public void onSuccess(ProjectMember result) {
+                                Log.d(TAG, ">>> Added member: " + result.getUser().getEmail() + 
+                                    ", Role: " + result.getRole());
                                 members.add(result);
                                 memberListLive.setValue(members);
                             }
@@ -60,11 +67,13 @@ public class MembersViewModel extends ViewModel {
                                     errMsg = Helpers.parseError(volleyError);
                                 } catch (Exception e) {
                                 }
+                                Log.e(TAG, ">>> Error converting member: " + errMsg);
                                 Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
                 } catch (Exception e) {
+                    Log.e(TAG, ">>> Error parsing members: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -76,7 +85,49 @@ public class MembersViewModel extends ViewModel {
                     errMsg = Helpers.parseError(volleyError);
                 } catch (Exception e) {
                 }
-                Log.d(TAG, ">>> onError fetchMembers: " + errMsg);
+                Log.e(TAG, ">>> onError fetchMembers: " + errMsg);
+            }
+        });
+    }
+
+    public void updateMemberRole(ProjectMember member, ProjectMember.Role newRole) {
+        memberRepository.updateMemberRole(savedProject.getProjectID(), member.getUser().getId(), newRole, new CustomCallback<JSONObject, VolleyError>() {
+            @Override
+            public void onSuccess(JSONObject result) {
+                // Refresh member list after successful update
+                fetchMembers();
+                Toast.makeText(context, "Cập nhật quyền thành công", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(VolleyError volleyError) {
+                String errMsg = "Không thể cập nhật quyền thành viên";
+                try {
+                    errMsg = Helpers.parseError(volleyError);
+                } catch (Exception e) {
+                }
+                Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void removeMember(ProjectMember member) {
+        memberRepository.removeMember(savedProject.getProjectID(), member.getUser().getId(), new CustomCallback<JSONObject, VolleyError>() {
+            @Override
+            public void onSuccess(JSONObject result) {
+                // Refresh member list after successful removal
+                fetchMembers();
+                Toast.makeText(context, "Đã xóa thành viên khỏi dự án", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(VolleyError volleyError) {
+                String errMsg = "Không thể xóa thành viên";
+                try {
+                    errMsg = Helpers.parseError(volleyError);
+                } catch (Exception e) {
+                }
+                Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show();
             }
         });
     }

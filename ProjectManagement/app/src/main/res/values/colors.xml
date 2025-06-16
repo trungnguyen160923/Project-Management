@@ -1,12 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base colors -->
+    <color name="colorPrimary">#2196F3</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorAccent">#03A9F4</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="dialog_background">#FFFFFF</color>
+
+    <!-- Light theme colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#F5F5F5</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Status colors -->
+    <color name="status_completed">#4CAF50</color>
+    <color name="status_pending">#FFC107</color>
+    <color name="status_overdue">#F44336</color>
+
+    <!-- Chart colors -->
+    <color name="chart_completed">#4CAF50</color>
+    <color name="chart_pending">#FFC107</color>
+    <color name="chart_overdue">#F44336</color>
+
+    <!-- Card colors -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_text">#212121</color>
+    
+    <!-- Chart colors -->
+    <color name="chart_text">#212121</color>
+    <color name="chart_grid">#1F000000</color>
+    
     <color name="splash_background_color">#2196F3</color>
 
-    <color name="colorAccent">#0C90F1</color>
-    <color name="colorPrimary">#0A80F5</color>
-    <color name="dialog_background">#FFFFFF</color>
     <color name="primary_text_color">#212121</color>
     <color name="avatar_background">#2196F3</color>
     <color name="light_gray">#DDDDDD</color>
@@ -14,8 +41,6 @@
 
 
     <color name="unread_bg">#FFFDE7</color>       <!-- nền nhạt cho item chưa đọc -->
-    <color name="text_primary">#212121</color>   <!-- chữ đậm -->
-    <color name="text_secondary">#757575</color> <!-- chữ nhạt cho đã đọc -->
     <color name="divider_color">#DDDDDD</color>
     <color name="colorWarning">#FFD600</color>
 
@@ -67,11 +92,15 @@
 
     <color name="md_theme_errorContainer">#FFDAD6</color>
     <color name="md_theme_onErrorContainer">#410002</color>
-    <color name="completed_green">#4CAF50</color>
     <color name="avatar_bg_1">#F44336</color>
     <color name="avatar_bg_2">#E91E63</color>
     <color name="avatar_bg_3">#9C27B0</color>
     <color name="avatar_bg_4">#3F51B5</color>
     <color name="avatar_bg_5">#03A9F4</color>
     <color name="avatar_bg_6">#009688</color>
+    <color name="yellow_light">#FFEA00</color>   <!-- Material Yellow A400 -->
+    <color name="completed_green">#00E676</color> <!-- Material Green A400 -->
+
+    <color name="dark_background">#121212</color>
+    <color name="dark_card_background">#1E1E1E</color>
 </resources>

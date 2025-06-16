@@ -64,6 +64,25 @@ public class MembersActivity extends AppCompatActivity {
         memberAdapter = new MemberAdapter(filteredMembers, this);
         binding.rvMembers.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMembers.setAdapter(memberAdapter);
+
+        // Set role change listener
+        memberAdapter.setOnRoleChangeListener((member, newRole) -> {
+            viewModel.updateMemberRole(member, newRole);
+        });
+
+        // Set remove member listener
+        memberAdapter.setOnRemoveMemberListener(member -> {
+            // Show confirmation dialog
+            new AlertDialog.Builder(this)
+                .setTitle("Xác nhận")
+                .setMessage("Bạn có chắc chắn muốn buộc thành viên này rời khỏi dự án?")
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
+                    viewModel.removeMember(member);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+        });
+
         // Khởi tạo ViewModel và observe danh sách thành viên
         viewModel = new ViewModelProvider(this).get(MembersViewModel.class);
         Project project = (Project) getIntent().getParcelableExtra("project");
@@ -88,59 +107,6 @@ public class MembersActivity extends AppCompatActivity {
                 filterMembers(newText);
                 return true;
             }
-        });
-
-
-        // Tạo liên kết mời
-//        binding.layoutCreateLink.setOnClickListener(v -> {
-//            inviteLink = "https://yourapp.com/invite?project=" + projectName;
-//            binding.layoutCreateLink.setVisibility(View.GONE);
-//            binding.layoutInviteLink.setVisibility(View.VISIBLE);
-//        });
-
-        // Copy link
-        binding.btnCopyLink.setOnClickListener(v -> {
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("Invite Link", inviteLink);
-            clipboard.setPrimaryClip(clip);
-            Toast.makeText(this, "Đã copy liên kết!", Toast.LENGTH_SHORT).show();
-        });
-
-        // Chọn quyền mời (giả lập, bạn có thể show dialog chọn quyền ở đây)
-        binding.tvInvitePermission.setOnClickListener(v -> {
-            View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_invite_link_permission, null, false);
-
-            AlertDialog dialog = new AlertDialog.Builder(this, R.style.CustomDialogTheme)
-                    .setView(dialogView)
-                    .create();
-
-            RadioButton rbMember = dialogView.findViewById(R.id.rb_member);
-            RadioButton rbObserver = dialogView.findViewById(R.id.rb_observer);
-            MaterialButton btnSave = dialogView.findViewById(R.id.btn_save_setting_inviteLink);
-            TextView tvDelete = dialogView.findViewById(R.id.btn_delete_inviteLink);
-
-            rbMember.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) rbObserver.setChecked(false);
-            });
-            rbObserver.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) rbMember.setChecked(false);
-            });
-
-            btnSave.setOnClickListener(v2 -> {
-                // TODO: Lưu quyền đã chọn, cập nhật UI nếu cần
-                dialog.dismiss();
-            });
-            tvDelete.setOnClickListener(v2 -> {
-                // Ẩn layout hiển thị link, hiện layout tạo link lại
-                binding.layoutInviteLink.setVisibility(View.GONE);
-//                binding.layoutCreateLink.setVisibility(View.VISIBLE);
-                // Xoá link cũ (nếu muốn)
-                inviteLink = "";
-                dialog.dismiss();
-            });
-
-
-            dialog.show();
         });
     }
 

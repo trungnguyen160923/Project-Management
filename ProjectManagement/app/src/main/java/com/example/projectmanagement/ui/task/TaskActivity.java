@@ -171,6 +171,23 @@ public class TaskActivity extends AppCompatActivity {
                 // Fetch project members
                 viewModel.fetchProjectMembers();
 
+                // Check if current user is assigned to this task
+                UserPreferences userPreferences = new UserPreferences(this);
+                User currentUser =  userPreferences.getUser();
+                if (currentUser != null) {
+                    boolean isAssignedToCurrentUser = task.getAssignedTo() == currentUser.getId();
+                    binding.checkboxCompleted.setVisibility(isAssignedToCurrentUser ? View.VISIBLE : View.GONE);
+                }
+
+                // Check due date and set border color
+                if (task.getDueDate() != null) {
+                    boolean isOverdue = task.getDueDate().before(new Date()) && !task.getStatus().equals("DONE");
+                    if (isOverdue) {
+                        binding.cardMain.setStrokeColor(ContextCompat.getColor(this, R.color.red));
+                        binding.cardMain.setStrokeWidth(2);
+                    }
+                }
+
                 // Observe messages for feedback
                 viewModel.getMessage().observe(this, message -> {
                     if (message != null && !message.isEmpty()) {
@@ -379,15 +396,29 @@ public class TaskActivity extends AppCompatActivity {
                 if (task.getDueDate() != null) {
                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
                     binding.tvDueDate.setText(dateFormat.format(task.getDueDate()));
+                    
+                    // Check if task is overdue
+                    boolean isOverdue = task.getDueDate().before(new Date()) && !task.getStatus().equals("DONE");
+                    if (isOverdue) {
+                        binding.cardMain.setStrokeColor(ContextCompat.getColor(this, R.color.red));
+                        binding.cardMain.setStrokeWidth(2);
+                    }
                 } else {
                     binding.tvDueDate.setText("Chưa có ngày hết hạn");
                 }
 
-                // Set status - chỉ set một lần khi task được load
+                // Set status and update checkbox visibility
                 if (task.getStatus() != null && !task.getStatus().isEmpty()) {
                     boolean isDone = "DONE".equalsIgnoreCase(task.getStatus());
                     binding.checkboxCompleted.setChecked(isDone);
                     updateCardStrokeColor(isDone);
+                }
+
+                // Check if current user is assigned to this task
+                User currentUser = userPreferences.getUser();
+                if (currentUser != null) {
+                    boolean isAssignedToCurrentUser = task.getAssignedTo() == currentUser.getId();
+                    binding.checkboxCompleted.setVisibility(isAssignedToCurrentUser ? View.VISIBLE : View.GONE);
                 }
 
                 // Check if project members are loaded
@@ -1451,14 +1482,21 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     private void updateCardStrokeColor(boolean isChecked) {
-        int colorResId = isChecked
-                ? R.color.card_stroke_checked
-                : R.color.card_stroke_default;
-        // 1. Đổi màu viền
-        binding.cardMain.setStrokeColor(
-                ContextCompat.getColor(this, colorResId)
-        );
-        // 2. Đổi độ dày viền (ví dụ 4dp)
+        Task currentTask = viewModel.getTask().getValue();
+        if (currentTask == null) return;
+
+        if (isChecked) {
+            // Task is completed - green border
+            binding.cardMain.setStrokeColor(ContextCompat.getColor(this, R.color.completed_green));
+        } else if (currentTask.getDueDate() != null && currentTask.getDueDate().before(new Date())) {
+            // Task is overdue - red border
+            binding.cardMain.setStrokeColor(ContextCompat.getColor(this, R.color.red));
+        } else {
+            // Default border color
+            binding.cardMain.setStrokeColor(ContextCompat.getColor(this, R.color.card_stroke_default));
+        }
+        
+        // Set stroke width
         int strokeWidthDp = 2;
         int strokeWidthPx = (int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP,

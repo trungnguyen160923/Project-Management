@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -18,12 +19,14 @@ import com.example.projectmanagement.databinding.ActivityMenuProjectBinding;
 import com.example.projectmanagement.ui.main.HomeActivity;
 import com.example.projectmanagement.ui.project.vm.MenuProjectViewModel;
 import com.example.projectmanagement.utils.ConfirmDialogUtil;
+import com.example.projectmanagement.utils.UserPreferences;
 import com.example.projectmanagement.viewmodel.AvatarView;
 import com.example.projectmanagement.utils.ParseDateUtil;
 import com.example.projectmanagement.data.repository.ProjectRepository;
 import com.example.projectmanagement.utils.LoadingDialog;
 
 import java.util.Date;
+import java.util.Optional;
 
 public class MenuProjectActivity extends AppCompatActivity {
     private String TAG = "MenuProjectActivity";
@@ -89,9 +92,11 @@ public class MenuProjectActivity extends AppCompatActivity {
 
                 // Hiển thị thời hạn
                 if (project.getDeadline() != null) {
-                    String deadlineText = String.format("Từ %s đến %s",
-                            ParseDateUtil.toCustomDateTime((project.getStartDate())),
-                            ParseDateUtil.toCustomDateTime(project.getDeadline()));
+                    String deadlineText = String.format(
+                            "Từ %s%nđến %s",
+                            ParseDateUtil.toCustomDateTime(project.getStartDate()),
+                            ParseDateUtil.toCustomDateTime(project.getDeadline())
+                    );
                     Log.d("MenuProjectActivity", "Setting deadline: " + deadlineText);
                     binding.tvDeadline.setText(deadlineText);
                 } else {
@@ -120,6 +125,19 @@ public class MenuProjectActivity extends AppCompatActivity {
                         binding.tvAuthorUsername.setText(member.getUser().getEmail());
                         break;
                     }
+                }
+                int currentUserId = new UserPreferences(this).getUser().getId();
+                Optional<ProjectMember> me = memberList.stream()
+                        .filter(m -> m.getUser() != null && m.getUser().getId() == currentUserId)
+                        .findFirst();
+
+                if (me.isPresent() && me.get().getRole() == ProjectMember.Role.Admin) {
+                    // show nút mời & update/delete
+                    binding.btnInvite.setVisibility(View.VISIBLE);
+                    binding.llUpdDelByRole.setVisibility(View.VISIBLE);
+                } else {
+                    binding.btnInvite.setVisibility(View.GONE);
+                    binding.llUpdDelByRole.setVisibility(View.GONE);
                 }
 
                 // Thêm avatar cho từng thành viên
@@ -172,6 +190,13 @@ public class MenuProjectActivity extends AppCompatActivity {
         binding.btnInvite.setOnClickListener(v -> {
             // Nếu muốn truyền projectId sang InviteMemberActivity:
             Intent intent = new Intent(this, InviteMemberActivity.class);
+            startActivity(intent);
+        });
+
+        binding.btnProjectStats.setOnClickListener(v -> {
+            // Mở ProjectStatisticActivity và truyền project ID
+            Intent intent = new Intent(this, ProjectStatisticActivity.class);
+            intent.putExtra("project_id", project.getProjectID());
             startActivity(intent);
         });
 

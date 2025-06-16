@@ -49,12 +49,12 @@ public class ProjectViewModel extends ViewModel {
     }
 
     public void setProject(Project project) {
-        Log.d("ProjectViewModel", "Setting project: " + project.getProjectName() + 
-            ", phases: " + (project.getPhases() != null ? project.getPhases().size() : 0));
-        
+        Log.d("ProjectViewModel", "Setting project: " + project.getProjectName() +
+                ", phases: " + (project.getPhases() != null ? project.getPhases().size() : 0));
+
         // Set project first
         this.project.setValue(project);
-        
+
         // Set phases immediately if project has them
         if (project.getPhases() != null && !project.getPhases().isEmpty()) {
             Log.d("ProjectViewModel", "Using existing phases from project: " + project.getPhases().size());
@@ -97,7 +97,7 @@ public class ProjectViewModel extends ViewModel {
         newPhase.setDescription("Description for " + newPhase.getPhaseName());
         newPhase.setStatus("ACTIVE");
         newPhase.setProjectID(project.getValue().getProjectID());
-        newPhase.setOrderIndex(currentPhases.size()+1); // Set order index to last position
+        newPhase.setOrderIndex(currentPhases.size() + 1); // Set order index to last position
 
         // Set flag to prevent multiple creations
         isCreatingPhase = true;
@@ -158,7 +158,7 @@ public class ProjectViewModel extends ViewModel {
         List<Phase> currentPhases = phases.getValue();
         if (currentPhases != null && phasePosition >= 0 && phasePosition < currentPhases.size()) {
             Phase phase = currentPhases.get(phasePosition);
-            
+
             // Create new task
             Task newTask = new Task();
             newTask.setTaskName(taskName);
@@ -166,9 +166,9 @@ public class ProjectViewModel extends ViewModel {
             newTask.setStatus("WORKING");
             newTask.setPriority("MEDIUM");
             newTask.setDueDate(new Date());
-            newTask.setOrderIndex(phase.getTasks().size()+1);
+            newTask.setOrderIndex(phase.getTasks().size() + 1);
             newTask.setPhase(phase);
-            
+
             // Get project ID
             Project currentProject = project.getValue();
             if (currentProject == null) {
@@ -178,43 +178,43 @@ public class ProjectViewModel extends ViewModel {
 
             // Call API to create task
             TaskService.createTask(
-                context,
-                newTask,
-                response -> {
-                    try {
-                        if ("success".equals(response.optString("status"))) {
-                            // Parse task data from response
-                            JSONObject data = response.getJSONObject("data");
-                            Task createdTask = new Task();
-                            createdTask.setTaskID(data.optInt("id"));
-                            createdTask.setTaskName(data.optString("taskName"));
-                            createdTask.setTaskDescription(data.optString("description"));
-                            createdTask.setStatus(data.optString("status"));
-                            createdTask.setPriority(data.optString("priority"));
-                            createdTask.setDueDate(ParseDateUtil.parseDate(data.optString("dueDate")));
-                            createdTask.setOrderIndex(data.optInt("orderIndex"));
-                            createdTask.setPhase(phase);
+                    context,
+                    newTask,
+                    response -> {
+                        try {
+                            if ("success".equals(response.optString("status"))) {
+                                // Parse task data from response
+                                JSONObject data = response.getJSONObject("data");
+                                Task createdTask = new Task();
+                                createdTask.setTaskID(data.optInt("id"));
+                                createdTask.setTaskName(data.optString("taskName"));
+                                createdTask.setTaskDescription(data.optString("description"));
+                                createdTask.setStatus(data.optString("status"));
+                                createdTask.setPriority(data.optString("priority"));
+                                createdTask.setDueDate(ParseDateUtil.parseDate(data.optString("dueDate")));
+                                createdTask.setOrderIndex(data.optInt("orderIndex"));
+                                createdTask.setPhase(phase);
 
-                            // Add task to phase
-                            phase.getTasks().add(createdTask);
-                            phases.setValue(currentPhases);
-                            message.setValue("Task created successfully");
-                            Log.d("ProjectViewModel", "Task created successfully: " + taskName);
-                        } else {
-                            String errorMsg = response.optString("message", "Unknown error occurred");
-                            message.setValue(errorMsg);
-                            Log.e("ProjectViewModel", "Error creating task: " + errorMsg);
+                                // Add task to phase
+                                phase.getTasks().add(createdTask);
+                                phases.setValue(currentPhases);
+                                message.setValue("Task created successfully");
+                                Log.d("ProjectViewModel", "Task created successfully: " + taskName);
+                            } else {
+                                String errorMsg = response.optString("message", "Unknown error occurred");
+                                message.setValue(errorMsg);
+                                Log.e("ProjectViewModel", "Error creating task: " + errorMsg);
+                            }
+                        } catch (JSONException e) {
+                            message.setValue("Error parsing response: " + e.getMessage());
+                            Log.e("ProjectViewModel", "Error parsing response", e);
                         }
-                    } catch (JSONException e) {
-                        message.setValue("Error parsing response: " + e.getMessage());
-                        Log.e("ProjectViewModel", "Error parsing response", e);
+                    },
+                    error -> {
+                        String errorMsg = error.getMessage() != null ? error.getMessage() : "Unknown error occurred";
+                        message.setValue("Error creating task: " + errorMsg);
+                        Log.e("ProjectViewModel", "Error creating task", error);
                     }
-                },
-                error -> {
-                    String errorMsg = error.getMessage() != null ? error.getMessage() : "Unknown error occurred";
-                    message.setValue("Error creating task: " + errorMsg);
-                    Log.e("ProjectViewModel", "Error creating task", error);
-                }
             );
         }
     }
@@ -272,7 +272,7 @@ public class ProjectViewModel extends ViewModel {
             return;
         }
         isLoading = true;
-        
+
         Project currentProject = project.getValue();
         if (currentProject != null) {
             // Load lại phase và task
@@ -281,17 +281,18 @@ public class ProjectViewModel extends ViewModel {
     }
 
     private void loadProjectPhases(int projectId) {
-        Log.d(TAG,">>> yyyyyyy aaaaa: "+projectId);
-        phases.postValue(null);
-        phases.setValue(null);
+        Log.d(TAG, ">>> yyyyyyy aaaaa: " + projectId);
+//        phases.postValue(null);
+//        phases.setValue(null);
         phaseRepository.getPhasesByProjectId(projectId, new PhaseRepository.PhaseCallback() {
             @Override
             public void onSuccess(List<Phase> phaseList) {
                 // Cập nhật phases
                 phases.postValue(phaseList);
-                
+                Log.d("NCNCNCD",phaseList.size()+"");
                 // Cập nhật project với phases mới
                 Project currentProject = project.getValue();
+                Log.d("NCNSNSBC",currentProject.toString());
                 if (currentProject != null) {
                     currentProject.setPhases(phaseList);
                     project.postValue(currentProject);
@@ -300,20 +301,23 @@ public class ProjectViewModel extends ViewModel {
                 // Load tasks cho tất cả phase
                 int[] loadedPhases = {0};
                 int totalPhases = phaseList.size();
-                
+
                 if (totalPhases == 0) {
                     isLoading = false;
                     return;
                 }
-
+                Log.d("TICKKK1","Den day");
+                Log.d("TICKKK1",phaseList +"");
                 for (Phase phase : phaseList) {
                     loadPhaseTasks(phase.getPhaseID(), () -> {
+                        Log.d("TICKKK1","Den day 2-"+ phase.getPhaseID());
                         loadedPhases[0]++;
                         if (loadedPhases[0] == totalPhases) {
                             isLoading = false;
                         }
                     });
                 }
+                Log.d("TICKKK1","Den day end");
             }
 
             @Override
@@ -326,7 +330,7 @@ public class ProjectViewModel extends ViewModel {
 
     private void loadPhaseTasks(int phaseId, Runnable onComplete) {
         Log.d(TAG, "Loading tasks for phase: " + phaseId);
-        
+
         // Get current phases
         List<Phase> currentPhases = phases.getValue();
         if (currentPhases == null) {
@@ -337,9 +341,9 @@ public class ProjectViewModel extends ViewModel {
 
         // Find target phase
         Phase targetPhase = currentPhases.stream()
-            .filter(phase -> phase.getPhaseID() == phaseId)
-            .findFirst()
-            .orElse(null);
+                .filter(phase -> phase.getPhaseID() == phaseId)
+                .findFirst()
+                .orElse(null);
 
         if (targetPhase == null) {
             Log.e(TAG, "Phase not found: " + phaseId);
@@ -349,23 +353,27 @@ public class ProjectViewModel extends ViewModel {
 
         // Get tasks from API
         ProjectService.getPhaseTasks(context, String.valueOf(phaseId),
-            response -> {
-                try {
-                    List<Task> tasks = ProjectService.parseTasksList(response);
-                    targetPhase.setTasks(tasks);
-                    phases.postValue(currentPhases);
-                    Log.d(TAG, "Updated phase " + phaseId + " with " + tasks.size() + " tasks");
-                } catch (Exception e) {
-                    Log.e(TAG, "Error parsing tasks", e);
-                    message.postValue("Error loading tasks: " + e.getMessage());
+                response -> {
+                    try {
+                        List<Task> tasks = ProjectService.parseTasksList(response);
+                        Log.d("NATTTT",String.valueOf(phaseId) + tasks.size());
+                        Log.d("NATTTT2",currentPhases.toString());
+
+                        targetPhase.setTasks(tasks);
+//                        phases.postValue(currentPhases);
+                        phases.postValue(new ArrayList<>(currentPhases));
+                        Log.d(TAG, "Updated phase " + phaseId + " with " + tasks.size() + " tasks");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing tasks", e);
+                        message.postValue("Error loading tasks: " + e.getMessage());
+                    }
+                    onComplete.run();
+                },
+                error -> {
+                    Log.e(TAG, "Error loading tasks", error);
+                    message.postValue("Error loading tasks: " + error.getMessage());
+                    onComplete.run();
                 }
-                onComplete.run();
-            },
-            error -> {
-                Log.e(TAG, "Error loading tasks", error);
-                message.postValue("Error loading tasks: " + error.getMessage());
-                onComplete.run();
-            }
         );
     }
 

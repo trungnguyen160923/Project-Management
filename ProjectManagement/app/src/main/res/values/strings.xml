@@ -49,6 +49,7 @@
     <string name="menu_project">Dự án</string>
     <string name="menu_statistics">Thống kê</string>
     <string name="menu_setting">Cài đặt</string>
+    <string name="menu_myTask">Các thẻ của tôi</string>
     <string name="logout_description">Log out</string>
     <string name="home_text_donot_have_project">Không có dự án</string>
     <string name="home_text_create_first_project">Tạo dự án Trello đầu tiên của bạn</string>
@@ -85,7 +86,10 @@
     <string-array name="gender_options">
         <item>Nam</item>
         <item>Nữ</item>
+        <item>Khác</item>
     </string-array>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 
 </resources>

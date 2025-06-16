@@ -1,5 +1,6 @@
 package com.example.projectmanagement.ui.adapter;
 
+import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.util.Log;
@@ -11,6 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -20,120 +22,177 @@ import com.example.projectmanagement.data.model.Project;
 import com.example.projectmanagement.utils.ParseDateUtil;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import android.graphics.Color;
+import com.example.projectmanagement.ui.home.HomeViewModel;
+import com.example.projectmanagement.utils.UserPreferences;
+import com.google.android.material.card.MaterialCardView;
 
-public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHolder> {
-    private final List<Project> projects = new ArrayList<>();
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
+public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectViewHolder> {
+    private List<Project> projects;
+    private HomeViewModel viewModel;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
         void onItemClick(Project project);
     }
 
-    public ProjectAdapter(OnItemClickListener listener) {
+    public ProjectAdapter(List<Project> projects, HomeViewModel viewModel, OnItemClickListener listener) {
+        this.projects = projects;
+        this.viewModel = viewModel;
         this.listener = listener;
-    }
-
-    public void setData(List<Project> data) {
-        projects.clear();
-        if (data != null) projects.addAll(data);
-        notifyDataSetChanged();
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(
-            @NonNull ViewGroup parent, int viewType
-    ) {
-        return new ViewHolder(LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_project, parent, false));
+    public ProjectViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_project, parent, false);
+        return new ProjectViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(
-            @NonNull ViewHolder holder, int pos
-    ) {
-        Project p = projects.get(pos);
-        holder.bind(p);
-        holder.itemView.setOnClickListener(v -> {
-            Log.d("ProjectAdapter", ">>> onItemClick called ihihih: " + pos);
-            if (listener != null) listener.onItemClick(p);
-        });
+    public void onBindViewHolder(@NonNull ProjectViewHolder holder, int position) {
+        Project project = projects.get(position);
+        holder.bind(project);
     }
 
     @Override
     public int getItemCount() {
-        return projects.size();
+        return projects != null ? projects.size() : 0;
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivBg;
-        TextView tvName, tvDesc, tvDeadline;
+    public void updateProjects(List<Project> newProjects) {
+        this.projects = newProjects;
+        notifyDataSetChanged();
+    }
 
-        LinearLayout llDeadline;
+    class ProjectViewHolder extends RecyclerView.ViewHolder {
+        private final TextView tvProjectName;
+        private final TextView tvTaskCount;
+        private final TextView tvCreatedBy;
+        private final TextView tvDescription;
+        private final TextView tvDeadline;
+        private final ImageView ivItemBackground;
 
-        ViewHolder(@NonNull View v) {
-            super(v);
-            ivBg = v.findViewById(R.id.ivItemBackground);
-            tvName = v.findViewById(R.id.tvProjectName);
-            tvDesc = v.findViewById(R.id.tvDescription);
-            tvDeadline = v.findViewById(R.id.tvDeadline);
-            llDeadline = v.findViewById(R.id.llDeadline);
+        private final MaterialCardView card;
+
+        public ProjectViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvProjectName = itemView.findViewById(R.id.tvProjectName);
+            tvTaskCount = itemView.findViewById(R.id.tvTaskCount);
+            tvCreatedBy = itemView.findViewById(R.id.tvCreatedBy);
+            tvDescription = itemView.findViewById(R.id.tvDescription);
+            tvDeadline = itemView.findViewById(R.id.tvDeadline);
+            ivItemBackground = itemView.findViewById(R.id.ivItemBackground);
+            card = itemView.findViewById(R.id.cardProject);
+
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    listener.onItemClick(projects.get(position));
+                }
+            });
         }
 
-        void bind(Project p) {
-            tvName.setText(p.getProjectName());
-            // description
-            if (TextUtils.isEmpty(p.getProjectDescription())) {
-                tvDesc.setVisibility(View.GONE);
-            } else {
-                tvDesc.setVisibility(View.VISIBLE);
-                tvDesc.setText(p.getProjectDescription());
+        public void bind(Project project) {
+            tvProjectName.setText(project.getProjectName());
+            if(project.getProjectDescription() != null && !project.getProjectDescription().isEmpty()){
+                tvDescription.setVisibility(View.VISIBLE);
+                tvDescription.setText(project.getProjectDescription());
+            }else{
+                tvDescription.setVisibility(View.GONE);
             }
-            // deadline
-            if (p.getDeadline() != null) {
-                llDeadline.setVisibility(View.VISIBLE);
-                tvDeadline.setText("Đến hạn vào: " + ParseDateUtil.toCustomDateTime(p.getDeadline()));
-            } else llDeadline.setVisibility(View.GONE);
 
-            String bg = (p.getBackgroundImg() != null && !p.getBackgroundImg().isEmpty()) ? p.getBackgroundImg() : "COLOR;#0C90F1";
+            // Get project creator
+            viewModel.getProjectCreator(project.getProjectID(), creatorName -> {
+                if (getAdapterPosition() != RecyclerView.NO_POSITION) {
+                    UserPreferences userPreferences = new UserPreferences(itemView.getContext());
+                    if(creatorName.equals(userPreferences.getUser().getFullname())){
+                        creatorName += "(Bạn)";
+                    }
+                    tvCreatedBy.setText("Được tạo bởi: " + creatorName);
+                }
+            });
+
+            viewModel.getProjectTaskCounts(project.getProjectID(), new HomeViewModel.TaskCountCallback() {
+                @Override
+                public void onTaskCountsReceived(int completed, int total) {
+                    // 1. cập nhật text
+                    if (total > 0) {
+                        tvTaskCount.setText(completed + "/" + total + " tasks");
+                    } else {
+                        tvTaskCount.setText("No tasks");
+                    }
+
+                    // 2. tính overdue & allDone
+                    Date now = new Date();
+                    Date dl  = project.getDeadline();
+                    boolean isOverdue = dl != null && dl.before(now);
+                    boolean allDone   = total > 0 && completed == total;
+
+                    // 3. set viền ngay trong callback
+                    if ((dl == null && allDone) || (isOverdue && allDone)) {
+                        card.setStrokeColor(ContextCompat.getColor(itemView.getContext(), R.color.completed_green));
+                    } else if (isOverdue) {
+                        card.setStrokeColor(ContextCompat.getColor(itemView.getContext(), android.R.color.holo_red_dark));
+                    } else {
+                        card.setStrokeColor(ContextCompat.getColor(itemView.getContext(), R.color.colorAccent));
+                    }
+                }
+            });
+
+
+            Date now = new Date();
+            Date dl = project.getDeadline();
+            boolean isOverdue = (dl != null) && dl.before(now);
+            // Set deadline
+            if (project.getDeadline() != null) {
+                String deadline = "Deadline: " + ParseDateUtil.toCustomDateTime(project.getDeadline());
+                if(isOverdue){
+                    deadline += " (Quá hạn)";
+                }
+                tvDeadline.setText(deadline);
+            }
+            else {
+                tvDeadline.setText("No deadline");
+            }
+
+            // Set background image
+            String bg = (project.getBackgroundImg() != null
+                    && !project.getBackgroundImg().isEmpty())? project.getBackgroundImg(): "COLOR;#0C90F1";
             Log.d("CHECK=>>>>>>>", bg);
-            int radius = ivBg.getContext()
+            int radius = ivItemBackground.getContext()
                     .getResources()
                     .getDimensionPixelSize(R.dimen.corner_radius);
             if (bg.startsWith("http")) {
-                Glide.with(ivBg.getContext())
+                Glide.with(ivItemBackground.getContext())
                         .load(bg)
                         .transform(new RoundedCorners(radius))
-                        .into(ivBg);
+                        .into(ivItemBackground);
 
             } else if (bg.startsWith("COLOR;")) {
                 // tạo Drawable có bo góc luôn
                 GradientDrawable gd = new GradientDrawable();
-                gd.setColor(Color.parseColor(bg.split(";", 2)[1]));
+                gd.setColor(Color.parseColor(bg.split(";",2)[1]));
                 gd.setCornerRadius(radius);
-                ivBg.setBackground(gd);
-
+                ivItemBackground.setBackground(gd);
             } else if (bg.startsWith("GRADIENT;")) {
-                String[] parts = bg.split(";", 3);
-                String[] cols = parts[1].split(",");
+                String[] parts = bg.split(";",3);
+                String[] cols  = parts[1].split(",");
                 int c1 = Color.parseColor(cols[0]);
                 int c2 = Color.parseColor(cols[1]);
                 int ori = Integer.parseInt(parts[2]);
                 GradientDrawable gd = new GradientDrawable(
                         GradientDrawable.Orientation.values()[ori],
-                        new int[]{c1, c2});
+                        new int[]{c1,c2});
                 gd.setCornerRadius(radius);
-                ivBg.setBackground(gd);
-
-            } else if (bg.startsWith("RESOURCE;")) {
-                int resId = Integer.parseInt(bg.split(";", 2)[1]);
-                Glide.with(ivBg.getContext())
-                        .load(resId)
-                        .transform(new RoundedCorners(radius))
-                        .into(ivBg);
+                ivItemBackground.setBackground(gd);
             }
         }
     }

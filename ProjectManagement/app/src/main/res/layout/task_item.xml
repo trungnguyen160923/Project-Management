@@ -5,11 +5,12 @@
     android:id="@+id/cardTask"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
     app:cardCornerRadius="8dp"
-    app:strokeWidth="2dp"
+    app:strokeWidth="0.3dp"
     app:strokeColor="@color/card_stroke_default"
-    app:cardUseCompatPadding="true">
+    app:cardUseCompatPadding="true"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@android:color/white">
 
     <LinearLayout
         android:orientation="vertical"

@@ -44,10 +44,25 @@ public class ProfileViewModel extends ViewModel {
         try {
             JSONObject userData = new JSONObject();
             userData.put("fullname", updatedUser.getFullname());
-            userData.put("birthday", updatedUser.getBirthday());
-            userData.put("gender", updatedUser.getGender());
+            userData.put("birthday", ParseDateUtil.dateToIsoDate(updatedUser.getBirthday()));
+            String gender = "";
+            switch (updatedUser.getGender()) {
+                case "Nam":
+                    gender = "Male";
+                    break;
+                case "Nữ":
+                    gender = "Female";
+                    break;
+                case "Khác":
+                    gender = "Other";
+                    break;
+            }
+
+            userData.put("gender", gender);
             userData.put("socialLinks", updatedUser.getSocial_links());
             userData.put("bio", updatedUser.getBio());
+
+            Log.d("ProfileViewModel", userData.toString());
 
             UserService.updateUserProfile(context, userData, response -> {
                 try {
@@ -73,15 +88,19 @@ public class ProfileViewModel extends ViewModel {
                             errorMessage.setValue(null);
                         }
                     } else {
+                        Log.d("ProfileViewModel", response.optString("error", "Không thể cập nhật thông tin"));
                         errorMessage.setValue(response.optString("error", "Không thể cập nhật thông tin"));
                     }
                 } catch (Exception e) {
+                    Log.d("ProfileViewModel", e.getMessage());
                     errorMessage.setValue("Lỗi: " + e.getMessage());
                 }
             }, error -> {
+                Log.d("ProfileViewModel", error.getMessage());
                 errorMessage.setValue("Lỗi kết nối: " + error.getMessage());
             });
         } catch (Exception e) {
+            Log.d("ProfileViewModel", e.getMessage());
             errorMessage.setValue("Lỗi: " + e.getMessage());
         }
     }
@@ -151,20 +170,5 @@ public class ProfileViewModel extends ViewModel {
         if (u == null || u.getSocial_links() == null) return false;
         Pattern p = Pattern.compile("https?://[\\w./-]+");
         return p.matcher(u.getSocial_links()).matches();
-    }
-
-    public void initMockData() {
-        User u = new User(
-                1,
-                "username",
-                "user@example.com",
-                null
-        );
-        u.setFullname("Nguyễn Văn A");
-        u.setBirthday(ParseDateUtil.parseDate("01/01/2000"));
-        u.setGender("Nam");
-        u.setSocial_links("https://facebook.com/user");
-        u.setBio("Đây là mô tả ngắn về người dùng.");
-        user.setValue(u);
     }
 }
